@@ -1,0 +1,47 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+ 
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 1. TABLA: USERS (Autenticación centralizada)
+model User {
+  id        Int      @id @default(autoincrement()) 
+  email     String   @unique
+  password  String
+  role      String   // 'student', 'company', 'admin'
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relaciones (Prisma las necesita para saber navegar)
+  studentProfile Student? // Un usuario PUEDE tener un perfil de estudiante (opcional porque puede ser empresa)
+
+  @@map("users") // Nombre real de la tabla en PostgreSQL
+}
+
+// 2. TABLA: STUDENTS (Perfil extendido)
+model Student {
+  id               Int     @id @default(autoincrement())
+  userId           Int     @unique @map("user_id") // La llave foránea
+  user             User    @relation(fields: [userId], references: [id]) // La conexión lógica
+  
+  matricula        String  @unique
+  nombreCompleto   String  @map("nombre_completo")
+  carrera          String
+  estatusAcademico String  @map("estatus_academico") // 'Activo' o 'Egresado'
+  perfilLaboral    Json?   @map("perfil_laboral")    // JSONB: Genial para skills sin crear 20 tablas extra
+  cvUrl            String? @map("cv_url")
+  grado            String? // Lo mencionaste al final de tu lista
+
+  @@map("students") // Nombre real de la tabla en PostgreSQL
+}
