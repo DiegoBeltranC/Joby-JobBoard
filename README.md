@@ -29,17 +29,21 @@ cd bolsa-trabajo
 npm install
 ```
 
-(Nota: Al ejecutar npm install, todas las librerías como shadcn, Prisma y Tailwind se instalarán automáticamente. No es necesario configurarlas de cero).
+*(Nota: Al ejecutar `npm install`, todas las librerías como shadcn, Prisma y Tailwind se instalarán automáticamente. No es necesario configurarlas de cero).*
 
 ### 3. Configurar Variables de Entorno
-Crea un archivo llamado .env en la raíz del proyecto (al mismo nivel que el package.json).
+Crea un archivo llamado `.env` en la raíz del proyecto (al mismo nivel que el `package.json`).
 Pega lo siguiente y reemplaza los valores con tus credenciales locales de PostgreSQL:
 
+```env
 # Ejemplo: postgresql://USUARIO:CONTRASEÑA@localhost:5432/NOMBRE_BD?schema=public
 DATABASE_URL="postgresql://postgres:tu_password@localhost:5432/jobby_db?schema=public"
+```
 
 ### 4. Configurar la Base de Datos (Prisma)
 Ejecuta estos 3 comandos estrictamente en este orden para preparar la base de datos:
+
+```bash
 # 1. Genera el cliente de Prisma (Actualiza la conexión en node_modules)
 npx prisma generate
 
@@ -48,26 +52,28 @@ npx prisma db push
 
 # 3. Llena la base de datos con información de prueba (Usuarios, Estudiantes, etc.)
 npx prisma db seed
+```
 
-Si el seed fue exitoso, verás un mensaje verde en la consola.
+*Si el seed fue exitoso, verás un mensaje verde en la consola.*
 
 ### 5. Iniciar el Servidor de Desarrollo
+```bash
 npm run dev
+```
 
-📂 Estructura del Proyecto
-/src/app - Páginas y rutas principales de Next.js (/login, /registro).
+---
 
-/src/actions - Server Actions (Lógica de backend, ej: auth.ts).
+## 📂 Estructura del Proyecto
+* `/src/app` - Páginas y rutas principales de Next.js (`/login`, `/registro`).
+* `/src/actions` - Server Actions (Lógica de backend, ej: `auth.ts`).
+* `/src/components/ui` - Componentes reutilizables de shadcn (Botones, Inputs). ¡No los modifiques a menos que quieras cambiar el diseño global!
+* `/src/lib` - Utilidades y configuración (ej. `prisma.ts`).
+* `/prisma` - Esquema de la base de datos (`schema.prisma`) y script de datos iniciales (`seed.ts`).
 
-/src/components/ui - Componentes reutilizables de shadcn (Botones, Inputs). ¡No los modifiques a menos que quieras cambiar el diseño global!
+---
 
-/src/lib - Utilidades y configuración (ej. prisma.ts).
-
-/prisma - Esquema de la base de datos (schema.prisma) y script de datos iniciales (seed.ts).
-
-💡 Notas Importantes para el Equipo
-Cambios en la Base de Datos: Si alguien del equipo modifica el archivo schema.prisma, debes hacer un git pull y luego ejecutar npx prisma db push y npx prisma generate en tu terminal para sincronizar tu entorno.
-
+## 💡 Notas Importantes para el Equipo
+* **Cambios en la Base de Datos:** Si alguien del equipo modifica el archivo `schema.prisma`, debes hacer un `git pull` y luego ejecutar `npx prisma db push` y `npx prisma generate` en tu terminal para sincronizar tu entorno.
 
 
 
