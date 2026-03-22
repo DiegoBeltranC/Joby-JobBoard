@@ -44,13 +44,7 @@ export default function LandingPage() {
           <div className="md:w-1/2 flex justify-center relative">
             {/* Círculo principal / Imagen Placeholder */}
             <div className="w-full max-w-md aspect-square bg-slate-100 rounded-full relative flex items-center justify-center border-4 border-white shadow-xl overflow-hidden">
-                <span className="text-slate-400 font-medium">[Aquí va la imagen del chico en la laptop]</span>
-                
-                {/* Flotante 1 */}
-                <div className="absolute top-10 left-0 bg-white px-4 py-2 rounded-lg shadow-md flex items-center gap-2 text-xs font-bold">
-                    <span className="w-4 h-4 rounded-full border-2 border-slate-300"></span>
-                    <span className="text-slate-300">UT Chetumal</span>
-                </div>
+                  <Image src="/logos/landing/chico_en_computadora.png" alt="JobBy" fill className="object-cover" />
             </div>
           </div>
         </section>
@@ -102,7 +96,7 @@ export default function LandingPage() {
               <h2 className="text-2xl font-bold text-slate-800 mb-8">¿Por qué usar <span className="text-emerald-600">JobBy</span>?</h2>
               {/* Imagen Placeholder */}
               <div className="w-full max-w-sm aspect-square bg-slate-200 rounded-3xl flex items-center justify-center mx-auto relative overflow-hidden">
-                 <span className="text-slate-400 font-medium">[Imagen de la chica con pulgar arriba]</span>
+                 <Image src="/logos/landing/monaChinaPulgar.png" alt="JobBy" fill className="object-cover" />
               </div>
             </div>
             
@@ -146,8 +140,8 @@ export default function LandingPage() {
             </div>
             <div className="md:w-1/2">
                {/* Imagen Placeholder */}
-               <div className="w-full aspect-[4/3] bg-slate-100 rounded-3xl flex items-center justify-center">
-                 <span className="text-slate-400 font-medium">[Imagen ilustrativa estudiantes]</span>
+               <div className="w-full max-w-sm aspect-[4/3] bg-slate-100 rounded-3xl flex items-center justify-center relative overflow-hidden">
+                <Image src="/logos/landing/jovenes_estudiando.png" alt="JobBy" fill className="object-cover" />
                </div>
             </div>
           </div>
