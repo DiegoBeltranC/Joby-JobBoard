@@ -3,42 +3,45 @@ import { PrismaClient } from '@prisma/client'
 const prisma = new PrismaClient()
 
 async function main() {
-  // 1. Crear (o actualizar) un Estudiante de prueba
-  // Usamos 'upsert' para que no falle si lo corres dos veces
-  const estudiante = await prisma.user.upsert({
-    where: { email: '21390384@utchetumal.edu.mx' },
+  console.log('🌱 Iniciando la siembra de datos...')
+
+  // 1. Crear la Universidad (Si no existe, la crea. Si existe, no hace nada)
+  const utch = await prisma.universidad.upsert({
+    where: { id: 1 }, // Asumimos que será la ID 1
     update: {},
     create: {
-      email: '21390384@utchetumal.edu.mx',
-      password: 'password123', // En producción esto irá hasheado
-      role: 'student',
-      isActive: true,
-      // AQUÍ ESTÁ LA MAGIA: Creamos el perfil al mismo tiempo
-      studentProfile: {
-        create: {
-          matricula: '21390384',
-          nombreCompleto: 'Diego Alberto Beltrán Can',
-          carrera: 'Ingeniería en Desarrollo de Software',
-          estatusAcademico: 'Activo',
-          grado: '10', // Ejemplo
-          perfilLaboral: { 
-            skills: ['React', 'Next.js', 'PostgreSQL'],
-            bio: 'Estudiante apasionado por el backend.'
-          }
-        }
-      }
+      nombre: 'Universidad Tecnológica de Chetumal',
+      siglas: 'UTCH',
+      tipo_periodo: 'CUATRIMESTRE',
     },
   })
+  console.log(`✅ Universidad registrada: ${utch.nombre}`)
 
-  console.log('✅ Usuario y Estudiante creado:', estudiante)
+  // 2. Crear las Carreras oficiales de Joby
+  const carreras = [
+    'Innovación de Negocios y Mercadotecnia',
+    'Gastronomía',
+    'Mecatrónica',
+    'Desarrollo y Gestión de Software'
+  ]
+
+  for (const nombreCarrera of carreras) {
+    // Usamos findFirst para no duplicar si corres el seed dos veces
+    const existe = await prisma.carrera.findFirst({ where: { nombre: nombreCarrera } })
+    if (!existe) {
+      await prisma.carrera.create({ data: { nombre: nombreCarrera } })
+      console.log(`✅ Carrera registrada: ${nombreCarrera}`)
+    }
+  }
+
+  console.log('🌳 Base de datos poblada con éxito.')
 }
 
 main()
-  .then(async () => {
-    await prisma.$disconnect()
-  })
-  .catch(async (e) => {
+  .catch((e) => {
     console.error(e)
-    await prisma.$disconnect()
     process.exit(1)
+  })
+  .finally(async () => {
+    await prisma.$disconnect()
   })

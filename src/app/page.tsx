@@ -11,7 +11,7 @@ export default function LandingPage() {
         <div className="flex items-center gap-2">
           {/* Logo Placeholder */}
           <div className="w-8 h-8 bg-emerald-700 rounded flex items-center justify-center text-white font-bold">J</div>
-          <span className="font-bold text-2xl tracking-tight text-slate-800">JobBy</span>
+          <span className="font-bold text-2xl tracking-tight text-slate-800">Joby</span>
         </div>
         <nav className="flex items-center gap-4">
           <Link href="/login">
@@ -44,7 +44,7 @@ export default function LandingPage() {
           <div className="md:w-1/2 flex justify-center relative">
             {/* Círculo principal / Imagen Placeholder */}
             <div className="w-full max-w-md aspect-square bg-slate-100 rounded-full relative flex items-center justify-center border-4 border-white shadow-xl overflow-hidden">
-                  <Image src="/logos/landing/chico_en_computadora.png" alt="JobBy" fill className="object-cover" />
+              <Image src="/logos/landing/chico_en_computadora.png" alt="JobBy" fill className="object-cover" />
             </div>
           </div>
         </section>
@@ -52,8 +52,8 @@ export default function LandingPage() {
         {/* 3. CÓMO FUNCIONA */}
         <section className="py-16 bg-white">
           <div className="container mx-auto px-6">
-            <h2 className="text-2xl font-bold text-slate-800 mb-12">¿Cómo funciona <span className="text-emerald-600">JobBy</span>?</h2>
-            
+            <h2 className="text-2xl font-bold text-slate-800 mb-12">¿Cómo funciona <span className="text-emerald-600">Joby</span>?</h2>
+
             <div className="flex flex-col md:flex-row justify-center items-center gap-8 relative">
               {/* Paso 1 */}
               <div className="flex flex-col items-center text-center max-w-xs z-10 bg-white">
@@ -93,13 +93,13 @@ export default function LandingPage() {
         <section className="py-16 bg-slate-50 border-y border-slate-100">
           <div className="container mx-auto px-6 flex flex-col md:flex-row items-center gap-12">
             <div className="md:w-1/2">
-              <h2 className="text-2xl font-bold text-slate-800 mb-8">¿Por qué usar <span className="text-emerald-600">JobBy</span>?</h2>
+              <h2 className="text-2xl font-bold text-slate-800 mb-8">¿Por qué usar <span className="text-emerald-600">Joby</span>?</h2>
               {/* Imagen Placeholder */}
               <div className="w-full max-w-sm aspect-square bg-slate-200 rounded-3xl flex items-center justify-center mx-auto relative overflow-hidden">
-                 <Image src="/logos/landing/monaChinaPulgar.png" alt="JobBy" fill className="object-cover" />
+                <Image src="/logos/landing/monaChinaPulgar.png" alt="JobBy" fill className="object-cover" />
               </div>
             </div>
-            
+
             <div className="md:w-1/2 space-y-4">
               {[
                 "Fácil de postular",
@@ -122,9 +122,9 @@ export default function LandingPage() {
           <div className="container mx-auto px-6 flex flex-col md:flex-row items-center gap-12">
             <div className="md:w-1/2 space-y-6">
               <div className="inline-block bg-slate-100 px-6 py-2 rounded-full font-bold text-slate-700 mb-4">
-                ¿A quién va dirigida la plataforma <span className="text-emerald-600">JobBy</span>?
+                ¿A quién va dirigida la plataforma <span className="text-emerald-600">Joby</span>?
               </div>
-              
+
               <div className="space-y-4">
                 {[
                   "Encuentra tu servicio social",
@@ -139,10 +139,10 @@ export default function LandingPage() {
               </div>
             </div>
             <div className="md:w-1/2">
-               {/* Imagen Placeholder */}
-               <div className="w-full max-w-sm aspect-[4/3] bg-slate-100 rounded-3xl flex items-center justify-center relative overflow-hidden">
+              {/* Imagen Placeholder */}
+              <div className="w-full max-w-sm aspect-[4/3] bg-slate-100 rounded-3xl flex items-center justify-center relative overflow-hidden">
                 <Image src="/logos/landing/jovenes_estudiando.png" alt="JobBy" fill className="object-cover" />
-               </div>
+              </div>
             </div>
           </div>
         </section>
@@ -194,10 +194,10 @@ export default function LandingPage() {
         <div className="container mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-slate-500">
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 bg-emerald-700 rounded flex items-center justify-center text-white font-bold text-xs">J</div>
-            <span className="font-bold">JobBy</span>
+            <span className="font-bold">Joby</span>
             <span className="hidden md:inline">| Plataforma de vacantes UT Chetumal</span>
           </div>
-          
+
           <div className="flex gap-4">
             <Link href="#" className="hover:text-emerald-600">Acerca de</Link>
             <Link href="#" className="hover:text-emerald-600">Accesibilidad</Link>
@@ -205,7 +205,7 @@ export default function LandingPage() {
           </div>
 
           <div>
-            © 2026 JobBy - UT Chetumal
+            © 2026 Joby - UT Chetumal
           </div>
         </div>
       </footer>

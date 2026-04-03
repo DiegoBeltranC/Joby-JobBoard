@@ -1,49 +1,50 @@
-'use server'
+"use server"
 
-import { prisma } from "../lib/prisma"
-import { redirect } from "next/navigation"
+import { prisma } from "@/lib/prisma"
+import bcrypt from "bcryptjs"
 
 export async function loginAction(formData: FormData) {
-  // 1. Obtener datos del formulario
   const email = formData.get("email") as string
   const password = formData.get("password") as string
 
   if (!email || !password) {
-    return { error: "Por favor llena todos los campos" }
+    return { error: "Por favor, llena todos los campos." }
   }
 
   try {
-    // 2. BUSCAR EN LA BASE DE DATOS
-    // Aquí usamos el "include" para traer también los datos del estudiante
+    // 1. Buscamos al usuario por correo
     const user = await prisma.user.findUnique({
-      where: { email: email },
-      include: { 
-        studentProfile: true // Traemos la info de la tabla Students
-      } 
+      where: { correo: email },
+      include: {
+        estudiante: true // Traemos su perfil de estudiante de paso
+      }
     })
 
-    // 3. Validar si existe y la contraseña coincide
-    if (!user || user.password !== password) {
-      return { error: "Credenciales inválidas" }
+    // 2. Si no existe, lanzamos error genérico por seguridad
+    if (!user) {
+      return { error: "Credenciales incorrectas." }
     }
 
-    // 4. Validar si está activo
-    if (!user.isActive) {
-      return { error: "Usuario desactivado. Contacta a la UT." }
+    // 3. Verificamos la contraseña encriptada
+    const passwordMatch = await bcrypt.compare(password, user.password_hash)
+
+    if (!passwordMatch) {
+      return { error: "Credenciales incorrectas." }
     }
 
-    // 5. ¡ÉXITO!
-    // Para la demo de mañana, devolvemos el nombre real del estudiante
-    const nombreUsuario = user.studentProfile?.nombreCompleto || user.email
-    
-    return { 
-      success: true, 
+    // 4. (Futuro) Aquí crearíamos la cookie o sesión de JWT (NextAuth/IronSession)
+    // Por ahora, simulamos el éxito devolviendo datos seguros
+
+    const nombreUsuario = user.estudiante?.nombre || "Administrador"
+
+    return {
+      success: true,
       userName: nombreUsuario,
-      role: user.role
+      role: user.rol
     }
 
   } catch (error) {
-    console.error("Error en base de datos:", error)
-    return { error: "Error de conexión con el servidor" }
+    console.error("Error en login:", error)
+    return { error: "Error interno del servidor. Intenta más tarde." }
   }
 }

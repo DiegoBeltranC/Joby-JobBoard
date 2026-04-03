@@ -1,12 +1,8 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
+// -----------------------------------------------------------------------------
+// CONFIGURACIÓN DE PRISMA
+// -----------------------------------------------------------------------------
 generator client {
   provider = "prisma-client-js"
- 
 }
 
 datasource db {
@@ -14,34 +10,142 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// 1. TABLA: USERS (Autenticación centralizada)
-model User {
-  id        Int      @id @default(autoincrement()) 
-  email     String   @unique
-  password  String
-  role      String   // 'student', 'company', 'admin'
-  isActive  Boolean  @default(true) @map("is_active")
-  createdAt DateTime @default(now()) @map("created_at")
-
-  // Relaciones (Prisma las necesita para saber navegar)
-  studentProfile Student? // Un usuario PUEDE tener un perfil de estudiante (opcional porque puede ser empresa)
-
-  @@map("users") // Nombre real de la tabla en PostgreSQL
+// -----------------------------------------------------------------------------
+// ENUMS (Catálogos fijos a nivel de base de datos)
+// -----------------------------------------------------------------------------
+enum EstatusAcademico {
+  ACTIVO
+  EGRESADO
+  INACTIVO
 }
 
-// 2. TABLA: STUDENTS (Perfil extendido)
-model Student {
-  id               Int     @id @default(autoincrement())
-  userId           Int     @unique @map("user_id") // La llave foránea
-  user             User    @relation(fields: [userId], references: [id]) // La conexión lógica
-  
-  matricula        String  @unique
-  nombreCompleto   String  @map("nombre_completo")
-  carrera          String
-  estatusAcademico String  @map("estatus_academico") // 'Activo' o 'Egresado'
-  perfilLaboral    Json?   @map("perfil_laboral")    // JSONB: Genial para skills sin crear 20 tablas extra
-  cvUrl            String? @map("cv_url")
-  grado            String? // Lo mencionaste al final de tu lista
+enum ModalidadBusqueda {
+  ESTADIA
+  SERVICIO_SOCIAL
+  MEDIO_TIEMPO
+  TIEMPO_COMPLETO
+  REMOTO
+  HIBRIDO
+}
 
-  @@map("students") // Nombre real de la tabla en PostgreSQL
+enum RolUsuario {
+  ESTUDIANTE
+  EMPRESA
+  ADMIN
+}
+
+// -----------------------------------------------------------------------------
+// TABLAS CATÁLOGO (Opciones dinámicas para la UI)
+// -----------------------------------------------------------------------------
+model Universidad {
+  id           Int          @id @default(autoincrement())
+  nombre       String       // Ej. "Universidad Tecnológica de Chetumal"
+  siglas       String       // Ej. "UTCH"
+  tipo_periodo String       // Ej. "CUATRIMESTRE" o "SEMESTRE"
+  
+  estudiantes  Estudiante[] 
+}
+
+model Carrera {
+  id           Int          @id @default(autoincrement())
+  nombre       String       // Ej. "Ingeniería de Software", "Gastronomía"
+  
+  estudiantes  Estudiante[]
+}
+
+// -----------------------------------------------------------------------------
+// ENTIDADES PRINCIPALES
+// -----------------------------------------------------------------------------
+model User {
+  id            Int         @id @default(autoincrement())
+  correo        String      @unique
+  password_hash String
+  rol           RolUsuario  @default(ESTUDIANTE) 
+  activo        Boolean     @default(true) // Soft delete (No borramos, desactivamos)
+  
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  estudiante    Estudiante? // Opcional: Empresas y Admins no lo usan
+}
+
+model Estudiante {
+  id                Int      @id @default(autoincrement())
+  
+  // Claves Foráneas
+  usuarioId         Int      @unique
+  universidadId     Int      
+  carreraId         Int      
+  
+  // Datos Personales
+  nombre            String
+  apellidoPaterno   String
+  apellidoMaterno   String?  
+  matricula         String   @unique
+  foto_perfil_url   String?
+  ubicacion         String?  @default("Chetumal, Quintana Roo")
+  bio               String?  @db.Text // Su "Elevator Pitch" rápido
+  
+  // Estatus Académico
+  estatus_academico EstatusAcademico      @default(ACTIVO)
+  periodo_academico Int?                  
+  modalidades_busqueda ModalidadBusqueda[] 
+  
+  // Perfil Profesional (El motor de búsqueda de los reclutadores)
+  habilidades       String[] // ["React", "Excel", "Distintivo H"]
+  idiomas           String[] // ["Inglés - B2", "Francés - A1"]
+  enlaces           Json?    // { "linkedin": "...", "github": "..." }
+  cv_url            String?  
+  
+  // Relaciones
+  usuario           User           @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  universidad       Universidad    @relation(fields: [universidadId], references: [id])
+  carrera           Carrera        @relation(fields: [carreraId], references: [id])
+  experiencias      Experiencia[]  
+  proyectos         Proyecto[]     
+  educacion_extra   EducacionExtra[] // Para TSU, Cursos y Certificados
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+// -----------------------------------------------------------------------------
+// TABLAS DE DETALLE (Historial del Estudiante - 1 a Muchos)
+// -----------------------------------------------------------------------------
+model Experiencia {
+  id           Int        @id @default(autoincrement())
+  estudianteId Int
+  puesto       String     
+  empresa      String
+  
+  // Arreglo de viñetas (bullets) para mejor lectura de los reclutadores
+  logros       String[]   // Ej: ["Mejoré el rendimiento 20%", "Lideré equipo de 3"]
+  
+  fechaInicio  DateTime
+  fechaFin     DateTime?  // Null significa "Trabajo actual"
+  
+  estudiante   Estudiante @relation(fields: [estudianteId], references: [id], onDelete: Cascade)
+}
+
+model Proyecto {
+  id           Int        @id @default(autoincrement())
+  estudianteId Int
+  nombre       String     
+  
+  // Arreglo de viñetas para destacar lo importante del proyecto
+  puntos_clave String[]   // Ej: ["Desarrollé app con Next.js", "Diseñé base de datos"]
+  
+  url_enlace   String?    // Link al repositorio o sitio en vivo
+  
+  estudiante   Estudiante @relation(fields: [estudianteId], references: [id], onDelete: Cascade)
+}
+
+model EducacionExtra {
+  id           Int        @id @default(autoincrement())
+  estudianteId Int
+  titulo       String     // Ej: "TSU en Desarrollo de Software" o "Curso de Liderazgo"
+  institucion  String     // Ej: "UT Chetumal" o "Platzi"
+  año          Int?       // Ej: 2025
+  
+  estudiante   Estudiante @relation(fields: [estudianteId], references: [id], onDelete: Cascade)
 }
