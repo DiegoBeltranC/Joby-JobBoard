@@ -28,14 +28,9 @@ export default function LoginPage() {
         description: result.error
       })
       setLoading(false)
-    } else {
-      toast.dismiss(idCarga)
-      toast.success("¡Acceso concedido!", {
-        description: `Bienvenido de vuelta, ${result?.userName}`
-      })
-
-      // Aquí en el futuro redirigiremos al Dashboard: router.push("/dashboard")
-      setLoading(false)
+    } else if (result?.success) {
+      toast.success("¡Bienvenido a Joby!", { id: idCarga })
+      router.push("/inicio")
     }
   }
 

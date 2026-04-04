@@ -1,50 +1,45 @@
 "use server"
-
+import { cookies } from "next/headers"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
+import { createSession } from "@/lib/session" // 👈 Importamos la nueva función
+import { redirect } from "next/navigation"
 
 export async function loginAction(formData: FormData) {
   const email = formData.get("email") as string
   const password = formData.get("password") as string
 
-  if (!email || !password) {
-    return { error: "Por favor, llena todos los campos." }
-  }
+  if (!email || !password) return { error: "Por favor, llena todos los campos." }
 
   try {
-    // 1. Buscamos al usuario por correo
     const user = await prisma.user.findUnique({
       where: { correo: email },
-      include: {
-        estudiante: true // Traemos su perfil de estudiante de paso
-      }
+      include: { estudiante: true }
     })
 
-    // 2. Si no existe, lanzamos error genérico por seguridad
-    if (!user) {
-      return { error: "Credenciales incorrectas." }
-    }
+    if (!user) return { error: "Credenciales incorrectas." }
 
-    // 3. Verificamos la contraseña encriptada
     const passwordMatch = await bcrypt.compare(password, user.password_hash)
+    if (!passwordMatch) return { error: "Credenciales incorrectas." }
 
-    if (!passwordMatch) {
-      return { error: "Credenciales incorrectas." }
-    }
-
-    // 4. (Futuro) Aquí crearíamos la cookie o sesión de JWT (NextAuth/IronSession)
-    // Por ahora, simulamos el éxito devolviendo datos seguros
-
-    const nombreUsuario = user.estudiante?.nombre || "Administrador"
-
-    return {
-      success: true,
-      userName: nombreUsuario,
-      role: user.rol
-    }
+    // 🔥 ¡AQUÍ ESTÁ LA MAGIA! Creamos la cookie de sesión con el ID del usuario
+    await createSession(user.id)
+    return { success: true }
 
   } catch (error) {
     console.error("Error en login:", error)
     return { error: "Error interno del servidor. Intenta más tarde." }
   }
+
+  // Next.js requiere que el redirect se ejecute FUERA del bloque try/catch
+  redirect("/inicio")
+}
+
+export async function logoutAction() {
+  // Obtenemos las cookies y borramos la de sesión
+  const cookieStore = await cookies()
+  cookieStore.delete("session")
+
+  // Redirigimos al login
+  redirect("/login")
 }

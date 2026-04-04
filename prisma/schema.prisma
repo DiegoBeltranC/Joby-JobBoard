@@ -136,6 +136,8 @@ model Proyecto {
   puntos_clave String[]   // Ej: ["Desarrollé app con Next.js", "Diseñé base de datos"]
   
   url_enlace   String?    // Link al repositorio o sitio en vivo
+  fechaInicio  DateTime
+  fechaFin     DateTime?  // Null significa "En desarrollo" o "Actual"
   
   estudiante   Estudiante @relation(fields: [estudianteId], references: [id], onDelete: Cascade)
 }
