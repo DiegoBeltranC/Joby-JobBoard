@@ -5,6 +5,8 @@ import Link from "next/link";
 import ModalProyecto from "@/app/perfil/components/ModalProyecto";
 import ListaProyectos from "@/app/perfil/components/ListaProyectos";
 import ListaExperiencias from "@/app/perfil/components/ListaExperiencias";
+import AvatarEditor from "@/app/perfil/components/AvatarEditor";
+
 export default async function PerfilPage() {
     const session = await getSession();
     if (!session) redirect("/login");
@@ -58,15 +60,10 @@ export default async function PerfilPage() {
                 <div className="px-8 pb-8 relative">
                     <div className="flex flex-col sm:flex-row gap-6 items-start sm:items-end -mt-12 mb-6">
                         {/* Avatar */}
-                        <div className="w-24 h-24 rounded-2xl bg-white p-1 shadow-md shrink-0">
-                            <div className="w-full h-full bg-gray-100 rounded-xl flex items-center justify-center overflow-hidden">
-                                {estudiante.foto_perfil_url ? (
-                                    <img src={estudiante.foto_perfil_url} alt="Foto de perfil" className="w-full h-full object-cover" />
-                                ) : (
-                                    <span className="text-3xl font-bold text-gray-400">{estudiante.nombre.charAt(0)}</span>
-                                )}
-                            </div>
-                        </div>
+                        <AvatarEditor
+                            fotoActualUrl={estudiante.foto_perfil_url}
+                            iniciales={estudiante.nombre.charAt(0)}
+                        />
                         <div className="flex-1">
                             <h2 className="text-2xl font-bold text-gray-800">
                                 {estudiante.nombre} {estudiante.apellidoPaterno} {estudiante.apellidoMaterno || ""}

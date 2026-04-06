@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { redirect } from "next/navigation";
+import { guardarArchivo } from "@/lib/uploadService";
 
 export async function guardarPaso1(data: { bio?: string; ubicacion: string }) {
     const session = await getSession();
@@ -222,5 +223,56 @@ export async function eliminarExperiencia(experienciaId: number) {
         return { success: true };
     } catch (error) {
         return { error: "No se pudo eliminar la experiencia" };
+    }
+}
+
+export async function actualizarFotoPerfil(formData: FormData) {
+    const session = await getSession();
+    if (!session) return { error: "No autorizado" };
+
+    const archivo = formData.get("foto") as File;
+    if (!archivo || archivo.size === 0) return { error: "No se recibió ninguna imagen" };
+
+    // Validar peso (Ej. máximo 2MB)
+    if (archivo.size > 2 * 1024 * 1024) return { error: "La imagen no debe pesar más de 2MB" };
+
+    try {
+        const usuario = await prisma.user.findUnique({ where: { id: session.userId }, include: { estudiante: true } });
+        if (!usuario?.estudiante) return { error: "Estudiante no encontrado" };
+
+        // 1. Usamos nuestro servicio escalable para guardar la imagen
+        const urlFoto = await guardarArchivo(archivo, "avatars", `avatar-${usuario.estudiante.id}`);
+
+        // 2. Actualizamos la base de datos
+        await prisma.estudiante.update({
+            where: { id: usuario.estudiante.id },
+            data: { foto_perfil_url: urlFoto }
+        });
+
+        revalidatePath("/perfil");
+        return { success: true };
+    } catch (error) {
+        console.error("Error al actualizar foto:", error);
+        return { error: "Error interno al guardar la foto" };
+    }
+}
+
+export async function eliminarFotoPerfil() {
+    const session = await getSession();
+    if (!session) return { error: "No autorizado" };
+
+    try {
+        const usuario = await prisma.user.findUnique({ where: { id: session.userId }, include: { estudiante: true } });
+        if (!usuario?.estudiante) return { error: "Estudiante no encontrado" };
+
+        await prisma.estudiante.update({
+            where: { id: usuario.estudiante.id },
+            data: { foto_perfil_url: null }
+        });
+
+        revalidatePath("/perfil");
+        return { success: true };
+    } catch (error) {
+        return { error: "No se pudo eliminar la foto" };
     }
 }
