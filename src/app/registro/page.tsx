@@ -96,7 +96,7 @@ export default function RegistroPage() {
 
             // Si todo está bien, pasamos al siguiente paso
             if (pasoActual < PASOS.length) {
-                setPasoActual(prev => prev + 1)
+                setPasoActual(pasoActual + 1)
             }
         }
     }
@@ -105,12 +105,17 @@ export default function RegistroPage() {
         if (pasoActual > 1) setPasoActual(prev => prev - 1)
     }
 
+    const manejarSubmit = async (e: React.FormEvent) => {
+        e.preventDefault()
+        if (pasoActual < PASOS.length) {
+            await avanzarPaso()
+        } else {
+            await handleSubmit(onSubmit)(e)
+        }
+    }
+
     // Se ejecuta al finalizar el paso 3
     const onSubmit = async (data: RegistroFormValues) => {
-        if (pasoActual < PASOS.length) {
-            avanzarPaso()
-            return
-        }
         // 1. Mostramos un toast de carga que se queda dando vueltas
         const idCarga = toast.loading("Creando tu cuenta en Joby...")
 
@@ -185,7 +190,7 @@ export default function RegistroPage() {
                     </div>
 
                     {/* FORMULARIO */}
-                    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                    <form onSubmit={manejarSubmit} className="space-y-6">
 
                         {/* PASO 1: CUENTA */}
                         {pasoActual === 1 && (

@@ -16,8 +16,11 @@ export default async function Paso1Page() {
 
     // Extraemos los datos actuales para que el formulario no aparezca vacío si ya los había llenado
     const valoresIniciales = {
+        estado: usuario.estudiante.estado || "",
+        municipio: usuario.estudiante.municipio || "",
+        reubicacion: usuario.estudiante.reubicacion || "NO_DISPONIBLE",
+        tipos_contrato: usuario.estudiante.tipos_contrato || ["ESTADIA"],
         bio: usuario.estudiante.bio || "",
-        ubicacion: usuario.estudiante.ubicacion || "Chetumal, Quintana Roo",
     };
 
     return (

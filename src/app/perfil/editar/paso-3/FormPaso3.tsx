@@ -39,7 +39,7 @@ export default function FormPaso3({ valoresIniciales }: { valoresIniciales: Form
     return (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Enlace a LinkedIn</label>
+                <label className="text-sm font-medium text-gray-700">Enlace a LinkedIn (opcional)</label>
                 <input
                     {...register("linkedin")}
                     type="url"
@@ -50,7 +50,7 @@ export default function FormPaso3({ valoresIniciales }: { valoresIniciales: Form
             </div>
 
             <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Enlace a GitHub o Portafolio</label>
+                <label className="text-sm font-medium text-gray-700">Enlace a GitHub o Portafolio (opcional)</label>
                 <input
                     {...register("github")}
                     type="url"

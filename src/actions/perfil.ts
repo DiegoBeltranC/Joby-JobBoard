@@ -4,8 +4,16 @@ import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { redirect } from "next/navigation";
 import { guardarArchivo } from "@/lib/uploadService";
+import { DisponibilidadReubicacion, TipoContrato } from "@prisma/client";
 
-export async function guardarPaso1(data: { bio?: string; ubicacion: string }) {
+
+export async function guardarPaso1(data: { 
+    estado: string; 
+    municipio: string; 
+    reubicacion: DisponibilidadReubicacion; 
+    tipos_contrato: TipoContrato[]; // 👈 Nuevo
+    bio: string 
+}) {
     const session = await getSession();
     if (!session) return { error: "No autorizado" };
 
@@ -13,16 +21,17 @@ export async function guardarPaso1(data: { bio?: string; ubicacion: string }) {
         await prisma.estudiante.update({
             where: { usuarioId: session.userId },
             data: {
-                bio: data.bio || "",
-                ubicacion: data.ubicacion,
+                estado: data.estado,
+                municipio: data.municipio,
+                reubicacion: data.reubicacion,
+                tipos_contrato: data.tipos_contrato, // 👈 Guardamos el arreglo
+                bio: data.bio,
             }
         });
+        return { success: true };
     } catch (error) {
-        console.error("Error guardando paso 1:", error);
         return { error: "Error al guardar los datos" };
     }
-
-    return { success: true };
 }
 
 // En actions/perfil.ts (Añade esta función al final)
@@ -35,17 +44,15 @@ export async function guardarPaso2(data: { habilidades: string[]; idiomas: strin
         await prisma.estudiante.update({
             where: { usuarioId: session.userId },
             data: {
-                // Prisma recibe los arreglos limpios directamente
-                habilidades: data.habilidades,
+                // Sanitización final en el servidor por seguridad
+                habilidades: data.habilidades.map(h => h.trim().charAt(0).toUpperCase() + h.trim().slice(1).toLowerCase()),
                 idiomas: data.idiomas,
             }
         });
+        return { success: true };
     } catch (error) {
-        console.error("Error guardando paso 2:", error);
-        return { error: "Error al guardar los datos" };
+        return { error: "Error al guardar habilidades" };
     }
-
-    return { success: true };
 }
 
 // En actions/perfil.ts (Añade al final)

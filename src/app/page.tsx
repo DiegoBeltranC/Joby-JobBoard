@@ -104,7 +104,7 @@ export default function LandingPage() {
               {[
                 "Fácil de postular",
                 "Vacantes validadas por la UT",
-                "Servicio social y prácticas profesionales",
+                "Prácticas profesionales",
                 "Prioridad para los estudiantes",
                 "Empresas confiables"
               ].map((item, i) => (

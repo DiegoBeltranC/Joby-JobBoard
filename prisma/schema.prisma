@@ -19,15 +19,27 @@ enum EstatusAcademico {
   INACTIVO
 }
 
-enum ModalidadBusqueda {
-  ESTADIA
-  SERVICIO_SOCIAL
-  MEDIO_TIEMPO
-  TIEMPO_COMPLETO
-  REMOTO
-  HIBRIDO
+// 1. Enum para la movilidad (Lo usamos en el perfil del estudiante)
+enum DisponibilidadReubicacion {
+  NO_DISPONIBLE
+  DENTRO_DEL_ESTADO
+  NACIONAL
+  INTERNACIONAL
 }
 
+// 2. Enum limpio para el futuro (Lo usarán las Empresas en sus Vacantes)
+enum TipoContrato {
+  ESTADIA
+  MEDIO_TIEMPO
+  TIEMPO_COMPLETO
+}
+
+// 3. Enum para la modalidad física de la vacante (Para el futuro)
+enum ModalidadTrabajo {
+  PRESENCIAL
+  HIBRIDO
+  REMOTO
+}
 enum RolUsuario {
   ESTUDIANTE
   EMPRESA
@@ -83,13 +95,16 @@ model Estudiante {
   apellidoMaterno   String?  
   matricula         String   @unique
   foto_perfil_url   String?
-  ubicacion         String?  @default("Chetumal, Quintana Roo")
+  estado            String?  @default("Quintana Roo")
+  municipio         String?  @default("Othón P. Blanco")
+  tipos_contrato TipoContrato[]
+  // Logística
+  reubicacion       DisponibilidadReubicacion @default(NO_DISPONIBLE)
   bio               String?  @db.Text // Su "Elevator Pitch" rápido
   
   // Estatus Académico
   estatus_academico EstatusAcademico      @default(ACTIVO)
   periodo_academico Int?                  
-  modalidades_busqueda ModalidadBusqueda[] 
   
   // Perfil Profesional (El motor de búsqueda de los reclutadores)
   habilidades       String[] // ["React", "Excel", "Distintivo H"]

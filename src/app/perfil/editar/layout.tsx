@@ -1,7 +1,8 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { CheckCircle2 } from "lucide-react";
+import Link from "next/link";
+import { CheckCircle2, X } from "lucide-react";
 
 const PASOS = [
     { id: 1, path: "/perfil/editar/paso-1", titulo: "Sobre ti" },
@@ -17,7 +18,16 @@ export default function EditarPerfilLayout({ children }: { children: React.React
 
     return (
         <div className="max-w-2xl mx-auto py-8 px-4">
-            <h1 className="text-3xl font-bold text-gray-800 mb-6">Completa tu Perfil</h1>
+            <div className="flex items-center justify-between mb-6">
+                <h1 className="text-3xl font-bold text-gray-800">Completa tu Perfil</h1>
+                <Link 
+                    href="/perfil" 
+                    className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                    title="Cerrar y volver a mi perfil"
+                >
+                    <X className="w-6 h-6" />
+                </Link>
+            </div>
 
             {/* Stepper Visual */}
             <div className="flex items-center justify-between mb-8 relative">
