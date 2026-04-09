@@ -91,7 +91,7 @@ export default function Sidebar({ perfil, onClose }: SidebarProps) {
                 )}
 
                 {/* Barra de progreso interactiva */}
-                {perfil && (
+                {perfil && perfil.progreso < 100 && (
                     <div className="w-full mt-6 px-1.5">
                         <div className="flex justify-between items-end text-xs mb-2">
                             <span className="text-gray-500 font-medium tracking-tight">Completar perfil</span>
@@ -102,10 +102,13 @@ export default function Sidebar({ perfil, onClose }: SidebarProps) {
                                 <div className="absolute top-0 right-0 bottom-0 w-4 bg-white/30 blur-[2px]"></div>
                             </div>
                         </div>
-                        {/* Mensaje de motivación si no está al 100% */}
-                        {perfil.progreso < 100 && (
-                            <p className="text-[10px] text-gray-400 text-center">Un perfil completo recibe 3x más ofertas.</p>
-                        )}
+                        <p className="text-[10px] text-gray-400 text-center">Un perfil completo recibe 3x más ofertas.</p>
+                    </div>
+                )}
+                {perfil && perfil.progreso === 100 && (
+                    <div className="w-full mt-6 px-1.5 flex items-center justify-center gap-1.5 text-emerald-600 bg-emerald-50 py-2 rounded-xl border border-emerald-100">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        <span className="text-xs font-bold tracking-tight">Perfil Completo</span>
                     </div>
                 )}
             </div>

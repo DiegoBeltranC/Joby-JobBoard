@@ -1,0 +1,285 @@
+"use server"
+import { revalidatePath } from "next/cache";
+import { prisma } from "@/lib/prisma";
+import { getSession } from "@/lib/session";
+import { guardarArchivo } from "@/lib/uploadService";
+
+// =============================================================================
+// UTILIDAD: Title Case (Primera letra mayúscula por cada palabra)
+// =============================================================================
+function toTitleCase(str: string): string {
+    return str.trim().replace(/\w\S*/g, (txt) =>
+        txt.charAt(0).toUpperCase() + txt.substring(1).toLowerCase()
+    );
+}
+
+// =============================================================================
+// PASO 1: Datos Legales y Ubicación
+// =============================================================================
+export async function guardarPaso1Empresa(data: {
+    rfc: string;
+    razon_social: string;
+    estado: string;
+    municipio: string;
+}) {
+    const session = await getSession();
+    if (!session) return { error: "No autorizado" };
+
+    try {
+        // Verificar que el RFC no esté ya en uso por OTRA empresa
+        if (data.rfc) {
+            const rfcExistente = await prisma.empresa.findFirst({
+                where: {
+                    rfc: data.rfc,
+                    NOT: { usuarioId: session.userId }
+                }
+            });
+            if (rfcExistente) return { error: "Este RFC ya está registrado por otra empresa." };
+        }
+
+        await prisma.empresa.update({
+            where: { usuarioId: session.userId },
+            data: {
+                rfc: data.rfc || null,
+                razon_social: data.razon_social || null,
+                estado: data.estado,
+                municipio: data.municipio,
+            }
+        });
+        revalidatePath("/empresa/perfil-empresa");
+        return { success: true };
+    } catch (error) {
+        console.error("Error guardando paso 1 empresa:", error);
+        return { error: "Error al guardar los datos legales" };
+    }
+}
+
+// =============================================================================
+// PASO 2: Datos del Reclutador (con auto-capitalización)
+// =============================================================================
+export async function guardarPaso2Empresa(data: {
+    nombre: string;
+    apellidoPaterno: string;
+    apellidoMaterno?: string;
+    cargo_contacto: string;
+    telefono_contacto?: string;
+}) {
+    const session = await getSession();
+    if (!session) return { error: "No autorizado" };
+
+    try {
+        await prisma.empresa.update({
+            where: { usuarioId: session.userId },
+            data: {
+                nombre: toTitleCase(data.nombre),
+                apellidoPaterno: toTitleCase(data.apellidoPaterno),
+                apellidoMaterno: data.apellidoMaterno ? toTitleCase(data.apellidoMaterno) : null,
+                cargo_contacto: toTitleCase(data.cargo_contacto),
+                telefono_contacto: data.telefono_contacto || null,
+            }
+        });
+        revalidatePath("/empresa/perfil-empresa");
+        return { success: true };
+    } catch (error) {
+        console.error("Error guardando paso 2 empresa:", error);
+        return { error: "Error al guardar los datos del reclutador" };
+    }
+}
+
+// =============================================================================
+// PASO 3: Marketing (Descripción, Sitio Web, Enlaces)
+// =============================================================================
+export async function guardarPaso3Empresa(data: {
+    descripcion?: string;
+    sitio_web?: string;
+    linkedin?: string;
+    facebook?: string;
+}) {
+    const session = await getSession();
+    if (!session) return { error: "No autorizado" };
+
+    try {
+        await prisma.empresa.update({
+            where: { usuarioId: session.userId },
+            data: {
+                descripcion: data.descripcion || null,
+                sitio_web: data.sitio_web || null,
+                enlaces: {
+                    linkedin: data.linkedin || "",
+                    facebook: data.facebook || "",
+                }
+            }
+        });
+        revalidatePath("/empresa/perfil-empresa");
+        return { success: true };
+    } catch (error) {
+        console.error("Error guardando paso 3 empresa:", error);
+        return { error: "Error al guardar la información de marketing" };
+    }
+}
+
+// =============================================================================
+// LOGO: Subir y eliminar logo de empresa
+// =============================================================================
+export async function actualizarLogoEmpresa(formData: FormData) {
+    const session = await getSession();
+    if (!session) return { error: "No autorizado" };
+
+    const archivo = formData.get("logo") as File;
+    if (!archivo || archivo.size === 0) return { error: "No se recibió ninguna imagen" };
+
+    // Validar peso (máximo 2MB)
+    if (archivo.size > 2 * 1024 * 1024) return { error: "La imagen no debe pesar más de 2MB" };
+
+    try {
+        const usuario = await prisma.user.findUnique({ where: { id: session.userId }, include: { empresa: true } });
+        if (!usuario?.empresa) return { error: "Empresa no encontrada" };
+
+        // Usamos el servicio escalable (misma interfaz que el avatar de estudiante)
+        const urlLogo = await guardarArchivo(archivo, "logos", `logo-${usuario.empresa.id}`);
+
+        await prisma.empresa.update({
+            where: { id: usuario.empresa.id },
+            data: { logo_url: urlLogo }
+        });
+
+        revalidatePath("/empresa/perfil-empresa");
+        return { success: true };
+    } catch (error) {
+        console.error("Error al actualizar logo:", error);
+        return { error: "Error interno al guardar el logo" };
+    }
+}
+
+export async function eliminarLogoEmpresa() {
+    const session = await getSession();
+    if (!session) return { error: "No autorizado" };
+
+    try {
+        const usuario = await prisma.user.findUnique({ where: { id: session.userId }, include: { empresa: true } });
+        if (!usuario?.empresa) return { error: "Empresa no encontrada" };
+
+        await prisma.empresa.update({
+            where: { id: usuario.empresa.id },
+            data: { logo_url: null }
+        });
+
+        revalidatePath("/empresa/perfil-empresa");
+        return { success: true };
+    } catch (error) {
+        return { error: "No se pudo eliminar el logo" };
+    }
+}
+
+// =============================================================================
+// FOTOS DE INSTALACIONES: Agregar y eliminar
+// =============================================================================
+export async function agregarFotoEmpresa(formData: FormData) {
+    const session = await getSession();
+    if (!session) return { error: "No autorizado" };
+
+    const archivo = formData.get("foto") as File;
+    if (!archivo || archivo.size === 0) return { error: "No se recibió ninguna imagen" };
+
+    if (archivo.size > 2 * 1024 * 1024) return { error: "La imagen no debe pesar más de 2MB" };
+
+    try {
+        const usuario = await prisma.user.findUnique({ where: { id: session.userId }, include: { empresa: true } });
+        if (!usuario?.empresa) return { error: "Empresa no encontrada" };
+
+        // Límite de 5 fotos
+        if (usuario.empresa.fotos_empresa.length >= 5) {
+            return { error: "Máximo 5 fotos permitidas. Elimina una para subir otra." };
+        }
+
+        const urlFoto = await guardarArchivo(archivo, "empresas-fotos", `empresa-${usuario.empresa.id}`);
+
+        await prisma.empresa.update({
+            where: { id: usuario.empresa.id },
+            data: {
+                fotos_empresa: {
+                    push: urlFoto
+                }
+            }
+        });
+
+        revalidatePath("/empresa/perfil-empresa");
+        return { success: true, url: urlFoto };
+    } catch (error) {
+        console.error("Error al agregar foto:", error);
+        return { error: "Error al subir la foto" };
+    }
+}
+
+export async function eliminarFotoEmpresa(urlFoto: string) {
+    const session = await getSession();
+    if (!session) return { error: "No autorizado" };
+
+    try {
+        const usuario = await prisma.user.findUnique({ where: { id: session.userId }, include: { empresa: true } });
+        if (!usuario?.empresa) return { error: "Empresa no encontrada" };
+
+        // Filtramos la foto eliminada del array
+        const fotosActualizadas = usuario.empresa.fotos_empresa.filter(url => url !== urlFoto);
+
+        await prisma.empresa.update({
+            where: { id: usuario.empresa.id },
+            data: { fotos_empresa: fotosActualizadas }
+        });
+
+        revalidatePath("/empresa/perfil-empresa");
+        return { success: true };
+    } catch (error) {
+        return { error: "No se pudo eliminar la foto" };
+    }
+}
+
+// =============================================================================
+// ENVIAR SOLICITUD DE VERIFICACIÓN
+// =============================================================================
+export async function enviarSolicitudVerificacion() {
+    const session = await getSession();
+    if (!session) return { error: "No autorizado" };
+
+    try {
+        const usuario = await prisma.user.findUnique({ where: { id: session.userId }, include: { empresa: true } });
+        if (!usuario?.empresa) return { error: "Empresa no encontrada" };
+
+        // Solo permitir si el estatus es SIN_ENVIAR o RECHAZADA
+        if (usuario.empresa.estatus_verificacion !== "SIN_ENVIAR" && usuario.empresa.estatus_verificacion !== "RECHAZADA") {
+            return { error: "Tu solicitud ya fue enviada o aprobada." };
+        }
+
+        // Validar que el perfil esté al 100% (cálculo en servidor)
+        const empresa = usuario.empresa;
+        const enlaces = (empresa.enlaces as { linkedin?: string; facebook?: string }) || {};
+        const tieneEnlace = !!(empresa.sitio_web || enlaces.linkedin || enlaces.facebook);
+
+        let progreso = 10; // Base
+        if (empresa.razon_social && empresa.rfc) progreso += 15;
+        if (empresa.estado && empresa.municipio) progreso += 10;
+        if (empresa.telefono_contacto) progreso += 10;
+        if (empresa.descripcion) progreso += 15;
+        if (tieneEnlace) progreso += 10;
+        if (empresa.logo_url) progreso += 15;
+        if (empresa.fotos_empresa.length > 0) progreso += 15;
+
+        if (progreso < 100) {
+            return { error: `Tu perfil está al ${progreso}%. Complétalo al 100% para poder enviar la solicitud.` };
+        }
+
+        await prisma.empresa.update({
+            where: { id: empresa.id },
+            data: {
+                estatus_verificacion: "PENDIENTE",
+                motivo_rechazo: null, // Limpiar el motivo de rechazo anterior si existía
+            }
+        });
+
+        revalidatePath("/empresa");
+        return { success: true };
+    } catch (error) {
+        console.error("Error al enviar solicitud:", error);
+        return { error: "Error al enviar la solicitud de verificación" };
+    }
+}

@@ -46,6 +46,13 @@ enum RolUsuario {
   ADMIN
 }
 
+enum EstatusEmpresa {
+  SIN_ENVIAR   // Recién registrada, perfil incompleto
+  PENDIENTE    // Dio clic en "Enviar Solicitud"
+  APROBADA     // Admin la aprobó
+  RECHAZADA    // Admin la rechazó (puede corregir y reenviar)
+}
+
 // -----------------------------------------------------------------------------
 // TABLAS CATÁLOGO (Opciones dinámicas para la UI)
 // -----------------------------------------------------------------------------
@@ -124,6 +131,7 @@ model Estudiante {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 }
+
 model Empresa {
   id                  Int      @id @default(autoincrement())
   
@@ -144,19 +152,25 @@ model Empresa {
   municipio           String?  @default("Othón P. Blanco")
   
   // Datos del Reclutador (Quién maneja la cuenta)
-  nombre_contacto     String
+  nombre            String
+  apellidoPaterno   String
+  apellidoMaterno   String?  
   cargo_contacto      String   // Ej: "Gerente de Recursos Humanos"
   telefono_contacto   String?
 
-  // Lógica de Negocio (Seguridad)
-  aprobada_admin      Boolean  @default(false) // Comienza en false hasta que UTCH la apruebe
+  // Galería de fotos (Instalaciones de la empresa)
+  fotos_empresa       String[] // URLs de fotos del local/oficinas
+
+  // Lógica de Negocio (Verificación)
+  estatus_verificacion EstatusEmpresa @default(SIN_ENVIAR)
+  motivo_rechazo       String?  @db.Text // Razón de rechazo por parte del Admin
   
   // Relaciones
   usuario             User      @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
   vacantes            Vacante[] // Una empresa tiene muchas vacantes
 
   createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @default(updatedAt)
+  updatedAt DateTime @updatedAt
 }
 
 model Vacante {
@@ -188,7 +202,7 @@ model Vacante {
   empresa             Empresa  @relation(fields: [empresaId], references: [id], onDelete: Cascade)
   
   createdAt           DateTime @default(now())
-  updatedAt           DateTime @default(updatedAt)
+  updatedAt           DateTime @updatedAt
 }
 
 // -----------------------------------------------------------------------------

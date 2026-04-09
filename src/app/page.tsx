@@ -14,6 +14,10 @@ export default function LandingPage() {
           <span className="font-bold text-2xl tracking-tight text-slate-800">Joby</span>
         </div>
         <nav className="flex items-center gap-4">
+          <Link href="/registro?tipo=empresa" className="hidden md:flex items-center gap-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-700 transition-colors">
+            <Briefcase className="w-4 h-4" />
+            ¿Eres Empresa?
+          </Link>
           <Link href="/login">
             <Button variant="outline" className="text-emerald-700 border-emerald-700 hover:bg-emerald-50 hidden md:flex">
               Iniciar sesión
@@ -174,17 +178,22 @@ export default function LandingPage() {
         </section>
 
         {/* 7. CTA EMPRESAS */}
-        <section className="py-16 bg-white text-center">
+        <section className="py-16 bg-gradient-to-br from-indigo-50 to-blue-50 text-center border-y border-indigo-100">
           <div className="container mx-auto px-6 max-w-2xl">
-            <h2 className="text-3xl font-bold text-slate-600 mb-4">
-              ¿Eres una empresa / institución y buscas jóvenes con talento?
+            <div className="w-16 h-16 bg-indigo-100 rounded-2xl mx-auto flex items-center justify-center mb-6">
+              <Briefcase className="w-8 h-8 text-indigo-600" />
+            </div>
+            <h2 className="text-3xl font-bold text-slate-800 mb-4">
+              ¿Eres una empresa y buscas jóvenes con talento?
             </h2>
             <p className="text-slate-500 mb-8">
-              Conecta con estudiantes de la UT con ganas de aprender, trabajar y crecer profesionalmente.
+              Conecta con estudiantes de la UT con ganas de aprender, trabajar y crecer profesionalmente. Publica tus vacantes y encuentra al candidato ideal.
             </p>
-            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-6 rounded-full">
-              Afiliar mi empresa
-            </Button>
+            <Link href="/registro?tipo=empresa">
+              <Button className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-6 rounded-full shadow-lg shadow-indigo-200">
+                Publicar vacantes gratis
+              </Button>
+            </Link>
           </div>
         </section>
       </main>
