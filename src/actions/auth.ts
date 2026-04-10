@@ -22,6 +22,9 @@ export async function loginAction(formData: FormData) {
     if (!user) return { error: "Credenciales incorrectas." }
 
     // Validar que el rol coincida con el tipo de login seleccionado
+    if (tipo === "admin" && user.rol !== "ADMIN") {
+      return { error: "Este correo no tiene permisos de administrador." }
+    }
     if (tipo === "empresa" && user.rol !== "EMPRESA") {
       return { error: "Este correo no está registrado como empresa. ¿Intentaste iniciar sesión como estudiante?" }
     }

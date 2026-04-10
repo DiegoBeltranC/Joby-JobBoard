@@ -13,6 +13,21 @@ datasource db {
 // -----------------------------------------------------------------------------
 // ENUMS (Catálogos fijos a nivel de base de datos)
 // -----------------------------------------------------------------------------
+enum EstatusEmpresa {
+  SIN_ENVIAR       // Recién registrada, perfil incompleto
+  PENDIENTE        // Lista para que el Admin la revise
+  REQUIERE_CAMBIOS // Admin encontró errores, la empresa debe corregir
+  APROBADA         // Empresa validada, puede publicar vacantes
+  RECHAZADA        // Bateada en el proceso de revisión
+  SUSPENDIDA       // Estaba aprobada, pero violó normas de la UTCH
+}
+
+enum TipoComunicacion {
+  CORRECCION_DATOS
+  RECHAZO
+  AVISO_GENERAL
+  SUSPENSION
+}
 enum EstatusAcademico {
   ACTIVO
   EGRESADO
@@ -44,13 +59,6 @@ enum RolUsuario {
   ESTUDIANTE
   EMPRESA
   ADMIN
-}
-
-enum EstatusEmpresa {
-  SIN_ENVIAR   // Recién registrada, perfil incompleto
-  PENDIENTE    // Dio clic en "Enviar Solicitud"
-  APROBADA     // Admin la aprobó
-  RECHAZADA    // Admin la rechazó (puede corregir y reenviar)
 }
 
 // -----------------------------------------------------------------------------
@@ -85,8 +93,9 @@ model User {
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
-  estudiante    Estudiante? // Opcional: Empresas y Admins no lo usan
-  empresa       Empresa?    // Opcional: Estudiantes no usan esto
+  estudiante    Estudiante? 
+  empresa       Empresa?    
+  admin         Admin?
 }
 
 model Estudiante {
@@ -166,13 +175,34 @@ model Empresa {
   motivo_rechazo       String?  @db.Text // Razón de rechazo por parte del Admin
   
   // Relaciones
-  usuario             User      @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
-  vacantes            Vacante[] // Una empresa tiene muchas vacantes
-
-  createdAt           DateTime  @default(now())
-  updatedAt DateTime @updatedAt
+  usuario              User                    @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  vacantes             Vacante[] 
+  comunicaciones       HistorialComunicacion[] // Bandeja de entrada histórica de la empresa
+  
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 }
 
+model Admin {
+  id              Int      @id @default(autoincrement())
+  usuarioId       Int      @unique
+  
+  // Datos Personales (Obligatorios tras el primer login)
+  nombre          String
+  apellidoPaterno String
+  apellidoMaterno String?
+  telefono        String?
+  
+  // Jerarquía
+  esSuperAdmin    Boolean  @default(false) 
+
+  // Relaciones
+  usuario         User                    @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  comunicaciones  HistorialComunicacion[] // Correos que este admin ha enviado
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
 model Vacante {
   id                  Int      @id @default(autoincrement())
   empresaId           Int
@@ -246,4 +276,20 @@ model EducacionExtra {
   año          Int?       // Ej: 2025
   
   estudiante   Estudiante @relation(fields: [estudianteId], references: [id], onDelete: Cascade)
+}
+
+model HistorialComunicacion {
+  id          Int              @id @default(autoincrement())
+  empresaId   Int
+  adminId     Int              // Quién apretó el botón de enviar
+  
+  asunto      String
+  mensaje     String           @db.Text
+  tipo        TipoComunicacion // Categoría del mensaje
+  
+  // Relaciones
+  empresa     Empresa          @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  admin       Admin            @relation(fields: [adminId], references: [id])
+
+  createdAt   DateTime         @default(now())
 }

@@ -14,6 +14,10 @@ export default async function EmpresaInicioPage() {
             empresa: {
                 include: {
                     vacantes: true,
+                    comunicaciones: {
+                        orderBy: { createdAt: 'desc' },
+                        take: 5
+                    }
                 }
             }
         }
@@ -29,8 +33,9 @@ export default async function EmpresaInicioPage() {
 
     // Cálculo de métricas
     const totalVacantes = empresa.vacantes.length;
-    const vacantesActivas = empresa.vacantes.filter(v => v.activa).length;
-
+    const vacantesActivas = empresa.vacantes.filter((v: { estado_vacante: string }) => v.estado_vacante === "ACTIVA").length;
+    const vacantesBorrador = empresa.vacantes.filter((v: { estado_vacante: string }) => v.estado_vacante === "BORRADOR").length;
+    
     // Progreso del perfil (mismo algoritmo que el layout)
     let progreso = 10;
     if (empresa.razon_social && empresa.rfc) progreso += 15;
@@ -102,6 +107,44 @@ export default async function EmpresaInicioPage() {
                 </div>
             )}
 
+            {/* BANNER: REQUIERE CAMBIOS */}
+            {empresa.estatus_verificacion === "REQUIERE_CAMBIOS" && (
+                <div className="bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-2xl p-6 flex flex-col sm:flex-row gap-4 items-start shadow-sm">
+                    <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center shrink-0">
+                        <ShieldAlert className="w-6 h-6 text-orange-600" />
+                    </div>
+                    <div className="flex-1 w-full">
+                        <h3 className="font-bold text-orange-900 text-lg">Se requieren correcciones</h3>
+                        <p className="text-sm text-orange-800/80 mt-1 leading-relaxed">
+                            Hemos revisado tu perfil y encontramos algunos detalles técnicos que necesitas ajustar para cumplir con las normativas.
+                        </p>
+
+                        {/* Bandeja de Correos (Centro de Comunicaciones Inyectado) */}
+                        {empresa.comunicaciones && empresa.comunicaciones.length > 0 && (
+                            <div className="bg-white border border-orange-200/60 rounded-xl p-4 mt-4 shadow-sm w-full">
+                                <div className="flex items-center gap-2 mb-2 pb-2 border-b border-gray-100">
+                                    <span className="bg-orange-100 text-orange-800 text-[10px] font-black uppercase px-2 py-0.5 rounded-md tracking-wider">
+                                        Mensaje de UTCH
+                                    </span>
+                                    <span className="text-xs text-gray-400 font-medium ml-auto">
+                                        {new Date(empresa.comunicaciones[0].createdAt).toLocaleDateString("es-MX", { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                                    </span>
+                                </div>
+                                <h4 className="font-bold text-gray-800 text-sm mb-1">{empresa.comunicaciones[0].asunto}</h4>
+                                <p className="text-sm text-gray-600 whitespace-pre-wrap">{empresa.comunicaciones[0].mensaje}</p>
+                            </div>
+                        )}
+
+                        <Link 
+                            href="/empresa/perfil-empresa/editar/paso-1" 
+                            className="inline-flex items-center px-5 py-2.5 mt-4 bg-orange-600 hover:bg-orange-700 text-white text-sm font-medium rounded-xl transition-colors shadow-sm"
+                        >
+                            Corregir mi información
+                        </Link>
+                    </div>
+                </div>
+            )}
+
             {/* BANNER: RECHAZADA */}
             {empresa.estatus_verificacion === "RECHAZADA" && (
                 <div className="bg-gradient-to-r from-red-50 to-rose-50 border border-red-200 rounded-2xl p-6 flex flex-col sm:flex-row gap-4 items-start shadow-sm">
@@ -111,7 +154,7 @@ export default async function EmpresaInicioPage() {
                     <div className="flex-1">
                         <h3 className="font-bold text-red-900 text-lg">Solicitud Rechazada</h3>
                         <p className="text-sm text-red-800/80 mt-1 leading-relaxed">
-                            Tu solicitud fue revisada y no fue aprobada. Revisa los comentarios del administrador, corrige la información y envía de nuevo.
+                            Tu solicitud ha sido declinada. Si consideras que se trata de un error o deseas aclarar tus datos corporativos, comunícate con la administración de UTCH.
                         </p>
                         {empresa.motivo_rechazo && (
                             <div className="bg-white border border-red-200 rounded-xl p-3 mt-3">
@@ -119,12 +162,34 @@ export default async function EmpresaInicioPage() {
                                 <p className="text-sm text-red-800">{empresa.motivo_rechazo}</p>
                             </div>
                         )}
-                        <Link 
-                            href="/empresa/perfil-empresa/editar/paso-1" 
-                            className="inline-flex items-center px-4 py-2 mt-3 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-xl transition-colors shadow-sm"
-                        >
-                            Corregir Perfil
-                        </Link>
+                        {/* Se suprime el botón de arreglar */}
+                    </div>
+                </div>
+            )}
+
+            {/* BANNER: SUSPENDIDA */}
+            {empresa.estatus_verificacion === "SUSPENDIDA" && (
+                <div className="bg-zinc-800 border-2 border-red-900/50 rounded-2xl p-6 flex flex-col sm:flex-row gap-4 items-start shadow-lg">
+                    <div className="w-12 h-12 bg-red-500/20 rounded-xl flex items-center justify-center shrink-0 border border-red-500/30">
+                        <XCircle className="w-6 h-6 text-red-400" />
+                    </div>
+                    <div className="flex-1 w-full">
+                        <h3 className="font-bold text-white text-lg">Cuenta Suspendida Temporalmente</h3>
+                        <p className="text-sm text-gray-300 mt-1 leading-relaxed">
+                            Se han detectado infracciones recientes y tu cuenta ha sido suspendida. Tus vacantes no son visibles.
+                        </p>
+                        
+                        {empresa.comunicaciones && empresa.comunicaciones.length > 0 && (
+                            <div className="bg-zinc-900/50 border border-red-900/30 rounded-xl p-4 mt-4 w-full">
+                                <div className="flex items-center gap-2 mb-2 pb-2 border-b border-zinc-700/50">
+                                    <span className="bg-red-500 text-white text-[10px] font-black uppercase px-2 py-0.5 rounded-md tracking-wider">
+                                        Motivo Institucional
+                                    </span>
+                                </div>
+                                <h4 className="font-bold text-gray-200 text-sm mb-1">{empresa.comunicaciones[0].asunto}</h4>
+                                <p className="text-sm text-gray-400 whitespace-pre-wrap">{empresa.comunicaciones[0].mensaje}</p>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}

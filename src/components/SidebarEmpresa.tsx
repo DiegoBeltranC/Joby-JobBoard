@@ -15,7 +15,7 @@ interface SidebarEmpresaProps {
         ubicacion: string | null;
         progreso: number;
         logoUrl?: string | null;
-        estatus: "SIN_ENVIAR" | "PENDIENTE" | "APROBADA" | "RECHAZADA";
+        estatus: "SIN_ENVIAR" | "PENDIENTE" | "REQUIERE_CAMBIOS" | "APROBADA" | "RECHAZADA" | "SUSPENDIDA";
     };
     onClose?: () => void;
 }
@@ -43,8 +43,10 @@ export default function SidebarEmpresa({ perfil, onClose }: SidebarEmpresaProps)
     const estatusConfig = {
         SIN_ENVIAR: { text: "Perfil sin enviar", color: "text-gray-500" },
         PENDIENTE: { text: "En revisión", color: "text-amber-600" },
+        REQUIERE_CAMBIOS: { text: "Corrección requerida", color: "text-orange-600" },
         APROBADA: { text: "Cuenta verificada", color: "text-emerald-600" },
         RECHAZADA: { text: "Solicitud rechazada", color: "text-red-600" },
+        SUSPENDIDA: { text: "Cuenta suspendida", color: "text-red-800" },
     };
 
     const estatusActual = perfil ? estatusConfig[perfil.estatus] : null;
@@ -77,7 +79,8 @@ export default function SidebarEmpresa({ perfil, onClose }: SidebarEmpresaProps)
                     <div className={`absolute bottom-0 right-0 w-4 h-4 border-2 border-white rounded-full z-10 ${
                         perfil?.estatus === "APROBADA" ? 'bg-emerald-500' :
                         perfil?.estatus === "PENDIENTE" ? 'bg-amber-400' :
-                        perfil?.estatus === "RECHAZADA" ? 'bg-red-400' :
+                        perfil?.estatus === "REQUIERE_CAMBIOS" ? 'bg-orange-400' :
+                        perfil?.estatus === "RECHAZADA" || perfil?.estatus === "SUSPENDIDA" ? 'bg-red-400' :
                         'bg-gray-300'
                     }`} title={estatusActual?.text || ""}></div>
                 </div>
@@ -144,11 +147,11 @@ export default function SidebarEmpresa({ perfil, onClose }: SidebarEmpresaProps)
                         {enviando ? "Enviando..." : "Enviar Solicitud"}
                     </button>
                 )}
-                {perfil && perfil.progreso === 100 && perfil.estatus === "RECHAZADA" && (
+                {perfil && perfil.progreso === 100 && perfil.estatus === "REQUIERE_CAMBIOS" && (
                     <button
                         onClick={handleEnviarSolicitud}
                         disabled={enviando}
-                        className="w-full mt-6 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-xl transition-colors shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
+                        className="w-full mt-6 px-4 py-2.5 bg-orange-600 hover:bg-orange-700 text-white text-sm font-bold rounded-xl transition-colors shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
                     >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
                         {enviando ? "Enviando..." : "Reenviar Solicitud"}

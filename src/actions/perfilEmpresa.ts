@@ -245,9 +245,9 @@ export async function enviarSolicitudVerificacion() {
         const usuario = await prisma.user.findUnique({ where: { id: session.userId }, include: { empresa: true } });
         if (!usuario?.empresa) return { error: "Empresa no encontrada" };
 
-        // Solo permitir si el estatus es SIN_ENVIAR o RECHAZADA
-        if (usuario.empresa.estatus_verificacion !== "SIN_ENVIAR" && usuario.empresa.estatus_verificacion !== "RECHAZADA") {
-            return { error: "Tu solicitud ya fue enviada o aprobada." };
+        // Solo permitir si el estatus es SIN_ENVIAR o REQUIERE_CAMBIOS
+        if (usuario.empresa.estatus_verificacion !== "SIN_ENVIAR" && usuario.empresa.estatus_verificacion !== "REQUIERE_CAMBIOS") {
+            return { error: "Tu solicitud ya fue enviada o no se puede reenviar." };
         }
 
         // Validar que el perfil esté al 100% (cálculo en servidor)
