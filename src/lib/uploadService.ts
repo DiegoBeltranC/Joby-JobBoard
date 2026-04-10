@@ -32,3 +32,13 @@ export async function guardarArchivo(file: File, subcarpeta: string, prefijo: st
        Y retornarás la URL de la nube.
     */
 }
+
+export async function eliminarArchivo(urlPublica: string | null | undefined) {
+    if (!urlPublica || !urlPublica.startsWith('/uploads/')) return;
+    try {
+        const filePath = path.join(process.cwd(), "public", urlPublica);
+        await fs.unlink(filePath);
+    } catch (error) {
+        console.error("Error al intentar eliminar el archivo físico:", error);
+    }
+}

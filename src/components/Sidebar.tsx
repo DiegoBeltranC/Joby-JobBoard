@@ -3,6 +3,9 @@
 import { logoutAction } from "@/actions/auth";
 import Link from "next/link";
 import { usePathname } from "next/navigation"; 
+import { useState } from "react";
+import { createPortal } from "react-dom";
+import { AlertTriangle } from "lucide-react";
 
 interface SidebarProps {
     perfil?: {
@@ -11,7 +14,8 @@ interface SidebarProps {
         universidad: string;
         ubicacion: string | null;
         progreso: number;
-        nivelIngles: string | null;
+        faltantes?: string[];
+        idiomas: string[];
         fotoUrl?: string | null;
         buscando: string | null;
     };
@@ -20,9 +24,11 @@ interface SidebarProps {
 
 export default function Sidebar({ perfil, onClose }: SidebarProps) {
     const pathname = usePathname(); 
+    const [modalSalir, setModalSalir] = useState(false);
 
     return (
-        <aside className="flex flex-col w-80 bg-white border-r border-gray-200 h-screen sticky top-0 rounded-r-[20px] drop-shadow-sm z-40">
+        <>
+            <aside className="flex flex-col w-80 bg-white border-r border-gray-200 h-screen sticky top-0 rounded-r-[20px] drop-shadow-sm z-40">
             <div className="p-6">
                 <span className="font-bold text-teal-700 text-xl tracking-tight">Joby</span>
                 {onClose && (
@@ -80,12 +86,21 @@ export default function Sidebar({ perfil, onClose }: SidebarProps) {
                             </span>
                         </div>
 
-                        {/* Inglés */}
-                        <div className="flex items-start gap-3 text-xs">
+                        {/* Idiomas */}
+                        <div className="flex items-start gap-3 text-xs w-full">
                             <svg className="w-4 h-4 text-teal-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                            <span className={perfil.nivelIngles ? "font-medium text-gray-700 capitalize" : "italic text-gray-400"}>
-                                {perfil.nivelIngles ? perfil.nivelIngles : "Inglés no añadido"}
-                            </span>
+                            <div className="flex flex-col gap-2 w-full pr-2">
+                                {perfil.idiomas && perfil.idiomas.length > 0 ? (
+                                    perfil.idiomas.map((idioma, idx) => (
+                                        <div key={idx} className="w-full bg-white border border-teal-100 rounded-lg p-2 shadow-sm flex items-center justify-between">
+                                            <span className="font-semibold text-gray-700 capitalize">{idioma}</span>
+                                            <div className="w-1.5 h-1.5 rounded-full bg-teal-400"></div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <span className="italic text-gray-400 mt-0.5">Sin idiomas añadidos</span>
+                                )}
+                            </div>
                         </div>
                     </div>
                 )}
@@ -102,7 +117,21 @@ export default function Sidebar({ perfil, onClose }: SidebarProps) {
                                 <div className="absolute top-0 right-0 bottom-0 w-4 bg-white/30 blur-[2px]"></div>
                             </div>
                         </div>
-                        <p className="text-[10px] text-gray-400 text-center">Un perfil completo recibe 3x más ofertas.</p>
+                        {perfil.faltantes && perfil.faltantes.length > 0 ? (
+                            <div className="mt-3 bg-red-50/50 p-2.5 rounded-lg border border-red-100/50 tour-faltantes-box">
+                                <p className="text-[10px] text-red-800 font-semibold mb-1.5 flex items-center gap-1">
+                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                                    Te falta por completar:
+                                </p>
+                                <ul className="text-[10px] text-red-600/90 list-disc list-inside space-y-0.5 ml-1">
+                                    {perfil.faltantes.map((falta, i) => (
+                                        <li key={i}>{falta}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                        ) : (
+                            <p className="text-[10px] text-gray-400 text-center">Un perfil completo recibe 3x más ofertas.</p>
+                        )}
                     </div>
                 )}
                 {perfil && perfil.progreso === 100 && (
@@ -133,11 +162,30 @@ export default function Sidebar({ perfil, onClose }: SidebarProps) {
 
             {/* Cerrar Sesión */}
             <div className="p-4 border-t border-gray-100">
-                <button onClick={() => logoutAction()} className="w-full flex items-center justify-center gap-2 p-3 text-red-600 hover:bg-red-50 rounded-xl font-medium transition-colors">
+                <button onClick={() => setModalSalir(true)} className="w-full flex items-center justify-center gap-2 p-3 text-red-600 hover:bg-red-50 rounded-xl font-medium transition-colors">
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
                     Cerrar sesión
                 </button>
             </div>
         </aside>
+
+        {/* MODAL DE CONFIRMACIÓN PARA CERRAR SESIÓN */}
+        {modalSalir && typeof document !== 'undefined' && createPortal(
+            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 animate-in fade-in">
+                <div className="bg-white rounded-2xl w-full max-w-sm p-6 text-center shadow-2xl animate-in zoom-in-95 duration-200">
+                    <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto mb-4">
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                    </div>
+                    <h3 className="text-lg font-bold text-gray-900 mb-2">¿Cerrar sesión?</h3>
+                    <p className="text-sm text-gray-500 mb-6">Tendrás que volver a ingresar tus credenciales para acceder a tu cuenta.</p>
+                    <div className="flex gap-3">
+                        <button onClick={() => setModalSalir(false)} className="flex-1 px-4 py-2.5 text-sm font-medium bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors">Cancelar</button>
+                        <button onClick={() => logoutAction()} className="flex-1 px-4 py-2.5 text-sm font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl transition-colors">Sí, cerrar sesión</button>
+                    </div>
+                </div>
+            </div>,
+            document.body
+        )}
+        </>
     );
 }

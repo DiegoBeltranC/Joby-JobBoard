@@ -3,7 +3,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { redirect } from "next/navigation";
-import { guardarArchivo } from "@/lib/uploadService";
+import { guardarArchivo, eliminarArchivo } from "@/lib/uploadService";
 import { DisponibilidadReubicacion, TipoContrato } from "@prisma/client";
 
 
@@ -247,7 +247,12 @@ export async function actualizarFotoPerfil(formData: FormData) {
         const usuario = await prisma.user.findUnique({ where: { id: session.userId }, include: { estudiante: true } });
         if (!usuario?.estudiante) return { error: "Estudiante no encontrado" };
 
-        // 1. Usamos nuestro servicio escalable para guardar la imagen
+        // 1. Eliminamos físico de la foto vieja si existía
+        if (usuario.estudiante.foto_perfil_url) {
+            await eliminarArchivo(usuario.estudiante.foto_perfil_url);
+        }
+
+        // 2. Usamos nuestro servicio escalable para guardar la imagen
         const urlFoto = await guardarArchivo(archivo, "avatars", `avatar-${usuario.estudiante.id}`);
 
         // 2. Actualizamos la base de datos
@@ -271,6 +276,11 @@ export async function eliminarFotoPerfil() {
     try {
         const usuario = await prisma.user.findUnique({ where: { id: session.userId }, include: { estudiante: true } });
         if (!usuario?.estudiante) return { error: "Estudiante no encontrado" };
+
+        // Eliminamos el archivo físico del servidor
+        if (usuario.estudiante.foto_perfil_url) {
+            await eliminarArchivo(usuario.estudiante.foto_perfil_url);
+        }
 
         await prisma.estudiante.update({
             where: { id: usuario.estudiante.id },

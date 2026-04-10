@@ -22,10 +22,11 @@ export default function EditarPerfilLayout({ children }: { children: React.React
                 <h1 className="text-3xl font-bold text-gray-800">Completa tu Perfil</h1>
                 <Link 
                     href="/perfil" 
-                    className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-500 bg-white border border-gray-200 hover:text-gray-800 hover:bg-gray-50 rounded-full transition-all shadow-sm"
                     title="Cerrar y volver a mi perfil"
                 >
-                    <X className="w-6 h-6" />
+                    <X className="w-4 h-4" />
+                    <span>Cerrar</span>
                 </Link>
             </div>
 

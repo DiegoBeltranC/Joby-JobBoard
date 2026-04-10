@@ -2,7 +2,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
-import { guardarArchivo } from "@/lib/uploadService";
+import { guardarArchivo, eliminarArchivo } from "@/lib/uploadService";
 
 // =============================================================================
 // UTILIDAD: Title Case (Primera letra mayúscula por cada palabra)
@@ -135,6 +135,11 @@ export async function actualizarLogoEmpresa(formData: FormData) {
         const usuario = await prisma.user.findUnique({ where: { id: session.userId }, include: { empresa: true } });
         if (!usuario?.empresa) return { error: "Empresa no encontrada" };
 
+        // 1. Borramos el viejo si existía
+        if (usuario.empresa.logo_url) {
+            await eliminarArchivo(usuario.empresa.logo_url);
+        }
+
         // Usamos el servicio escalable (misma interfaz que el avatar de estudiante)
         const urlLogo = await guardarArchivo(archivo, "logos", `logo-${usuario.empresa.id}`);
 
@@ -158,6 +163,11 @@ export async function eliminarLogoEmpresa() {
     try {
         const usuario = await prisma.user.findUnique({ where: { id: session.userId }, include: { empresa: true } });
         if (!usuario?.empresa) return { error: "Empresa no encontrada" };
+
+        // Eliminamos el archivo del servidor
+        if (usuario.empresa.logo_url) {
+            await eliminarArchivo(usuario.empresa.logo_url);
+        }
 
         await prisma.empresa.update({
             where: { id: usuario.empresa.id },
@@ -218,6 +228,9 @@ export async function eliminarFotoEmpresa(urlFoto: string) {
     try {
         const usuario = await prisma.user.findUnique({ where: { id: session.userId }, include: { empresa: true } });
         if (!usuario?.empresa) return { error: "Empresa no encontrada" };
+
+        // Borramos el archivo físico
+        await eliminarArchivo(urlFoto);
 
         // Filtramos la foto eliminada del array
         const fotosActualizadas = usuario.empresa.fotos_empresa.filter(url => url !== urlFoto);

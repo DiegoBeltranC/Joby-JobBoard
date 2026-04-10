@@ -51,13 +51,12 @@ export default async function PerfilPage() {
                     <h1 className="text-3xl font-bold text-gray-800 tracking-tight">Mi Perfil Profesional</h1>
                     <p className="text-gray-500">Así es como te ven las empresas reclutadoras.</p>
                 </div>
-                <Link
-                    href="/perfil/editar/paso-1"
-                    className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-medium rounded-xl transition-colors shadow-sm"
-                >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                    Editar Perfil
-                </Link>
+                <div className="flex gap-3">
+                    <Link href="/perfil/editar/paso-1" className="bg-white border text-gray-700 px-4 py-2 rounded-lg font-medium hover:bg-gray-50 flex items-center gap-2 shadow-sm transition-colors text-sm">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                        Editar Perfil
+                    </Link>
+                </div>
             </div>
 
             {/* TARJETA PRINCIPAL (Resumen) */}
@@ -73,7 +72,6 @@ export default async function PerfilPage() {
                             <p className="text-teal-700 font-medium">{estudiante.carrera.nombre}</p>
                             
                             <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 mt-2">
-                                {/* 👇 AQUÍ REPARAMOS LA UBICACIÓN */}
                                 <span className="flex items-center gap-1">
                                     <MapPin className="w-4 h-4" />
                                     {estudiante.municipio ? `${estudiante.municipio}, ${estudiante.estado}` : "Ubicación pendiente"}
@@ -84,7 +82,6 @@ export default async function PerfilPage() {
                                 </span>
                             </div>
 
-                            {/* 👇 AÑADIMOS LOS BADGES DE CONTRATO Y REUBICACIÓN */}
                             <div className="flex flex-wrap gap-2 mt-3">
                                 {estudiante.reubicacion !== "NO_DISPONIBLE" && (
                                     <span className="px-2.5 py-1 bg-blue-50 text-blue-700 rounded-md text-[10px] font-bold uppercase border border-blue-100">
@@ -100,7 +97,6 @@ export default async function PerfilPage() {
                         </div>
                     </div>
 
-                    {/* Biografía */}
                     <div className="pt-4 border-t border-gray-100">
                         <h3 className="font-semibold text-gray-800 mb-2">Acerca de mí</h3>
                         {estudiante.bio ? (
@@ -117,7 +113,6 @@ export default async function PerfilPage() {
                 </div>
             </div>
 
-            {/* RESTO DEL PERFIL IGUAL... */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2 space-y-6">
                     <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
@@ -130,7 +125,12 @@ export default async function PerfilPage() {
 
                 <div className="space-y-6">
                     <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
-                        <h3 className="font-bold text-gray-800 mb-4">Habilidades</h3>
+                        <div className="flex justify-between items-center mb-4">
+                            <Link href="/perfil/editar/paso-2" className="group flex items-center gap-2">
+                                <h3 className="font-bold text-gray-800 group-hover:text-teal-600 transition-colors">Habilidades</h3>
+                                <svg className="w-4 h-4 text-gray-400 group-hover:text-teal-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                            </Link>
+                        </div>
                         {estudiante.habilidades.length > 0 ? (
                             <div className="flex flex-wrap gap-2">
                                 {estudiante.habilidades.map((hab, idx) => (
@@ -141,7 +141,12 @@ export default async function PerfilPage() {
                             <Link href="/perfil/editar/paso-2" className="text-sm text-teal-600 hover:underline">+ Añadir herramientas</Link>
                         )}
                         {/* Idiomas */}
-                        <h3 className="font-bold text-gray-800 mt-6 mb-3">Idiomas</h3>
+                        <div className="flex justify-between items-center mt-6 mb-3">
+                            <Link href="/perfil/editar/paso-2" className="group flex items-center gap-2">
+                                <h3 className="font-bold text-gray-800 group-hover:text-teal-600 transition-colors">Idiomas</h3>
+                                <svg className="w-4 h-4 text-gray-400 group-hover:text-teal-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                            </Link>
+                        </div>
                         {estudiante.idiomas.length > 0 ? (
                             <div className="space-y-2">
                                 {estudiante.idiomas.map((idioma, idx) => (
