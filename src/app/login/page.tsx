@@ -35,6 +35,9 @@ export default function LoginPage() {
         description: result.error
       })
       setLoading(false)
+    } else if ((result as any)?.redirect) {
+      toast.dismiss(idCarga)
+      router.push((result as any).redirect)
     } else if (result?.success) {
       toast.success("¡Bienvenido a Joby!", { id: idCarga })
       if (result.rol === "EMPRESA") {

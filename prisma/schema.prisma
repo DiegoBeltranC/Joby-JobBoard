@@ -82,6 +82,11 @@ model User {
   rol           RolUsuario  @default(ESTUDIANTE) 
   activo        Boolean     @default(true) // Soft delete (No borramos, desactivamos)
   
+  // --- CAMPOS NUEVOS PARA VERIFICACIÓN OTP ---
+  verifiedAt    DateTime?   
+  otpCode       String?     
+  otpExpiresAt  DateTime?
+  
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
@@ -127,6 +132,8 @@ model Estudiante {
   experiencias      Experiencia[]  
   proyectos         Proyecto[]     
   educacion_extra   EducacionExtra[] // Para TSU, Cursos y Certificados
+  
+  magicCVDraft      MagicCVDraft?
 
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
@@ -244,6 +251,21 @@ model EducacionExtra {
   titulo       String     // Ej: "TSU en Desarrollo de Software" o "Curso de Liderazgo"
   institucion  String     // Ej: "UT Chetumal" o "Platzi"
   año          Int?       // Ej: 2025
+  
+  estudiante   Estudiante @relation(fields: [estudianteId], references: [id], onDelete: Cascade)
+}
+
+// -----------------------------------------------------------------------------
+// BORRADOR MÁGICO DE CV (CAPA DE PRESENTACIÓN NO DESTRUCTIVA)
+// -----------------------------------------------------------------------------
+model MagicCVDraft {
+  id           Int        @id @default(autoincrement())
+  estudianteId Int        @unique
+  templateId   String     @default("1")
+  colorAcento  String     @default("#0F766E")
+  draftState   Json       // Guarda visibilidades, texto editado y ordenamiento interactivo
+  
+  updatedAt    DateTime   @updatedAt
   
   estudiante   Estudiante @relation(fields: [estudianteId], references: [id], onDelete: Cascade)
 }

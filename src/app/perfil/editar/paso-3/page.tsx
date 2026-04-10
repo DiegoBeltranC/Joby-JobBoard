@@ -9,7 +9,13 @@ export default async function Paso3Page() {
 
     const usuario = await prisma.user.findUnique({
         where: { id: session.userId },
-        include: { estudiante: true }
+        include: { 
+            estudiante: {
+                include: {
+                    carrera: true
+                }
+            } 
+        }
     });
 
     if (!usuario?.estudiante) redirect("/inicio");
@@ -22,10 +28,12 @@ export default async function Paso3Page() {
         github: enlaces.github || "",
     };
 
+    const isTech = /software|sistema|tecnolog[ií]a|redes|inform[aá]tica|computa|desarrollo/i.test(usuario.estudiante.carrera.nombre);
+
     return (
         <div className="animate-in fade-in slide-in-from-right-4 duration-300">
             <h2 className="text-xl font-bold text-gray-800 border-b border-gray-100 pb-2 mb-6">Escaparate Digital</h2>
-            <FormPaso3 valoresIniciales={valoresIniciales} />
+            <FormPaso3 valoresIniciales={valoresIniciales} isTech={isTech} cvUrl={usuario.estudiante.cv_url} />
         </div>
     );
 }

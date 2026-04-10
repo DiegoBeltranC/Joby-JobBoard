@@ -166,8 +166,13 @@ export default function RegistroPage() {
             return
         }
         toast.dismiss(idCarga)
-        toast.success("¡Bienvenido a Joby!", { description: "Tu cuenta ha sido creada exitosamente." })
-        router.push("/login")
+
+        if (respuesta.redirect) {
+            router.push(respuesta.redirect)
+        } else {
+            toast.success("¡Bienvenido a Joby!", { description: "Tu cuenta ha sido creada exitosamente." })
+            router.push("/login")
+        }
     }
 
     // ===== SUBMIT EMPRESA =====
