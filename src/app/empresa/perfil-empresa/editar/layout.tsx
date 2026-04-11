@@ -21,7 +21,7 @@ export default async function EditarPerfilEmpresaLayout({ children }: { children
 
     // Protección principal de rutas de guardado/edición
     if (estatus === "PENDIENTE" || estatus === "RECHAZADA" || estatus === "SUSPENDIDA") {
-        redirect("/empresa/inicio");
+        redirect("/empresa/inicio?error=locked");
     }
 
     // Nota: El Paso 1 estará protegido explícitamente en su propio componente si estatus === 'APROBADA'

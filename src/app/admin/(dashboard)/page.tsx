@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { Users, Building2, Briefcase, FileWarning } from "lucide-react";
+import { Users, Building2, Briefcase, FileWarning, Ban } from "lucide-react";
 import Link from "next/link";
 
 export default async function AdminDashboardPage() {
@@ -8,11 +8,13 @@ export default async function AdminDashboardPage() {
         empresasPendientes,
         empresasCorreccion,
         empresasActivas,
+        empresasSuspendidas,
         vacantesActivas
     ] = await Promise.all([
         prisma.empresa.count({ where: { estatus_verificacion: "PENDIENTE" } }),
         prisma.empresa.count({ where: { estatus_verificacion: "REQUIERE_CAMBIOS" } }),
         prisma.empresa.count({ where: { estatus_verificacion: "APROBADA" } }),
+        prisma.empresa.count({ where: { estatus_verificacion: "SUSPENDIDA" } }),
         prisma.vacante.count({ where: { activa: true } })
     ]);
 
@@ -38,16 +40,25 @@ export default async function AdminDashboardPage() {
         {
             title: "Empresas Activas",
             value: empresasActivas,
-            description: "Plataformas con convenios listos",
+            description: "Plataformas activas",
             icon: Building2,
             href: "/admin/empresas?tab=APROBADA",
             color: "text-emerald-600",
             bg: "bg-emerald-100/50"
         },
         {
+            title: "Cuentas Suspendidas",
+            value: empresasSuspendidas,
+            description: "Penalizadas sin acceso",
+            icon: Ban,
+            href: "/admin/empresas?tab=SUSPENDIDA",
+            color: "text-red-600",
+            bg: "bg-red-100/50"
+        },
+        {
             title: "Vacantes Activas",
             value: vacantesActivas,
-            description: "Ofertas disponibles a estudiantes",
+            description: "Ofertas de empleo hoy",
             icon: Briefcase,
             href: "#", // Futuro módulo de vacantes general
             color: "text-primary",
@@ -63,7 +74,7 @@ export default async function AdminDashboardPage() {
             </header>
 
             {/* Grid Estadísticas */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-12">
                 {stats.map((stat, idx) => (
                     <Link href={stat.href} key={idx} className="block group">
                         <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden">

@@ -2,7 +2,12 @@ import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+
 import { Building2, FileText, Users, TrendingUp, ShieldAlert, CheckCircle2, XCircle, Clock } from "lucide-react";
+import AlertsInterceptor from "./AlertsInterceptor";
+import BienvenidaAprobado from "./BienvenidaAprobado";
+import TimelineComunicaciones from "./TimelineComunicaciones";
+import { Suspense } from "react";
 
 export default async function EmpresaInicioPage() {
     const session = await getSession();
@@ -33,9 +38,9 @@ export default async function EmpresaInicioPage() {
 
     // Cálculo de métricas
     const totalVacantes = empresa.vacantes.length;
-    const vacantesActivas = empresa.vacantes.filter((v: { estado_vacante: string }) => v.estado_vacante === "ACTIVA").length;
-    const vacantesBorrador = empresa.vacantes.filter((v: { estado_vacante: string }) => v.estado_vacante === "BORRADOR").length;
-    
+    const vacantesActivas = empresa.vacantes.filter((v: any) => v.estado === "ACTIVA").length;
+    const vacantesBorrador = empresa.vacantes.filter((v: any) => v.estado === "BORRADOR").length;
+
     // Progreso del perfil (mismo algoritmo que el layout)
     let progreso = 10;
     if (empresa.razon_social && empresa.rfc) progreso += 15;
@@ -48,6 +53,15 @@ export default async function EmpresaInicioPage() {
 
     return (
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
+            {/* Pop-up De Un Sola Vez Para Cuentas 100% Aprobadas */}
+            {empresa.estatus_verificacion === "APROBADA" && (
+                <BienvenidaAprobado empresaId={empresa.id} />
+            )}
+
+            {/* Interceptor de URL via Suspend */}
+            <Suspense fallback={null}>
+                <AlertsInterceptor />
+            </Suspense>
 
             {/* BANNER: SIN ENVIAR (< 100%) */}
             {empresa.estatus_verificacion === "SIN_ENVIAR" && progreso < 100 && (
@@ -61,8 +75,8 @@ export default async function EmpresaInicioPage() {
                             Para que tu cuenta sea visible a los candidatos de la UTCH, necesitas completar tu perfil al <b>100%</b> y enviar tu solicitud de verificación.
                         </p>
                         <div className="flex flex-wrap gap-3 mt-4">
-                            <Link 
-                                href="/empresa/perfil-empresa/editar/paso-1" 
+                            <Link
+                                href="/empresa/perfil-empresa/editar/paso-1"
                                 className="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl transition-colors shadow-sm"
                             >
                                 Completar Perfil ({progreso}%)
@@ -96,7 +110,7 @@ export default async function EmpresaInicioPage() {
                     <div className="flex-1">
                         <h3 className="font-bold text-amber-900 text-lg">Solicitud en Revisión</h3>
                         <p className="text-sm text-amber-800/80 mt-1 leading-relaxed">
-                            Tu solicitud de verificación fue enviada. El equipo de la UTCH está revisando tu información. 
+                            Tu solicitud de verificación fue enviada. El equipo de la UTCH está revisando tu información.
                             Te notificaremos cuando tu cuenta sea aprobada.
                         </p>
                         <span className="inline-flex items-center px-4 py-2 mt-3 bg-white border border-amber-200 text-amber-700 text-sm font-medium rounded-xl">
@@ -119,24 +133,11 @@ export default async function EmpresaInicioPage() {
                             Hemos revisado tu perfil y encontramos algunos detalles técnicos que necesitas ajustar para cumplir con las normativas.
                         </p>
 
-                        {/* Bandeja de Correos (Centro de Comunicaciones Inyectado) */}
-                        {empresa.comunicaciones && empresa.comunicaciones.length > 0 && (
-                            <div className="bg-white border border-orange-200/60 rounded-xl p-4 mt-4 shadow-sm w-full">
-                                <div className="flex items-center gap-2 mb-2 pb-2 border-b border-gray-100">
-                                    <span className="bg-orange-100 text-orange-800 text-[10px] font-black uppercase px-2 py-0.5 rounded-md tracking-wider">
-                                        Mensaje de UTCH
-                                    </span>
-                                    <span className="text-xs text-gray-400 font-medium ml-auto">
-                                        {new Date(empresa.comunicaciones[0].createdAt).toLocaleDateString("es-MX", { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                                    </span>
-                                </div>
-                                <h4 className="font-bold text-gray-800 text-sm mb-1">{empresa.comunicaciones[0].asunto}</h4>
-                                <p className="text-sm text-gray-600 whitespace-pre-wrap">{empresa.comunicaciones[0].mensaje}</p>
-                            </div>
-                        )}
+                        {/* Timeline De Respuestas Ping-Pong Inyectado */}
+                        <TimelineComunicaciones comunicaciones={empresa.comunicaciones} />
 
-                        <Link 
-                            href="/empresa/perfil-empresa/editar/paso-1" 
+                        <Link
+                            href="/empresa/perfil-empresa/editar/paso-1"
                             className="inline-flex items-center px-5 py-2.5 mt-4 bg-orange-600 hover:bg-orange-700 text-white text-sm font-medium rounded-xl transition-colors shadow-sm"
                         >
                             Corregir mi información
@@ -178,7 +179,7 @@ export default async function EmpresaInicioPage() {
                         <p className="text-sm text-gray-300 mt-1 leading-relaxed">
                             Se han detectado infracciones recientes y tu cuenta ha sido suspendida. Tus vacantes no son visibles.
                         </p>
-                        
+
                         {empresa.comunicaciones && empresa.comunicaciones.length > 0 && (
                             <div className="bg-zinc-900/50 border border-red-900/30 rounded-xl p-4 mt-4 w-full">
                                 <div className="flex items-center gap-2 mb-2 pb-2 border-b border-zinc-700/50">
@@ -194,15 +195,7 @@ export default async function EmpresaInicioPage() {
                 </div>
             )}
 
-            {/* BANNER: APROBADA */}
-            {empresa.estatus_verificacion === "APROBADA" && (
-                <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-2xl p-4 flex items-center gap-3 shadow-sm">
-                    <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-                    <p className="text-sm text-emerald-800 font-medium">
-                        Tu cuenta está <b>verificada</b>. Puedes publicar vacantes y ser visible para los candidatos.
-                    </p>
-                </div>
-            )}
+            {/* BANNER: APROBADA (Eliminado, sustituido por Modal de Primera Visita LocalStorage) */}
 
             {/* ENCABEZADO */}
             <div>
@@ -265,8 +258,8 @@ export default async function EmpresaInicioPage() {
             <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
                 <h3 className="font-bold text-gray-800 mb-4">Acciones rápidas</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <Link 
-                        href="/empresa/perfil-empresa" 
+                    <Link
+                        href="/empresa/perfil-empresa"
                         className="flex items-center gap-3 p-4 bg-gray-50 hover:bg-indigo-50 rounded-xl transition-colors group"
                     >
                         <div className="w-9 h-9 bg-indigo-100 rounded-lg flex items-center justify-center group-hover:bg-indigo-200 transition-colors">
@@ -278,8 +271,8 @@ export default async function EmpresaInicioPage() {
                         </div>
                     </Link>
 
-                    <Link 
-                        href="/empresa/perfil-empresa/editar/paso-1" 
+                    <Link
+                        href="/empresa/perfil-empresa/editar/paso-1"
                         className="flex items-center gap-3 p-4 bg-gray-50 hover:bg-indigo-50 rounded-xl transition-colors group"
                     >
                         <div className="w-9 h-9 bg-indigo-100 rounded-lg flex items-center justify-center group-hover:bg-indigo-200 transition-colors">

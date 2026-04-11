@@ -24,25 +24,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     }
 
     const admin = usuarioInfo.admin;
-
-    // Redirigir a completar perfil si es su primer inicio de sesión
-    // y no tiene sus datos personales registrados
-    // IMPORTANTE: Evitamos redirección infinita en layout asegurándonos
-    // de que esto sólo afecte la UI compartida, o mejor, usando headers o manejándolo a nivel middleware o página real.
-    // Dado que NextJS layouts envuelven todas las rutas hijas (incluso /admin/completar-perfil),
-    // no podemos hacer la validación aquí si la ruta hija está dentro.
-    // Solución correcta: el layout.tsx envuelve la base con el Sidebar y el "completar-perfil" 
-    // debería estar fuera si no queremos Sidebar allí, O lo validamos y montamos otra shell.
-    
-    // Interceptamos la renderizacion de los children que iba a solicitar (Dashboard, Empresas, etc)
-    // presentándole forzosamente el formulario del Componente. 
-    // Dado que es un layout de ServerComponent, anular su children bloquea la UI sin hacks de middleware.
     const isProfileIncomplete = !admin.nombre || admin.nombre.trim() === "";
 
     if (isProfileIncomplete) {
         return (
             <div className="min-h-screen bg-slate-50 relative z-50">
-               <CompletarPerfilAdminPage />
+                <CompletarPerfilAdminPage />
             </div>
         )
     }

@@ -245,10 +245,6 @@ export default function RevisionWizardClient({ empresa, enlaces }: { empresa: an
 
                         {empresa.estatus_verificacion === "APROBADA" && (
                             <>
-                                <div className="font-black text-emerald-600 bg-emerald-50 border border-emerald-100 px-4 py-2.5 rounded-xl mr-2 flex items-center text-sm shadow-sm">
-                                    <CheckCircle2 className="w-4 h-4 mr-1.5" />
-                                    APROBADO
-                                </div>
                                 <button 
                                     onClick={() => { setMensaje(""); setModalSuspension(true); }}
                                     className="px-6 py-3 bg-red-500/10 hover:bg-red-500/20 text-red-600 font-bold rounded-xl transition text-sm flex items-center gap-2 border border-red-500/20"

@@ -4,6 +4,7 @@ import { useState } from "react"
 import { toast } from "sonner"
 import { completarPerfilAdmin } from "@/actions/adminConfig"
 import { Save } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 function capitalizar(texto: string) {
     if (!texto) return "";
@@ -11,6 +12,7 @@ function capitalizar(texto: string) {
 }
 
 export default function FormEditarPerfil({ adminActual }: { adminActual: any }) {
+    const router = useRouter();
     const [loading, setLoading] = useState(false);
     const [nombre, setNombre] = useState(adminActual?.nombre || "");
     const [paterno, setPaterno] = useState(adminActual?.apellidoPaterno || "");
@@ -27,6 +29,7 @@ export default function FormEditarPerfil({ adminActual }: { adminActual: any }) 
         } else {
             toast.dismiss(loadId);
             toast.success("Perfil actualizado con éxito");
+            router.refresh();
         }
         setLoading(false);
     }
@@ -72,6 +75,8 @@ export default function FormEditarPerfil({ adminActual }: { adminActual: any }) 
                         type="tel" 
                         name="telefono" 
                         defaultValue={adminActual?.telefono || ""}
+                        pattern="^[0-9]{10}$"
+                        title="Ingrese exactamente 10 dígitos numéricos"
                         className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                     />
                 </div>
