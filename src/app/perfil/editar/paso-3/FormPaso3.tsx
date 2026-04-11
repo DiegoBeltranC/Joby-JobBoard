@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Check, ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { guardarPaso3 } from "@/actions/perfil";
+import GestionCV from "@/app/perfil/components/GestionCV";
 
 const paso3Schema = z.object({
     linkedin: z.string().url("Ingresa una URL válida").optional().or(z.literal('')),
@@ -15,7 +16,7 @@ const paso3Schema = z.object({
 
 type FormValues = z.infer<typeof paso3Schema>;
 
-export default function FormPaso3({ valoresIniciales }: { valoresIniciales: FormValues }) {
+export default function FormPaso3({ valoresIniciales, isTech, cvUrl }: { valoresIniciales: FormValues, isTech: boolean, cvUrl: string | null }) {
     const router = useRouter();
     const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormValues>({
         resolver: zodResolver(paso3Schema),
@@ -49,25 +50,22 @@ export default function FormPaso3({ valoresIniciales }: { valoresIniciales: Form
                 {errors.linkedin && <p className="text-xs text-red-500">{errors.linkedin.message}</p>}
             </div>
 
-            <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Enlace a GitHub o Portafolio (opcional)</label>
-                <input
-                    {...register("github")}
-                    type="url"
-                    className="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:ring-2 focus:ring-teal-500 outline-none"
-                    placeholder="https://github.com/tu-usuario"
-                />
-                {errors.github && <p className="text-xs text-red-500">{errors.github.message}</p>}
-            </div>
-
-            {/* AVISO DE SUBIDA DE ARCHIVOS */}
-            <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl flex gap-3 items-start">
-                <div className="mt-0.5 text-amber-600">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            {isTech && (
+                <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">Enlace a GitHub o Portafolio (opcional)</label>
+                    <input
+                        {...register("github")}
+                        type="url"
+                        className="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:ring-2 focus:ring-teal-500 outline-none"
+                        placeholder="https://github.com/tu-usuario"
+                    />
+                    {errors.github && <p className="text-xs text-red-500">{errors.github.message}</p>}
                 </div>
-                <p className="text-xs text-amber-800 leading-relaxed">
-                    <b>Próximamente:</b> Podrás subir tu Currículum en PDF y tu foto de perfil directamente. Por ahora, asegúrate de que tus redes sociales estén actualizadas.
-                </p>
+            )}
+
+            <div className="pt-2">
+                <label className="block text-sm font-medium text-gray-700 mb-3">Tu Currículum</label>
+                <GestionCV cvUrl={cvUrl} />
             </div>
 
             <div className="flex justify-between pt-4 mt-6">

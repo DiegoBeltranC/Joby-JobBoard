@@ -34,15 +34,40 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
     // 2. ALGORITMO DE PROGRESO DEL PERFIL
     let progresoCalculado = 20; // 20% Base por haberse registrado (Nombre, Carrera, Universidad)
+    const faltantes: string[] = [];
     
-    if (estudiante.estado && estudiante.municipio && estudiante.bio) progresoCalculado += 20; // Ubicación y Bio completas
-    if (estudiante.habilidades && estudiante.habilidades.length > 0) progresoCalculado += 20; // Habilidades añadidas
-    if (estudiante.foto_perfil_url) progresoCalculado += 15; // Tiene foto
-    if (estudiante.cv_url) progresoCalculado += 15; // Subió CV
-    if (estudiante.experiencias.length > 0 || estudiante.proyectos.length > 0) progresoCalculado += 10; // Tiene portafolio/experiencia
+    if (estudiante.estado && estudiante.municipio && estudiante.bio) {
+        progresoCalculado += 20; // Ubicación y Bio completas
+    } else {
+        faltantes.push("Ubicación y Biografía (+20%)");
+    }
+
+    if (estudiante.habilidades && estudiante.habilidades.length > 0) {
+        progresoCalculado += 20; // Habilidades añadidas
+    } else {
+        faltantes.push("Habilidades (+20%)");
+    }
+
+    if (estudiante.foto_perfil_url) {
+        progresoCalculado += 15; // Tiene foto
+    } else {
+        faltantes.push("Foto de Perfil (+15%)");
+    }
+
+    if (estudiante.cv_url) {
+        progresoCalculado += 15; // Subió CV
+    } else {
+        faltantes.push("Currículum Vitae (+15%)");
+    }
+
+    if (estudiante.experiencias.length > 0 || estudiante.proyectos.length > 0) {
+        progresoCalculado += 10; // Tiene portafolio/experiencia
+    } else {
+        faltantes.push("Experiencia o Proyectos (+10%)");
+    }
 
     // 3. Extracción inteligente de idiomas y modalidades
-    const nivelIngles = estudiante.idiomas?.find(i => i.toLowerCase().includes('inglés')) || null;
+    const idiomas = estudiante.idiomas || [];
     const buscando = estudiante.tipos_contrato?.length > 0 
         ? estudiante.tipos_contrato.map(t => t.replace(/_/g, ' ')).join(', ') 
         : null;
@@ -54,7 +79,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
         universidad: estudiante.universidad.siglas, // Mejor las siglas para no romper el diseño si es muy largo
         ubicacion: estudiante.municipio ? `${estudiante.municipio}, ${estudiante.estado}` : null,
         progreso: progresoCalculado,
-        nivelIngles: nivelIngles,
+        faltantes,
+        idiomas: idiomas,
         fotoUrl: estudiante.foto_perfil_url,
         buscando: buscando // 👈 ¡Nuevo dato ultra valioso!
     };
