@@ -77,7 +77,7 @@ export default async function EmpresaInicioPage() {
                         <div className="flex flex-wrap gap-3 mt-4">
                             <Link
                                 href="/empresa/perfil-empresa/editar/paso-1"
-                                className="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl transition-colors shadow-sm"
+                                className="inline-flex items-center px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium rounded-xl transition-colors shadow-sm"
                             >
                                 Completar Perfil ({progreso}%)
                             </Link>
@@ -88,13 +88,13 @@ export default async function EmpresaInicioPage() {
 
             {/* BANNER: SIN ENVIAR (100% LISTO) */}
             {empresa.estatus_verificacion === "SIN_ENVIAR" && progreso === 100 && (
-                <div className="bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-200 rounded-2xl p-6 flex flex-col sm:flex-row gap-4 items-start shadow-sm">
-                    <div className="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center shrink-0">
-                        <CheckCircle2 className="w-6 h-6 text-indigo-600" />
+                <div className="bg-gradient-to-r from-violet-50 to-purple-50 border border-violet-200 rounded-2xl p-6 flex flex-col sm:flex-row gap-4 items-start shadow-sm">
+                    <div className="w-12 h-12 bg-violet-100 rounded-xl flex items-center justify-center shrink-0">
+                        <CheckCircle2 className="w-6 h-6 text-violet-600" />
                     </div>
                     <div className="flex-1">
-                        <h3 className="font-bold text-indigo-900 text-lg">¡Tu perfil está al 100%!</h3>
-                        <p className="text-sm text-indigo-800/80 mt-1 leading-relaxed">
+                        <h3 className="font-bold text-violet-900 text-lg">¡Tu perfil está al 100%!</h3>
+                        <p className="text-sm text-violet-800/80 mt-1 leading-relaxed">
                             Ya tienes toda la información requerida. Para que el equipo de la UTCH revise y apruebe tu cuenta, presiona el botón <b>Enviar Solicitud</b> que se encuentra en el menú lateral.
                         </p>
                     </div>
@@ -209,8 +209,8 @@ export default async function EmpresaInicioPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
                     <div className="flex items-center justify-between mb-4">
-                        <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center">
-                            <FileText className="w-5 h-5 text-indigo-600" />
+                        <div className="w-10 h-10 bg-violet-50 rounded-xl flex items-center justify-center">
+                            <FileText className="w-5 h-5 text-violet-600" />
                         </div>
                         <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Activas</span>
                     </div>
@@ -249,7 +249,7 @@ export default async function EmpresaInicioPage() {
                     </div>
                     <p className="text-3xl font-black text-gray-800">{progreso}%</p>
                     <div className="w-full bg-gray-100 rounded-full h-1.5 mt-2 overflow-hidden">
-                        <div className="bg-gradient-to-r from-indigo-400 to-indigo-600 h-1.5 rounded-full transition-all duration-1000" style={{ width: `${progreso}%` }}></div>
+                        <div className="bg-gradient-to-r from-violet-400 to-violet-600 h-1.5 rounded-full transition-all duration-1000" style={{ width: `${progreso}%` }}></div>
                     </div>
                 </div>
             </div>
@@ -260,10 +260,10 @@ export default async function EmpresaInicioPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <Link
                         href="/empresa/perfil-empresa"
-                        className="flex items-center gap-3 p-4 bg-gray-50 hover:bg-indigo-50 rounded-xl transition-colors group"
+                        className="flex items-center gap-3 p-4 bg-gray-50 hover:bg-violet-50 rounded-xl transition-colors group"
                     >
-                        <div className="w-9 h-9 bg-indigo-100 rounded-lg flex items-center justify-center group-hover:bg-indigo-200 transition-colors">
-                            <Building2 className="w-4 h-4 text-indigo-600" />
+                        <div className="w-9 h-9 bg-violet-100 rounded-lg flex items-center justify-center group-hover:bg-violet-200 transition-colors">
+                            <Building2 className="w-4 h-4 text-violet-600" />
                         </div>
                         <div>
                             <p className="text-sm font-semibold text-gray-800">Ver Perfil</p>
@@ -273,10 +273,10 @@ export default async function EmpresaInicioPage() {
 
                     <Link
                         href="/empresa/perfil-empresa/editar/paso-1"
-                        className="flex items-center gap-3 p-4 bg-gray-50 hover:bg-indigo-50 rounded-xl transition-colors group"
+                        className="flex items-center gap-3 p-4 bg-gray-50 hover:bg-violet-50 rounded-xl transition-colors group"
                     >
-                        <div className="w-9 h-9 bg-indigo-100 rounded-lg flex items-center justify-center group-hover:bg-indigo-200 transition-colors">
-                            <svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                        <div className="w-9 h-9 bg-violet-100 rounded-lg flex items-center justify-center group-hover:bg-violet-200 transition-colors">
+                            <svg className="w-4 h-4 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                         </div>
                         <div>
                             <p className="text-sm font-semibold text-gray-800">{progreso === 100 ? "Editar Perfil" : "Completar Perfil"}</p>
@@ -284,15 +284,31 @@ export default async function EmpresaInicioPage() {
                         </div>
                     </Link>
 
-                    <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl opacity-50 cursor-not-allowed">
-                        <div className="w-9 h-9 bg-gray-200 rounded-lg flex items-center justify-center">
-                            <FileText className="w-4 h-4 text-gray-400" />
+                    {/* Botón de Crear Vacante dinámico */}
+                    {empresa.estatus_verificacion === "APROBADA" ? (
+                        <Link
+                            href="/empresa/vacantes"
+                            className="flex items-center gap-3 p-4 bg-white hover:bg-violet-50 border border-violet-100 hover:border-violet-200 rounded-xl transition-all group shadow-sm hover:shadow-md"
+                        >
+                            <div className="w-9 h-9 bg-violet-100 rounded-lg flex items-center justify-center group-hover:bg-violet-200 transition-colors">
+                                <FileText className="w-4 h-4 text-violet-600" />
+                            </div>
+                            <div>
+                                <p className="text-sm font-semibold text-gray-900">Crear Vacante</p>
+                                <p className="text-[10px] text-violet-700 font-bold uppercase tracking-tight">Publicar ahora</p>
+                            </div>
+                        </Link>
+                    ) : (
+                        <div className="flex items-center gap-3 p-4 bg-gray-50 border border-dashed border-gray-200 rounded-xl opacity-60 cursor-not-allowed">
+                            <div className="w-9 h-9 bg-gray-200 rounded-lg flex items-center justify-center">
+                                <FileText className="w-4 h-4 text-gray-400" />
+                            </div>
+                            <div>
+                                <p className="text-sm font-semibold text-gray-500">Crear Vacante</p>
+                                <p className="text-[11px] text-gray-400">Requiere aprobación</p>
+                            </div>
                         </div>
-                        <div>
-                            <p className="text-sm font-semibold text-gray-500">Crear Vacante</p>
-                            <p className="text-[11px] text-gray-400">Próximamente</p>
-                        </div>
-                    </div>
+                    )}
                 </div>
             </div>
         </div>

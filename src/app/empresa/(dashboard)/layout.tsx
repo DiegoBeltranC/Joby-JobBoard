@@ -21,6 +21,11 @@ export default async function EmpresaLayout({ children }: { children: React.Reac
         redirect('/inicio');
     }
 
+    // --- PROTECCIÓN: VERIFICACIÓN DE CORREO (WALL) ---
+    if (!usuarioInfo.verifiedAt) {
+        redirect(`/verificar-correo?email=${encodeURIComponent(usuarioInfo.correo)}`);
+    }
+
     const empresa = usuarioInfo.empresa;
     const enlaces = (empresa.enlaces as { linkedin?: string; facebook?: string }) || {};
     const tieneEnlace = !!(empresa.sitio_web || enlaces.linkedin || enlaces.facebook);

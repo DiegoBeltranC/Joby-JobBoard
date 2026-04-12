@@ -48,7 +48,7 @@ export default async function PerfilEmpresaPage() {
                 </div>
                 <Link
                     href="/empresa/perfil-empresa/editar/paso-1"
-                    className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-xl transition-colors shadow-sm"
+                    className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-violet-600 hover:bg-violet-700 text-white font-medium rounded-xl transition-colors shadow-sm"
                 >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                     Editar Perfil
@@ -65,7 +65,7 @@ export default async function PerfilEmpresaPage() {
                             {empresa.logo_url ? (
                                 <img src={empresa.logo_url} alt="Logo empresa" className="w-full h-full rounded-2xl object-cover" />
                             ) : (
-                                <span className="text-3xl text-indigo-700 font-bold">{empresa.nombre_comercial.charAt(0)}</span>
+                                <span className="text-3xl text-violet-700 font-bold">{empresa.nombre_comercial.charAt(0)}</span>
                             )}
                             <div className={`absolute -bottom-1 -right-1 w-5 h-5 border-2 border-white rounded-full z-10 ${
                                 empresa.estatus_verificacion === "APROBADA" ? 'bg-emerald-500' :
@@ -77,7 +77,7 @@ export default async function PerfilEmpresaPage() {
 
                         <div className="flex-1">
                             <h2 className="text-2xl font-bold text-gray-800">{empresa.nombre_comercial}</h2>
-                            <p className="text-indigo-700 font-medium">{empresa.cargo_contacto}</p>
+                            <p className="text-violet-700 font-medium">{empresa.cargo_contacto}</p>
 
                             <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 mt-2">
                                 <span className="flex items-center gap-1">
@@ -97,7 +97,7 @@ export default async function PerfilEmpresaPage() {
                                     {estatus.label}
                                 </span>
                                 {empresa.rfc && (
-                                    <span className="px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-md text-[10px] font-bold uppercase border border-indigo-100">
+                                    <span className="px-2.5 py-1 bg-violet-50 text-violet-700 rounded-md text-[10px] font-bold uppercase border border-violet-100">
                                         RFC registrado
                                     </span>
                                 )}
@@ -191,20 +191,20 @@ export default async function PerfilEmpresaPage() {
                         </div>
                     </div>
 
-                    {/* FOTOS DE INSTALACIONES */}
-                    <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
-                        <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
-                            <ImageIcon className="w-4 h-4 text-indigo-600" /> Fotos de Instalaciones
-                        </h3>
-                        {empresa.fotos_empresa.length > 0 ? (
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                                {empresa.fotos_empresa.map((url, idx) => (
-                                    <div key={idx} className="aspect-video rounded-xl overflow-hidden border border-gray-100">
-                                        <img src={url} alt={`Foto ${idx + 1}`} className="w-full h-full object-cover" />
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
+                        {/* FOTOS DE INSTALACIONES */}
+                        <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
+                            <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
+                                <ImageIcon className="w-4 h-4 text-violet-600" /> Fotos de Instalaciones
+                            </h3>
+                            {(empresa.fotos_empresa || []).length > 0 ? (
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                    {(empresa.fotos_empresa || []).map((url, idx) => (
+                                        <div key={idx} className="aspect-video rounded-xl overflow-hidden border border-gray-100">
+                                            <img src={url} alt={`Foto ${idx + 1}`} className="w-full h-full object-cover" />
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
                             <div className="bg-gray-50 border border-dashed border-gray-300 rounded-xl p-6 text-center">
                                 <p className="text-sm text-gray-500 mb-3">Sube fotos de tus instalaciones para generar confianza.</p>
                                 <Link href="/empresa/perfil-empresa/editar/paso-3" className="text-indigo-600 text-sm font-medium hover:underline">

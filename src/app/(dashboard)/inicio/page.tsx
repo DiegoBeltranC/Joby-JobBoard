@@ -1,68 +1,178 @@
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
+import { 
+    MapPin, 
+    Clock, 
+    Building2, 
+    Calendar, 
+    Search, 
+    Briefcase,
+    ChevronRight
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+
+// FASE 2: Forzar Datos Frescos (Anti-Stale Cache)
+export const dynamic = 'force-dynamic';
+
+// Helper local para fecha relativa (evita dependencias extra)
+function calcularTiempoRelativo(fecha: Date) {
+    const ahora = new Date();
+    const diferenciaMs = ahora.getTime() - fecha.getTime();
+    const segundos = Math.floor(diferenciaMs / 1000);
+    const minutos = Math.floor(segundos / 60);
+    const horas = Math.floor(minutos / 60);
+    const dias = Math.floor(horas / 24);
+
+    if (dias > 0) return `Hace ${dias} ${dias === 1 ? 'día' : 'días'}`;
+    if (horas > 0) return `Hace ${horas} ${horas === 1 ? 'hora' : 'horas'}`;
+    if (minutos > 0) return `Hace ${minutos} ${minutos === 1 ? 'minuto' : 'minutos'}`;
+    return 'Recién publicado';
+}
 
 export default async function InicioPage() {
-    // 1. Buscamos la sesión del usuario para saber de dónde es
     const session = await getSession();
-    let ubicacionFiltro = "tu zona"; // Valor por defecto
+    let ubicacionSugerida = "tu zona";
 
+    // 1. Obtener contexto del estudiante para personalización visual
     if (session) {
         const usuarioInfo = await prisma.user.findUnique({
             where: { id: session.userId },
             include: { estudiante: true }
         });
         if (usuarioInfo?.estudiante?.municipio) {
-            ubicacionFiltro = usuarioInfo.estudiante.municipio;
+            ubicacionSugerida = usuarioInfo.estudiante.municipio;
         }
     }
 
-    // Datos falsos por ahora, luego los traeremos de Prisma buscando por `ubicacionFiltro`
-    const vacantesPrueba = [
-        { id: 1, titulo: "Desarrollador Frontend React", empresa: "Tech Chetumal", tipo: "Estadía", ubicacion: "Remoto / Chetumal", tiempo: "Hace 2 días" },
-        { id: 2, titulo: "Auxiliar Administrativo", empresa: "Grupo Hotelero Maya", tipo: "Medio Tiempo", ubicacion: "Tulum, Q. Roo", tiempo: "Hace 5 horas" },
-        { id: 3, titulo: "Prácticas en Marketing Digital", empresa: "Agencia Creativa Roo", tipo: "Servicio Social", ubicacion: "Cancún, Q. Roo", tiempo: "Hace 1 semana" },
-    ];
+    // FASE 1: Consulta Prisma Blindada (Anti Over-fetching & Zero Trust)
+    const vacantes = await prisma.vacante.findMany({
+        take: 30, // Anti-DoS
+        where: {
+            activa: true,
+            empresa: {
+                estatus_verificacion: "APROBADA" // Solo empresas validadas por UTCH
+            },
+            OR: [
+                { fecha_limite: null },
+                { fecha_limite: { gte: new Date() } }
+            ]
+        },
+        select: {
+            id: true,
+            titulo: true,
+            municipio: true,
+            estado: true,
+            modalidad: true,
+            tipo_contrato: true,
+            createdAt: true,
+            empresa: {
+                select: {
+                    nombre_comercial: true,
+                    logo_url: true
+                }
+            }
+        },
+        orderBy: {
+            createdAt: "desc"
+        }
+    });
 
     return (
-        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <h1 className="text-3xl font-bold text-gray-800 mb-2 tracking-tight">Buscar vacantes</h1>
+        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-6xl mx-auto">
             
-            {/* 👇 Aplicamos la personalización aquí */}
-            <p className="text-gray-500 mb-8">
-                Oportunidades recomendadas para ti cerca de <span className="font-semibold text-teal-600">{ubicacionFiltro}</span>.
-            </p>
-
-            {/* Grid de Vacantes */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {vacantesPrueba.map((vacante) => (
-                    <div key={vacante.id} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow group">
-                        <div className="flex justify-between items-start mb-4">
-                            <span className={`px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider ${
-                                vacante.tipo === 'Estadía' ? 'bg-blue-100 text-blue-700' :
-                                vacante.tipo === 'Medio Tiempo' ? 'bg-emerald-100 text-emerald-700' :
-                                'bg-purple-100 text-purple-700'
-                            }`}>
-                                {vacante.tipo}
-                            </span>
-                            <span className="text-xs text-gray-400">{vacante.tiempo}</span>
-                        </div>
-
-                        <h3 className="text-lg font-bold text-gray-800 group-hover:text-teal-600 transition-colors">{vacante.titulo}</h3>
-                        <p className="text-sm font-medium text-gray-600 mt-1">{vacante.empresa}</p>
-
-                        <div className="mt-4 flex items-center text-sm text-gray-500 gap-1">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                            {vacante.ubicacion}
-                        </div>
-
-                        <div className="mt-6">
-                            <button className="w-full py-2.5 bg-gray-50 hover:bg-teal-50 text-teal-700 font-semibold rounded-xl border border-gray-200 transition-colors">
-                                Ver detalles
-                            </button>
-                        </div>
-                    </div>
-                ))}
+            {/* Header de Sección */}
+            <div className="mb-8">
+                <h1 className="text-3xl font-black text-gray-900 mb-2 tracking-tight flex items-center gap-3">
+                    <Search className="w-8 h-8 text-teal-600" />
+                    Buscar Vacantes
+                </h1>
+                <p className="text-gray-500 font-medium">
+                    Oportunidades recomendadas para ti cerca de <span className="text-teal-600 font-bold underline decoration-teal-200 underline-offset-4">{ubicacionSugerida}</span>.
+                </p>
             </div>
+
+            {/* FASE 3: Renderizado UI Dinámico */}
+            {vacantes && vacantes.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 pb-12">
+                    {vacantes.map((v) => (
+                        <div key={v.id} className="bg-white p-6 rounded-[24px] border border-gray-100 shadow-sm hover:shadow-xl hover:border-teal-100 transition-all duration-300 group relative overflow-hidden">
+                            {/* Decoración de fondo */}
+                            <div className="absolute -right-4 -top-4 w-24 h-24 bg-teal-50/50 rounded-full blur-2xl group-hover:bg-teal-100/50 transition-colors"></div>
+                            
+                            <div className="relative z-10">
+                                <div className="flex justify-between items-start mb-5">
+                                    <div className="flex gap-2">
+                                        <span className={cn(
+                                            "px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider",
+                                            v.tipo_contrato === 'ESTADIA' ? 'bg-blue-50 text-blue-700 border border-blue-100' :
+                                            v.tipo_contrato === 'MEDIO_TIEMPO' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' :
+                                            'bg-teal-50 text-teal-700 border border-teal-100'
+                                        )}>
+                                            {v.tipo_contrato.replace('_', ' ')}
+                                        </span>
+                                        <span className="px-3 py-1 bg-gray-50 text-gray-500 border border-gray-100 rounded-lg text-[10px] font-bold uppercase tracking-wider">
+                                            {v.modalidad}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center gap-1 text-[11px] font-bold text-gray-400">
+                                        <Clock className="w-3 h-3" />
+                                        {calcularTiempoRelativo(new Date(v.createdAt))}
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-4 mb-4">
+                                    {/* Logo de Empresa */}
+                                    <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center border border-gray-100 shrink-0 overflow-hidden">
+                                        {v.empresa.logo_url ? (
+                                            <img src={v.empresa.logo_url} alt={v.empresa.nombre_comercial} className="w-full h-full object-cover" />
+                                        ) : (
+                                            <Building2 className="w-6 h-6 text-gray-300" />
+                                        )}
+                                    </div>
+                                    <div>
+                                        <h3 className="text-lg font-black text-gray-800 leading-tight group-hover:text-teal-700 transition-colors">
+                                            {v.titulo}
+                                        </h3>
+                                        <p className="text-sm font-bold text-gray-500">{v.empresa.nombre_comercial}</p>
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-wrap items-center gap-4 text-xs font-semibold text-gray-400 mt-4 pt-4 border-t border-gray-50">
+                                    <div className="flex items-center gap-1.5">
+                                        <MapPin className="w-4 h-4 text-teal-500" />
+                                        {v.municipio}, {v.estado}
+                                    </div>
+                                    <div className="flex items-center gap-1.5 ml-auto">
+                                        <Calendar className="w-4 h-4 text-teal-500" />
+                                        Publicado recientemente
+                                    </div>
+                                </div>
+
+                                <div className="mt-6">
+                                    <button className="w-full py-3.5 bg-gray-900 hover:bg-teal-600 text-white font-black rounded-2xl transition-all shadow-lg shadow-gray-200 hover:shadow-teal-200 flex items-center justify-center gap-2 group/btn">
+                                        Postularme ahora
+                                        <ChevronRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            ) : (
+                /* Empty State: Requisito de Diseño */
+                <div className="flex flex-col items-center justify-center py-20 px-4 bg-white rounded-[32px] border-2 border-dashed border-gray-100 text-center animate-in fade-in zoom-in duration-700">
+                    <div className="w-20 h-20 bg-teal-50 rounded-full flex items-center justify-center mb-6">
+                        <Briefcase className="w-10 h-10 text-teal-600 opacity-40" />
+                    </div>
+                    <h3 className="text-xl font-black text-gray-800 mb-2">Sin vacantes por el momento</h3>
+                    <p className="text-gray-500 max-w-sm font-medium">
+                        Por el momento no hay vacantes disponibles. Nuestro equipo está validando nuevas oportunidades para ti.
+                    </p>
+                    <button className="mt-8 px-6 py-2 bg-teal-600 text-white font-bold rounded-xl text-sm shadow-lg shadow-teal-100">
+                        Notificarme de nuevas vacantes
+                    </button>
+                </div>
+            )}
         </div>
     );
 }

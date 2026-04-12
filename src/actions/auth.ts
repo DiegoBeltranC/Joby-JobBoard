@@ -38,8 +38,8 @@ export async function loginAction(formData: FormData) {
     const passwordMatch = await bcrypt.compare(password, user.password_hash)
     if (!passwordMatch) return { error: "Credenciales incorrectas." }
 
-    // Edge Case: Limbo de Estudiante
-    if (user.rol === "ESTUDIANTE" && !user.verifiedAt) {
+    // Edge Case: Limbo de Usuario (Estudiante o Empresa no verificados)
+    if ((user.rol === "ESTUDIANTE" || user.rol === "EMPRESA") && !user.verifiedAt) {
       // Devolver al frontend la instruccion de redireccion para evitar atrapar NEXT_REDIRECT
       return { redirect: `/verificar-correo?email=${encodeURIComponent(user.correo)}` }
     }
@@ -91,7 +91,7 @@ export async function verificarOTPAction(email: string, otpOriginal: string) {
     // Iniciar Sesión automáticamente
     await createSession(user.id)
 
-    return { success: true }
+    return { success: true, rol: user.rol }
   } catch (error) {
     console.error("Error al verificar OTP:", error)
     return { error: "Error interno verificando código." }

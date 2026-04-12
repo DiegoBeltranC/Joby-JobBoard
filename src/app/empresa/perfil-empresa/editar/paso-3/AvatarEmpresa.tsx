@@ -158,7 +158,7 @@ export default function AvatarEmpresa({ logoActualUrl, iniciales }: AvatarEmpres
 
                         <div className="flex justify-end gap-3 p-4 bg-gray-50">
                             <button onClick={() => { setModalAbierto(false); setImageSrc(null); }} className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-200 rounded-lg">Cancelar</button>
-                            <button onClick={handleGuardarLogo} disabled={isSubmitting} className="flex items-center px-4 py-2 text-sm font-bold bg-indigo-600 text-white hover:bg-indigo-700 rounded-lg disabled:opacity-50">
+                            <button onClick={handleGuardarLogo} disabled={isSubmitting} className="flex items-center px-4 py-2 text-sm font-bold bg-violet-600 text-white hover:bg-violet-700 rounded-lg disabled:opacity-50">
                                 <Upload className="w-4 h-4 mr-2" /> {isSubmitting ? "Guardando..." : "Guardar logo"}
                             </button>
                         </div>

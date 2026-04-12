@@ -55,9 +55,9 @@ export default function FormPaso2Empresa({ valoresIniciales }: { valoresIniciale
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
 
             {/* SECCIÓN 1: DATOS PERSONALES DEL RECLUTADOR */}
-            <div className="bg-indigo-50/40 p-5 rounded-2xl border border-indigo-100 space-y-5">
-                <h3 className="text-sm font-bold text-indigo-900 flex items-center gap-2">
-                    <UserCircle className="w-4 h-4 text-indigo-600" /> Persona de Contacto
+            <div className="bg-violet-50/40 p-5 rounded-2xl border border-violet-100 space-y-5">
+                <h3 className="text-sm font-bold text-violet-900 flex items-center gap-2">
+                    <UserCircle className="w-4 h-4 text-violet-600" /> Persona de Contacto
                 </h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -68,7 +68,7 @@ export default function FormPaso2Empresa({ valoresIniciales }: { valoresIniciale
                             {...register("nombre")}
                             type="text"
                             className={cn(
-                                "w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none",
+                                "w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:ring-2 focus:ring-violet-500 outline-none",
                                 errors.nombre && "border-red-500"
                             )}
                             placeholder="Ej: María Elena"
@@ -83,7 +83,7 @@ export default function FormPaso2Empresa({ valoresIniciales }: { valoresIniciale
                             {...register("apellidoPaterno")}
                             type="text"
                             className={cn(
-                                "w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none",
+                                "w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:ring-2 focus:ring-violet-500 outline-none",
                                 errors.apellidoPaterno && "border-red-500"
                             )}
                             placeholder="Ej: González"
@@ -97,7 +97,7 @@ export default function FormPaso2Empresa({ valoresIniciales }: { valoresIniciale
                         <input
                             {...register("apellidoMaterno")}
                             type="text"
-                            className="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                            className="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:ring-2 focus:ring-violet-500 outline-none"
                             placeholder="Ej: López"
                         />
                     </div>
@@ -109,7 +109,7 @@ export default function FormPaso2Empresa({ valoresIniciales }: { valoresIniciale
                             {...register("cargo_contacto")}
                             type="text"
                             className={cn(
-                                "w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none",
+                                "w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:ring-2 focus:ring-violet-500 outline-none",
                                 errors.cargo_contacto && "border-red-500"
                             )}
                             placeholder="Ej: Gerente de Recursos Humanos"
@@ -122,7 +122,7 @@ export default function FormPaso2Empresa({ valoresIniciales }: { valoresIniciale
             {/* SECCIÓN 2: TELÉFONO */}
             <div className="bg-gray-50 p-5 rounded-2xl border border-gray-100 space-y-5">
                 <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
-                    <Phone className="w-4 h-4 text-indigo-600" /> Contacto Directo
+                    <Phone className="w-4 h-4 text-violet-600" /> Contacto Directo
                 </h3>
 
                 <div className="flex flex-col space-y-1.5">
@@ -131,7 +131,7 @@ export default function FormPaso2Empresa({ valoresIniciales }: { valoresIniciale
                         {...register("telefono_contacto")}
                         type="tel"
                         className={cn(
-                            "w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none max-w-sm",
+                            "w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:ring-2 focus:ring-violet-500 outline-none max-w-sm",
                             errors.telefono_contacto && "border-red-500"
                         )}
                         placeholder="9831234567"
@@ -147,7 +147,7 @@ export default function FormPaso2Empresa({ valoresIniciales }: { valoresIniciale
                 <button type="button" onClick={() => router.push("/empresa/perfil-empresa/editar/paso-1")} className="flex items-center text-sm font-medium text-gray-600 hover:bg-gray-100 px-4 py-2.5 rounded-xl transition-colors">
                     <ArrowLeft className="w-4 h-4 mr-1" /> Atrás
                 </button>
-                <button type="submit" disabled={isSubmitting} className="flex items-center bg-indigo-600 text-white text-sm font-bold px-6 py-2.5 rounded-xl hover:bg-indigo-700 transition-colors shadow-sm disabled:opacity-50">
+                <button type="submit" disabled={isSubmitting} className="flex items-center bg-violet-600 text-white text-sm font-bold px-6 py-2.5 rounded-xl hover:bg-violet-700 transition-colors shadow-sm disabled:opacity-50">
                     {isSubmitting ? "Guardando..." : "Guardar y Continuar"} <ChevronRight className="w-4 h-4 ml-1" />
                 </button>
             </div>

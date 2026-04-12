@@ -42,12 +42,12 @@ export default function TimelineComunicaciones({ comunicaciones }: { comunicacio
 
                     {expandido && (
                         <div className="mt-4 pl-3 ml-2 border-l-2 border-orange-100 space-y-6 relative before:content-[''] before:absolute before:inset-0 before:bg-linear-to-b before:from-transparent before:via-orange-50/10 before:to-transparent pointer-events-auto animate-in slide-in-from-top-4 duration-300">
-                            {historialesAntiguos.map((com, index) => (
+                            {(historialesAntiguos || []).map((com, index) => (
                                 <div key={com.id} className="relative z-10">
                                     <div className="absolute -left-[19px] top-1 w-3 h-3 bg-white border-2 border-orange-300 rounded-full"></div>
                                     <div className="bg-orange-50/50 rounded-xl p-4 border border-orange-100/50">
                                         <div className="flex items-center justify-between mb-1">
-                                            <span className="text-[10px] font-bold text-orange-600 uppercase">Intento de Revisión #{historialesAntiguos.length - index}</span>
+                                            <span className="text-[10px] font-bold text-orange-600 uppercase">Intento de Revisión #{(historialesAntiguos || []).length - index}</span>
                                             <span className="text-xs text-gray-400 font-medium">
                                                 {new Date(com.createdAt).toLocaleDateString("es-MX", { day: 'numeric', month: 'short' })}
                                             </span>

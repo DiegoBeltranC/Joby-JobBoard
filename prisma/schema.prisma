@@ -225,10 +225,9 @@ model Vacante {
   // Ubicación del puesto (Puede ser distinto a la ubicación de la empresa)
   estado              String?
   municipio           String?
-  
   // El "Match" con los alumnos
   habilidades_req     String[] // ["React", "TypeScript"] <- Esto cruzará con las habilidades del estudiante
-  
+
   // Datos opcionales y control
   sueldo_min          Int?     // Para filtros de búsqueda (opcional)
   sueldo_max          Int?

@@ -46,7 +46,7 @@ export default function FormPaso1Empresa({ valoresIniciales }: { valoresIniciale
 
     const estadoActual = watch("estado");
     const municipioActual = watch("municipio");
-    const municipiosDisponibles = estadoActual ? ubicaciones[estadoActual] : [];
+    const municipiosDisponibles = estadoActual ? (ubicaciones[estadoActual] || []) : [];
 
     const onSubmit = async (data: FormValues) => {
         const idCarga = toast.loading("Guardando datos legales...");
@@ -66,9 +66,9 @@ export default function FormPaso1Empresa({ valoresIniciales }: { valoresIniciale
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
             
             {/* SECCIÓN 1: DATOS DE FACTURACIÓN */}
-            <div className="bg-indigo-50/40 p-5 rounded-2xl border border-indigo-100 space-y-5">
-                <h3 className="text-sm font-bold text-indigo-900 flex items-center gap-2">
-                    <Building2 className="w-4 h-4 text-indigo-600" /> Datos de Facturación
+            <div className="bg-violet-50/40 p-5 rounded-2xl border border-violet-100 space-y-5">
+                <h3 className="text-sm font-bold text-violet-900 flex items-center gap-2">
+                    <Building2 className="w-4 h-4 text-violet-600" /> Datos de Facturación
                 </h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -79,7 +79,7 @@ export default function FormPaso1Empresa({ valoresIniciales }: { valoresIniciale
                             {...register("rfc")}
                             type="text"
                             className={cn(
-                                "w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none uppercase",
+                                "w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:ring-2 focus:ring-violet-500 outline-none uppercase",
                                 errors.rfc && "border-red-500"
                             )}
                             placeholder="XAXX010101000"
@@ -95,7 +95,7 @@ export default function FormPaso1Empresa({ valoresIniciales }: { valoresIniciale
                             {...register("razon_social")}
                             type="text"
                             className={cn(
-                                "w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none",
+                                "w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:ring-2 focus:ring-violet-500 outline-none",
                                 errors.razon_social && "border-red-500"
                             )}
                             placeholder="Ej: Grupo Experiencias Xcaret S.A.P.I. de C.V."
@@ -108,7 +108,7 @@ export default function FormPaso1Empresa({ valoresIniciales }: { valoresIniciale
             {/* SECCIÓN 2: UBICACIÓN */}
             <div className="bg-gray-50 p-5 rounded-2xl border border-gray-100 space-y-5">
                 <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
-                    <MapPin className="w-4 h-4 text-indigo-600" /> Ubicación de la Empresa
+                    <MapPin className="w-4 h-4 text-violet-600" /> Ubicación de la Empresa
                 </h3>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -152,7 +152,7 @@ export default function FormPaso1Empresa({ valoresIniciales }: { valoresIniciale
 
             {/* BOTÓN DE ENVÍO */}
             <div className="flex justify-end pt-4 border-t border-gray-100">
-                <Button type="submit" disabled={isSubmitting} className="bg-indigo-600 hover:bg-indigo-700 px-8 rounded-xl shadow-sm">
+                <Button type="submit" disabled={isSubmitting} className="bg-violet-600 hover:bg-violet-700 px-8 rounded-xl shadow-sm">
                     {isSubmitting ? "Guardando..." : "Guardar y Continuar"} <ChevronRight className="w-4 h-4 ml-1" />
                 </Button>
             </div>

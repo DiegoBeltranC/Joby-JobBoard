@@ -76,8 +76,9 @@ export default function OTPClient({ email }: OTPClientProps) {
             }
         } else {
             toast.success("¡Cuenta verificada exitosamente!", { id: idCarga })
-            // Redirigimos al inicio de la plataforma (ya estamos logueados por la acción)
-            router.push("/inicio")
+            // Redirigimos al inicio según el rol
+            const target = res.rol === "EMPRESA" ? "/empresa/inicio" : "/inicio"
+            router.push(target)
         }
     }
 

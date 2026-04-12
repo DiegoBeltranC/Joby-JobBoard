@@ -185,8 +185,13 @@ export default function RegistroPage() {
             return
         }
         toast.dismiss(idCarga)
-        toast.success("¡Empresa registrada!", { description: "Ya puedes iniciar sesión con tu cuenta empresarial." })
-        router.push("/login?tipo=empresa")
+
+        if (respuesta.redirect) {
+            router.push(respuesta.redirect)
+        } else {
+            toast.success("¡Empresa registrada!", { description: "Ya puedes iniciar sesión con tu cuenta empresarial." })
+            router.push("/login?tipo=empresa")
+        }
     }
 
     return (

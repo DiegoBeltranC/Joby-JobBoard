@@ -124,9 +124,9 @@ export default function FormPaso3Empresa({ valoresIniciales, logoActualUrl, foto
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
 
             {/* SECCIÓN 0: LOGO DE LA EMPRESA */}
-            <div className="bg-indigo-50/40 p-5 rounded-2xl border border-indigo-100 space-y-4">
-                <h3 className="text-sm font-bold text-indigo-900 flex items-center gap-2">
-                    <Camera className="w-4 h-4 text-indigo-600" /> Logo de la Empresa
+            <div className="bg-violet-50/40 p-5 rounded-2xl border border-violet-100 space-y-4">
+                <h3 className="text-sm font-bold text-violet-900 flex items-center gap-2">
+                    <Camera className="w-4 h-4 text-violet-600" /> Logo de la Empresa
                 </h3>
                 <p className="text-xs text-gray-500">Sube el logo de tu empresa. Los candidatos lo verán en tu perfil y en tus vacantes.</p>
                 <div className="flex justify-center">
@@ -137,7 +137,7 @@ export default function FormPaso3Empresa({ valoresIniciales, logoActualUrl, foto
             {/* SECCIÓN 1: DESCRIPCIÓN DE LA EMPRESA */}
             <div className="bg-gray-50 p-5 rounded-2xl border border-gray-100 space-y-4">
                 <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
-                    <Megaphone className="w-4 h-4 text-indigo-600" /> ¿A qué se dedica tu empresa?
+                    <Megaphone className="w-4 h-4 text-violet-600" /> ¿A qué se dedica tu empresa?
                 </h3>
 
                 <div className="space-y-1.5">
@@ -145,7 +145,7 @@ export default function FormPaso3Empresa({ valoresIniciales, logoActualUrl, foto
                     <textarea
                         {...register("descripcion")}
                         className={cn(
-                            "w-full rounded-lg border border-gray-300 p-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none h-32 resize-none",
+                            "w-full rounded-lg border border-gray-300 p-3 text-sm focus:ring-2 focus:ring-violet-500 outline-none h-32 resize-none",
                             errors.descripcion && "border-red-500"
                         )}
                         placeholder="Cuéntale a los candidatos sobre tu empresa: giro, cultura, valores..."
@@ -162,7 +162,7 @@ export default function FormPaso3Empresa({ valoresIniciales, logoActualUrl, foto
             {/* SECCIÓN 2: PRESENCIA DIGITAL */}
             <div className="bg-gray-50 p-5 rounded-2xl border border-gray-100 space-y-5">
                 <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
-                    <Globe className="w-4 h-4 text-indigo-600" /> Presencia en Internet
+                    <Globe className="w-4 h-4 text-violet-600" /> Presencia en Internet
                 </h3>
                 <p className="text-xs text-gray-500">Al menos un enlace es necesario para completar tu perfil al 100%.</p>
 
@@ -173,7 +173,7 @@ export default function FormPaso3Empresa({ valoresIniciales, logoActualUrl, foto
                             {...register("sitio_web")}
                             type="url"
                             className={cn(
-                                "w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none",
+                                "w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:ring-2 focus:ring-violet-500 outline-none",
                                 errors.sitio_web && "border-red-500"
                             )}
                             placeholder="https://www.tuempresa.com"
@@ -187,7 +187,7 @@ export default function FormPaso3Empresa({ valoresIniciales, logoActualUrl, foto
                             {...register("linkedin")}
                             type="url"
                             className={cn(
-                                "w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none",
+                                "w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:ring-2 focus:ring-violet-500 outline-none",
                                 errors.linkedin && "border-red-500"
                             )}
                             placeholder="https://www.linkedin.com/company/tu-empresa"
@@ -201,7 +201,7 @@ export default function FormPaso3Empresa({ valoresIniciales, logoActualUrl, foto
                             {...register("facebook")}
                             type="url"
                             className={cn(
-                                "w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none",
+                                "w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:ring-2 focus:ring-violet-500 outline-none",
                                 errors.facebook && "border-red-500"
                             )}
                             placeholder="https://www.facebook.com/tu-empresa"
@@ -212,9 +212,9 @@ export default function FormPaso3Empresa({ valoresIniciales, logoActualUrl, foto
             </div>
 
             {/* SECCIÓN 3: FOTOS DE INSTALACIONES */}
-            <div className="bg-indigo-50/40 p-5 rounded-2xl border border-indigo-100 space-y-4">
-                <h3 className="text-sm font-bold text-indigo-900 flex items-center gap-2">
-                    <ImagePlus className="w-4 h-4 text-indigo-600" /> Fotos de Instalaciones
+            <div className="bg-violet-50/40 p-5 rounded-2xl border border-violet-100 space-y-4">
+                <h3 className="text-sm font-bold text-violet-900 flex items-center gap-2">
+                    <ImagePlus className="w-4 h-4 text-violet-600" /> Fotos de Instalaciones
                 </h3>
                 <p className="text-xs text-gray-500">
                     Adjunta fotos de las oficinas, local o instalaciones de tu empresa. Esto genera confianza en los candidatos. 
@@ -222,9 +222,9 @@ export default function FormPaso3Empresa({ valoresIniciales, logoActualUrl, foto
                 </p>
 
                 {/* Grid de fotos existentes */}
-                {fotos.length > 0 && (
+                {(fotos || []).length > 0 && (
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                        {fotos.map((url, idx) => (
+                        {(fotos || []).map((url, idx) => (
                             <div key={idx} className="relative group aspect-video rounded-xl overflow-hidden border border-gray-200 shadow-sm">
                                 <img src={url} alt={`Foto ${idx + 1}`} className="w-full h-full object-cover" />
                                 {/* Botón X para eliminar */}
@@ -246,13 +246,13 @@ export default function FormPaso3Empresa({ valoresIniciales, logoActualUrl, foto
                     <label className={cn(
                         "flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed rounded-xl cursor-pointer transition-colors",
                         subiendoFoto 
-                            ? "border-indigo-300 bg-indigo-50 cursor-wait" 
-                            : "border-gray-300 hover:border-indigo-400 hover:bg-indigo-50/50"
+                            ? "border-violet-300 bg-violet-50 cursor-wait" 
+                            : "border-gray-300 hover:border-violet-400 hover:bg-violet-50/50"
                     )}>
                         {subiendoFoto ? (
                             <>
-                                <svg className="w-8 h-8 text-indigo-400 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                                <span className="text-sm text-indigo-600 font-medium">Subiendo...</span>
+                                <svg className="w-8 h-8 text-violet-400 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                <span className="text-sm text-violet-600 font-medium">Subiendo...</span>
                             </>
                         ) : (
                             <>
