@@ -246,6 +246,16 @@ export default function RevisionWizardClient({ empresa, enlaces }: { empresa: an
                         {empresa.estatus_verificacion === "APROBADA" && (
                             <>
                                 <button 
+                                    onClick={() => {
+                                        setAsunto(""); setMensaje(""); 
+                                        setModalCorreccion(true);
+                                    }}
+                                    className="px-6 py-3 bg-orange-50 hover:bg-orange-100 text-orange-600 font-bold rounded-xl transition text-sm flex items-center gap-2 border border-orange-100"
+                                >
+                                    <AlertTriangle className="w-4 h-4" />
+                                    Requiere Cambios
+                                </button>
+                                <button 
                                     onClick={() => { setMensaje(""); setModalSuspension(true); }}
                                     className="px-6 py-3 bg-red-500/10 hover:bg-red-500/20 text-red-600 font-bold rounded-xl transition text-sm flex items-center gap-2 border border-red-500/20"
                                 >

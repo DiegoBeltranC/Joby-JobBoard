@@ -42,7 +42,7 @@ export default function AdminLoginPage() {
       <div className="w-full max-w-md relative z-10">
         <div className="bg-white border border-gray-200 rounded-3xl p-8 shadow-sm">
           <div className="flex flex-col items-center mb-8">
-            <div className="w-16 h-16 bg-indigo-50 border border-indigo-100 rounded-2xl flex items-center justify-center mb-6 text-indigo-600">
+            <div className="w-16 h-16 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-center justify-center mb-6 text-emerald-600">
                <ShieldAlert className="w-8 h-8" />
             </div>
             <h1 className="text-2xl font-bold text-gray-900 tracking-tight mb-2">Acceso Restringido</h1>
@@ -60,7 +60,7 @@ export default function AdminLoginPage() {
                   name="email"
                   type="email"
                   placeholder="admin@utchetumal.edu.mx"
-                  className="pl-10 h-12 bg-white border-gray-200 text-gray-900 focus-visible:ring-indigo-600"
+                  className="pl-10 h-12 bg-white border-gray-200 text-gray-900 focus-visible:ring-emerald-600"
                   required
                 />
                 <Fingerprint className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -74,21 +74,21 @@ export default function AdminLoginPage() {
                 name="password"
                 type="password"
                 placeholder="••••••••••••"
-                className="h-12 bg-white border-gray-200 text-gray-900 focus-visible:ring-indigo-600 tracking-widest"
+                className="h-12 bg-white border-gray-200 text-gray-900 focus-visible:ring-emerald-600 tracking-widest"
                 required
               />
             </div>
 
             <Button
               disabled={loading}
-              className="w-full h-12 text-md font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition-all duration-300"
+              className="w-full h-12 text-md font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-all duration-300"
             >
               {loading ? "Autenticando..." : "Ingresar al Sistema"}
             </Button>
           </form>
 
           <div className="mt-8 text-center">
-            <Link href="/" className="text-xs text-gray-500 hover:text-indigo-600 transition-colors flex items-center justify-center gap-2">
+            <Link href="/" className="text-xs text-gray-500 hover:text-emerald-600 transition-colors flex items-center justify-center gap-2">
               Volver al portal público
             </Link>
           </div>

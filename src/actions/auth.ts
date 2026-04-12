@@ -60,6 +60,12 @@ export async function logoutAction() {
   redirect("/login")
 }
 
+export async function logoutAdminAction() {
+  const cookieStore = await cookies()
+  cookieStore.delete("session")
+  redirect("/admin/login")
+}
+
 // -----------------------------------------------------------------------------
 // VERIFICAR OTP
 // -----------------------------------------------------------------------------

@@ -17,10 +17,18 @@ export default function FormEditarPerfil({ adminActual }: { adminActual: any }) 
     const [nombre, setNombre] = useState(adminActual?.nombre || "");
     const [paterno, setPaterno] = useState(adminActual?.apellidoPaterno || "");
     const [materno, setMaterno] = useState(adminActual?.apellidoMaterno || "");
+    const [telefono, setTelefono] = useState(adminActual?.telefono || "");
+    const [errorTel, setErrorTel] = useState("");
 
     async function handleSubmit(formData: FormData) {
+        if (telefono && !/^[0-9]{10}$/.test(telefono)) {
+            setErrorTel("El teléfono debe contener exactamente 10 dígitos numéricos.");
+            return;
+        }
+
         setLoading(true);
         const loadId = toast.loading("Actualizando datos personales...");
+        formData.set("telefono", telefono);
         const result = await completarPerfilAdmin(formData);
         
         if (result?.error) {
@@ -74,11 +82,14 @@ export default function FormEditarPerfil({ adminActual }: { adminActual: any }) 
                     <input 
                         type="tel" 
                         name="telefono" 
-                        defaultValue={adminActual?.telefono || ""}
-                        pattern="^[0-9]{10}$"
-                        title="Ingrese exactamente 10 dígitos numéricos"
-                        className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                        value={telefono}
+                        onChange={(e) => {
+                            setTelefono(e.target.value);
+                            setErrorTel("");
+                        }}
+                        className={`w-full p-3 bg-gray-50 border ${errorTel ? 'border-red-500' : 'border-gray-200'} rounded-xl text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none`}
                     />
+                    {errorTel && <p className="text-[11px] font-bold text-red-500 mt-1">{errorTel}</p>}
                 </div>
             </div>
             <button 

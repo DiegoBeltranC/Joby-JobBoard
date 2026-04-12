@@ -1,6 +1,6 @@
 "use client";
 
-import { logoutAction } from "@/actions/auth";
+import { logoutAdminAction } from "@/actions/auth";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LayoutDashboard, Building2, Users, LogOut, Settings } from "lucide-react";
@@ -71,9 +71,8 @@ export default function SidebarAdmin({ admin, onClose }: SidebarAdminProps) {
                 )}
             </nav>
 
-            {/* Cerrar Sesión */}
             <div className="p-4 border-t border-gray-100">
-                <button onClick={() => logoutAction()} className="w-full flex items-center justify-center gap-2 p-3 text-red-600 hover:bg-red-50 rounded-xl font-medium transition-colors">
+                <button onClick={() => logoutAdminAction()} className="w-full flex items-center justify-center gap-2 p-3 text-red-600 hover:bg-red-50 rounded-xl font-medium transition-colors">
                     <LogOut className="w-5 h-5" />
                     Cerrar sesión
                 </button>

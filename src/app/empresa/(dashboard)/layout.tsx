@@ -27,17 +27,13 @@ export default async function EmpresaLayout({ children }: { children: React.Reac
     }
 
     const empresa = usuarioInfo.empresa;
-    const enlaces = (empresa.enlaces as { linkedin?: string; facebook?: string }) || {};
-    const tieneEnlace = !!(empresa.sitio_web || enlaces.linkedin || enlaces.facebook);
-
-    // ALGORITMO DE PROGRESO DEL PERFIL EMPRESARIAL (8 criterios = 100%)
+    // ALGORITMO DE PROGRESO DEL PERFIL EMPRESARIAL (7 criterios = 100%)
     let progresoCalculado = 10; // 10% Base por haberse registrado
 
     if (empresa.razon_social && empresa.rfc) progresoCalculado += 15;       // Datos legales
     if (empresa.estado && empresa.municipio) progresoCalculado += 10;       // Ubicación
     if (empresa.telefono_contacto) progresoCalculado += 10;                 // Teléfono
-    if (empresa.descripcion) progresoCalculado += 15;                       // Descripción
-    if (tieneEnlace) progresoCalculado += 10;                               // Al menos 1 enlace
+    if (empresa.descripcion) progresoCalculado += 25;                       // Descripción
     if (empresa.logo_url) progresoCalculado += 15;                          // Logo
     if (empresa.fotos_empresa.length > 0) progresoCalculado += 15;          // Al menos 1 foto
 

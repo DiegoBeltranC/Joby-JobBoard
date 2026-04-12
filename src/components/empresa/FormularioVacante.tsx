@@ -21,6 +21,7 @@ import {
 // 1. Reutilización de Catálogos (DRY) - Mandatorio para Algoritmo de Match
 import { habilidades as sugerenciasHabilidades } from "@/lib/data/habilidades";
 import catalogos from "@/lib/data/idiomas.json";
+import locaciones from "@/lib/data/mexico.json";
 
 interface FormularioVacanteProps {
     onSuccess: () => void
@@ -38,6 +39,11 @@ export default function FormularioVacante({ onSuccess, onCancel }: FormularioVac
     const [idiomaTemp, setIdiomaTemp] = useState("")
     const [nivelTemp, setNivelTemp] = useState("")
     const [idiomasSeleccionados, setIdiomasSeleccionados] = useState<string[]>([])
+
+    // Estados para Geografía (Cascada)
+    const [estadoSeleccionado, setEstadoSeleccionado] = useState("Quintana Roo")
+    const listaEstados = Object.keys(locaciones)
+    const municipiosDisponibles = locaciones[estadoSeleccionado as keyof typeof locaciones] || []
 
     // --- LÓGICA DE AUTOCOMPLETADO (DROPDOWN) ---
     const sugerenciasFiltradas = inputHabilidad.trim() === "" 
@@ -203,12 +209,30 @@ export default function FormularioVacante({ onSuccess, onCancel }: FormularioVac
                         </div>
                         <div className="grid grid-cols-2 gap-3">
                              <div className="space-y-1.5">
-                                <label className="text-[10px] font-black text-gray-400 uppercase">Estado</label>
-                                <input name="estado" defaultValue="Quintana Roo" className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm font-medium" />
+                                <label className="text-[10px] font-black text-gray-400 uppercase">Estado *</label>
+                                <select 
+                                    name="estado" 
+                                    required
+                                    value={estadoSeleccionado}
+                                    onChange={(e) => setEstadoSeleccionado(e.target.value)}
+                                    className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm font-medium focus:border-violet-500 outline-none"
+                                >
+                                    <option value="" disabled>Selecciona un estado</option>
+                                    {listaEstados.map(e => <option key={e} value={e}>{e}</option>)}
+                                </select>
                             </div>
                             <div className="space-y-1.5">
-                                <label className="text-[10px] font-black text-gray-400 uppercase">Municipio</label>
-                                <input name="municipio" defaultValue="Othón P. Blanco" className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm font-medium" />
+                                <label className="text-[10px] font-black text-gray-400 uppercase">Municipio *</label>
+                                <select 
+                                    name="municipio" 
+                                    required
+                                    defaultValue={"Othón P. Blanco"}
+                                    disabled={!estadoSeleccionado}
+                                    className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm font-medium focus:border-violet-500 outline-none disabled:opacity-50"
+                                >
+                                    <option value="" disabled>Selecciona tu municipio</option>
+                                    {municipiosDisponibles.map((m: string) => <option key={m} value={m}>{m}</option>)}
+                                </select>
                             </div>
                         </div>
                     </div>

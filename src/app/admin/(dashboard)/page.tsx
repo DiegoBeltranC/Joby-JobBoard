@@ -9,12 +9,14 @@ export default async function AdminDashboardPage() {
         empresasCorreccion,
         empresasActivas,
         empresasSuspendidas,
+        empresasRechazadas,
         vacantesActivas
     ] = await Promise.all([
         prisma.empresa.count({ where: { estatus_verificacion: "PENDIENTE" } }),
         prisma.empresa.count({ where: { estatus_verificacion: "REQUIERE_CAMBIOS" } }),
         prisma.empresa.count({ where: { estatus_verificacion: "APROBADA" } }),
         prisma.empresa.count({ where: { estatus_verificacion: "SUSPENDIDA" } }),
+        prisma.empresa.count({ where: { estatus_verificacion: "RECHAZADA" } }),
         prisma.vacante.count({ where: { activa: true } })
     ]);
 
@@ -56,6 +58,15 @@ export default async function AdminDashboardPage() {
             bg: "bg-red-100/50"
         },
         {
+            title: "Cuentas Rechazadas",
+            value: empresasRechazadas,
+            description: "No pasaron verificación",
+            icon: FileWarning,
+            href: "/admin/empresas?tab=RECHAZADA",
+            color: "text-gray-600",
+            bg: "bg-gray-200/50"
+        },
+        {
             title: "Vacantes Activas",
             value: vacantesActivas,
             description: "Ofertas de empleo hoy",
@@ -74,7 +85,7 @@ export default async function AdminDashboardPage() {
             </header>
 
             {/* Grid Estadísticas */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-12">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
                 {stats.map((stat, idx) => (
                     <Link href={stat.href} key={idx} className="block group">
                         <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden">

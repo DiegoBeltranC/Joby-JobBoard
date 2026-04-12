@@ -33,8 +33,6 @@ export default async function EmpresaInicioPage() {
     }
 
     const empresa = usuarioInfo.empresa;
-    const enlaces = (empresa.enlaces as { linkedin?: string; facebook?: string }) || {};
-    const tieneEnlace = !!(empresa.sitio_web || enlaces.linkedin || enlaces.facebook);
 
     // Cálculo de métricas
     const totalVacantes = empresa.vacantes.length;
@@ -46,8 +44,7 @@ export default async function EmpresaInicioPage() {
     if (empresa.razon_social && empresa.rfc) progreso += 15;
     if (empresa.estado && empresa.municipio) progreso += 10;
     if (empresa.telefono_contacto) progreso += 10;
-    if (empresa.descripcion) progreso += 15;
-    if (tieneEnlace) progreso += 10;
+    if (empresa.descripcion) progreso += 25;
     if (empresa.logo_url) progreso += 15;
     if (empresa.fotos_empresa.length > 0) progreso += 15;
 
