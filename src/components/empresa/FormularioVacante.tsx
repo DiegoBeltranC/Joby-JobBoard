@@ -15,7 +15,8 @@ import {
     Sparkles,
     Wrench,
     Languages,
-    Info
+    Info,
+    Clock
 } from "lucide-react"
 
 // 1. Reutilización de Catálogos (DRY) - Mandatorio para Algoritmo de Match
@@ -38,6 +39,10 @@ export default function FormularioVacante({ onSuccess, onCancel }: FormularioVac
     const [idiomaTemp, setIdiomaTemp] = useState("")
     const [nivelTemp, setNivelTemp] = useState("")
     const [idiomasSeleccionados, setIdiomasSeleccionados] = useState<string[]>([])
+
+    // Estados para Horario
+    const [horaEntrada, setHoraEntrada] = useState("09:00")
+    const [horaSalida, setHoraSalida] = useState("18:00")
 
     // --- LÓGICA DE AUTOCOMPLETADO (DROPDOWN) ---
     const sugerenciasFiltradas = inputHabilidad.trim() === "" 
@@ -100,6 +105,7 @@ export default function FormularioVacante({ onSuccess, onCancel }: FormularioVac
             habilidades_req: requisitosFusionados,
             sueldo_min: sMinRaw ? Number(sMinRaw) : null,
             sueldo_max: sMaxRaw ? Number(sMaxRaw) : null,
+            horario: formData.get("horario")?.toString() || null,
             fecha_limite: formData.get("fecha_limite") || null,
         }
 
@@ -183,32 +189,54 @@ export default function FormularioVacante({ onSuccess, onCancel }: FormularioVac
                             <MapPin className="w-5 h-5" />
                             <h3 className="font-bold">Ubicación y Contrato</h3>
                         </div>
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-1.5">
-                                <label className="text-[10px] font-black text-gray-400 uppercase">Contrato</label>
-                                <select name="tipo_contrato" className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:border-violet-500 outline-none font-semibold text-sm">
-                                    <option value="ESTADIA">Estadía</option>
+                                <label className="text-[10px] font-black text-gray-400 uppercase">Tipo de Contrato</label>
+                                <select name="tipo_contrato" className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:border-violet-500 outline-none font-bold text-sm text-gray-700">
+                                    <option value="ESTADIA">Estadía Profesional</option>
                                     <option value="MEDIO_TIEMPO">Medio Tiempo</option>
                                     <option value="TIEMPO_COMPLETO">Tiempo Completo</option>
                                 </select>
                             </div>
                             <div className="space-y-1.5">
                                 <label className="text-[10px] font-black text-gray-400 uppercase">Modalidad</label>
-                                <select name="modalidad" className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:border-violet-500 outline-none font-semibold text-sm">
+                                <select name="modalidad" className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:border-violet-500 outline-none font-bold text-sm text-gray-700">
                                     <option value="PRESENCIAL">Presencial</option>
                                     <option value="HIBRIDO">Híbrido</option>
                                     <option value="REMOTO">Remoto</option>
                                 </select>
                             </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                             <div className="space-y-1.5">
-                                <label className="text-[10px] font-black text-gray-400 uppercase">Estado</label>
-                                <input name="estado" defaultValue="Quintana Roo" className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm font-medium" />
+
+                            <div className="space-y-2 md:col-span-2 bg-gray-50/50 p-4 rounded-2xl border border-dashed border-gray-200">
+                                <label className="text-[10px] font-black text-gray-400 uppercase flex items-center gap-2">
+                                    <Clock className="w-3 h-3 text-violet-500" /> Rango de Horario (Entrada - Salida)
+                                </label>
+                                <div className="flex items-center gap-3">
+                                    <input 
+                                        type="time"
+                                        value={horaEntrada}
+                                        onChange={(e) => setHoraEntrada(e.target.value)}
+                                        className="flex-1 px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-violet-500 focus:ring-4 focus:ring-violet-500/5 outline-none font-bold text-sm text-gray-700"
+                                    />
+                                    <span className="text-gray-300 font-black">—</span>
+                                    <input 
+                                        type="time"
+                                        value={horaSalida}
+                                        onChange={(e) => setHoraSalida(e.target.value)}
+                                        className="flex-1 px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:border-violet-500 focus:ring-4 focus:ring-violet-500/5 outline-none font-bold text-sm text-gray-700"
+                                    />
+                                </div>
+                                <input type="hidden" name="horario" value={`${horaEntrada} - ${horaSalida}`} />
+                                <p className="text-[9px] text-gray-400 font-medium italic px-1">Formato 24h: {horaEntrada} a {horaSalida}</p>
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-black text-gray-400 uppercase">Estado / Ciudad</label>
+                                <input name="estado" defaultValue="Quintana Roo" className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-700 outline-none focus:border-violet-500" />
                             </div>
                             <div className="space-y-1.5">
-                                <label className="text-[10px] font-black text-gray-400 uppercase">Municipio</label>
-                                <input name="municipio" defaultValue="Othón P. Blanco" className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm font-medium" />
+                                <label className="text-[10px] font-black text-gray-400 uppercase">Municipio / Zona</label>
+                                <input name="municipio" defaultValue="Othón P. Blanco" className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-700 outline-none focus:border-violet-500" />
                             </div>
                         </div>
                     </div>

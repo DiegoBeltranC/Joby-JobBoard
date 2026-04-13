@@ -182,6 +182,66 @@ export async function eliminarLogoEmpresa() {
 }
 
 // =============================================================================
+// BANNER: Subir y eliminar banner de empresa (Panorámico)
+// =============================================================================
+export async function actualizarBannerEmpresa(formData: FormData) {
+    const session = await getSession();
+    if (!session) return { error: "No autorizado" };
+
+    const archivo = formData.get("banner") as File;
+    if (!archivo || archivo.size === 0) return { error: "No se recibió ninguna imagen" };
+
+    if (archivo.size > 3 * 1024 * 1024) return { error: "El banner no debe pesar más de 3MB" };
+
+    try {
+        const usuario = await prisma.user.findUnique({ where: { id: session.userId }, include: { empresa: true } });
+        if (!usuario?.empresa) return { error: "Empresa no encontrada" };
+
+        if (usuario.empresa.banner_url) {
+            await eliminarArchivo(usuario.empresa.banner_url);
+        }
+
+        const urlBanner = await guardarArchivo(archivo, "banners", `banner-${usuario.empresa.id}`);
+
+        await prisma.empresa.update({
+            where: { id: usuario.empresa.id },
+            data: { banner_url: urlBanner }
+        });
+
+        revalidatePath("/empresa/perfil-empresa");
+        revalidatePath(`/perfil-publico-empresa/${usuario.empresa.id}`);
+        return { success: true };
+    } catch (error) {
+        console.error("Error al actualizar banner:", error);
+        return { error: "Error interno al guardar el banner" };
+    }
+}
+
+export async function eliminarBannerEmpresa() {
+    const session = await getSession();
+    if (!session) return { error: "No autorizado" };
+
+    try {
+        const usuario = await prisma.user.findUnique({ where: { id: session.userId }, include: { empresa: true } });
+        if (!usuario?.empresa) return { error: "Empresa no encontrada" };
+
+        if (usuario.empresa.banner_url) {
+            await eliminarArchivo(usuario.empresa.banner_url);
+        }
+
+        await prisma.empresa.update({
+            where: { id: usuario.empresa.id },
+            data: { banner_url: null }
+        });
+
+        revalidatePath("/empresa/perfil-empresa");
+        return { success: true };
+    } catch (error) {
+        return { error: "No se pudo eliminar el banner" };
+    }
+}
+
+// =============================================================================
 // FOTOS DE INSTALACIONES: Agregar y eliminar
 // =============================================================================
 export async function agregarFotoEmpresa(formData: FormData) {

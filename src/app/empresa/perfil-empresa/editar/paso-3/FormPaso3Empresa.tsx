@@ -10,6 +10,7 @@ import { guardarPaso3Empresa, agregarFotoEmpresa, eliminarFotoEmpresa } from "@/
 import { cn } from "@/lib/utils";
 import { useState, useRef } from "react";
 import AvatarEmpresa from "./AvatarEmpresa";
+import BannerUpload from "./BannerUpload";
 
 const paso3EmpresaSchema = z.object({
     descripcion: z.string()
@@ -34,12 +35,18 @@ type FormValues = z.infer<typeof paso3EmpresaSchema>;
 
 interface FormPaso3Props {
     valoresIniciales: FormValues;
-    logoActualUrl: string | null;
+    empresa: {
+        nombre_comercial: string;
+        logo_url: string | null;
+        banner_url: string | null;
+        rfc?: string | null;
+        municipio?: string | null;
+        razon_social?: string | null;
+    };
     fotosActuales: string[];
-    nombreComercial: string;
 }
 
-export default function FormPaso3Empresa({ valoresIniciales, logoActualUrl, fotosActuales, nombreComercial }: FormPaso3Props) {
+export default function FormPaso3Empresa({ valoresIniciales, empresa, fotosActuales }: FormPaso3Props) {
     const router = useRouter();
     const [fotos, setFotos] = useState<string[]>(fotosActuales);
     const [subiendoFoto, setSubiendoFoto] = useState(false);
@@ -61,7 +68,18 @@ export default function FormPaso3Empresa({ valoresIniciales, logoActualUrl, foto
             toast.error(result.error);
         } else {
             toast.dismiss(idCarga);
-            toast.success("¡Perfil empresarial actualizado!");
+            
+            // Verificación de integridad del perfil
+            const perfilIncompleto = !empresa.rfc || !empresa.municipio || !empresa.razon_social;
+            
+            if (perfilIncompleto) {
+                toast.warning("Perfil guardado. Recuerda completar tus datos legales en la pestaña de Edición para poder solicitar la verificación.", {
+                    duration: 6000
+                });
+            } else {
+                toast.success("¡Perfil empresarial actualizado!");
+            }
+
             router.push("/empresa/perfil-empresa");
         }
     };
@@ -123,14 +141,36 @@ export default function FormPaso3Empresa({ valoresIniciales, logoActualUrl, foto
     return (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
 
-            {/* SECCIÓN 0: LOGO DE LA EMPRESA */}
-            <div className="bg-violet-50/40 p-5 rounded-2xl border border-violet-100 space-y-4">
-                <h3 className="text-sm font-bold text-violet-900 flex items-center gap-2">
-                    <Camera className="w-4 h-4 text-violet-600" /> Logo de la Empresa
-                </h3>
-                <p className="text-xs text-gray-500">Sube el logo de tu empresa. Los candidatos lo verán en tu perfil y en tus vacantes.</p>
-                <div className="flex justify-center">
-                    <AvatarEmpresa logoActualUrl={logoActualUrl} iniciales={nombreComercial.charAt(0)} />
+            {/* SECCIÓN 0: IDENTIDAD VISUAL (BANNER Y LOGO) */}
+            <div className="space-y-6">
+                <div className="bg-violet-50/40 p-6 rounded-[32px] border border-violet-100 space-y-6">
+                    <div className="flex items-center justify-between">
+                        <h3 className="text-sm font-black text-violet-900 uppercase tracking-widest flex items-center gap-2">
+                            <Camera className="w-4 h-4 text-violet-600" /> Identidad Visual
+                        </h3>
+                        <span className="text-[10px] font-bold text-violet-400 bg-white px-3 py-1 rounded-full border border-violet-100">
+                            Marketing Premium
+                        </span>
+                    </div>
+
+                    <div className="space-y-8">
+                        {/* Banner Upload */}
+                        <div className="space-y-3">
+                            <label className="text-xs font-bold text-gray-500 uppercase tracking-tight">Banner de Perfil (Fondo)</label>
+                            <BannerUpload bannerActualUrl={empresa.banner_url} />
+                        </div>
+
+                        {/* Logo Upload */}
+                        <div className="flex flex-col sm:flex-row items-center gap-6 pt-4 border-t border-violet-100/50">
+                            <AvatarEmpresa logoActualUrl={empresa.logo_url} iniciales={empresa.nombre_comercial.charAt(0)} />
+                            <div className="flex-1 text-center sm:text-left">
+                                <h4 className="font-bold text-gray-800">Logo de la Empresa</h4>
+                                <p className="text-xs text-gray-500 mt-1 max-w-sm">
+                                    Aparecerá junto a tus vacantes y en el perfil circular. Usa un fondo sólido o transparente.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 

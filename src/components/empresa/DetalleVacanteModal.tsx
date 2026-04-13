@@ -96,8 +96,8 @@ export default function DetalleVacanteModal({ vacante, onClose, onUpdate }: Deta
                             {vacante.municipio}, {vacante.estado}
                         </div>
                         <div className="flex items-center gap-1.5">
-                            <Clock className="w-4 h-4" />
-                            {vacante.tipo_contrato} • {vacante.modalidad}
+                            <Clock className="w-4 h-4 text-violet-300" />
+                            {vacante.tipo_contrato} • {vacante.modalidad} {vacante.horario && `• ${vacante.horario}`}
                         </div>
                     </div>
                 </div>

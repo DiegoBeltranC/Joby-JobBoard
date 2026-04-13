@@ -1,33 +1,13 @@
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { 
-    MapPin, 
-    Clock, 
-    Building2, 
-    Calendar, 
     Search, 
-    Briefcase,
-    ChevronRight
+    Briefcase
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import VacantesSearchClient from "@/components/VacantesSearchClient";
 
 // FASE 2: Forzar Datos Frescos (Anti-Stale Cache)
 export const dynamic = 'force-dynamic';
-
-// Helper local para fecha relativa (evita dependencias extra)
-function calcularTiempoRelativo(fecha: Date) {
-    const ahora = new Date();
-    const diferenciaMs = ahora.getTime() - fecha.getTime();
-    const segundos = Math.floor(diferenciaMs / 1000);
-    const minutos = Math.floor(segundos / 60);
-    const horas = Math.floor(minutos / 60);
-    const dias = Math.floor(horas / 24);
-
-    if (dias > 0) return `Hace ${dias} ${dias === 1 ? 'día' : 'días'}`;
-    if (horas > 0) return `Hace ${horas} ${horas === 1 ? 'hora' : 'horas'}`;
-    if (minutos > 0) return `Hace ${minutos} ${minutos === 1 ? 'minuto' : 'minutos'}`;
-    return 'Recién publicado';
-}
 
 export default async function InicioPage() {
     const session = await getSession();
@@ -60,15 +40,19 @@ export default async function InicioPage() {
         select: {
             id: true,
             titulo: true,
+            descripcion: true, // Necesario para el modal
             municipio: true,
             estado: true,
             modalidad: true,
             tipo_contrato: true,
+            horario: true,
             createdAt: true,
             empresa: {
                 select: {
+                    id: true, // Necesario para el link
                     nombre_comercial: true,
-                    logo_url: true
+                    logo_url: true,
+                    descripcion: true // Opcional pero util
                 }
             }
         },
@@ -93,71 +77,7 @@ export default async function InicioPage() {
 
             {/* FASE 3: Renderizado UI Dinámico */}
             {vacantes && vacantes.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 pb-12">
-                    {vacantes.map((v) => (
-                        <div key={v.id} className="bg-white p-6 rounded-[24px] border border-gray-100 shadow-sm hover:shadow-xl hover:border-teal-100 transition-all duration-300 group relative overflow-hidden">
-                            {/* Decoración de fondo */}
-                            <div className="absolute -right-4 -top-4 w-24 h-24 bg-teal-50/50 rounded-full blur-2xl group-hover:bg-teal-100/50 transition-colors"></div>
-                            
-                            <div className="relative z-10">
-                                <div className="flex justify-between items-start mb-5">
-                                    <div className="flex gap-2">
-                                        <span className={cn(
-                                            "px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider",
-                                            v.tipo_contrato === 'ESTADIA' ? 'bg-blue-50 text-blue-700 border border-blue-100' :
-                                            v.tipo_contrato === 'MEDIO_TIEMPO' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' :
-                                            'bg-teal-50 text-teal-700 border border-teal-100'
-                                        )}>
-                                            {v.tipo_contrato.replace('_', ' ')}
-                                        </span>
-                                        <span className="px-3 py-1 bg-gray-50 text-gray-500 border border-gray-100 rounded-lg text-[10px] font-bold uppercase tracking-wider">
-                                            {v.modalidad}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center gap-1 text-[11px] font-bold text-gray-400">
-                                        <Clock className="w-3 h-3" />
-                                        {calcularTiempoRelativo(new Date(v.createdAt))}
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center gap-4 mb-4">
-                                    {/* Logo de Empresa */}
-                                    <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center border border-gray-100 shrink-0 overflow-hidden">
-                                        {v.empresa.logo_url ? (
-                                            <img src={v.empresa.logo_url} alt={v.empresa.nombre_comercial} className="w-full h-full object-cover" />
-                                        ) : (
-                                            <Building2 className="w-6 h-6 text-gray-300" />
-                                        )}
-                                    </div>
-                                    <div>
-                                        <h3 className="text-lg font-black text-gray-800 leading-tight group-hover:text-teal-700 transition-colors">
-                                            {v.titulo}
-                                        </h3>
-                                        <p className="text-sm font-bold text-gray-500">{v.empresa.nombre_comercial}</p>
-                                    </div>
-                                </div>
-
-                                <div className="flex flex-wrap items-center gap-4 text-xs font-semibold text-gray-400 mt-4 pt-4 border-t border-gray-50">
-                                    <div className="flex items-center gap-1.5">
-                                        <MapPin className="w-4 h-4 text-teal-500" />
-                                        {v.municipio}, {v.estado}
-                                    </div>
-                                    <div className="flex items-center gap-1.5 ml-auto">
-                                        <Calendar className="w-4 h-4 text-teal-500" />
-                                        Publicado recientemente
-                                    </div>
-                                </div>
-
-                                <div className="mt-6">
-                                    <button className="w-full py-3.5 bg-gray-900 hover:bg-teal-600 text-white font-black rounded-2xl transition-all shadow-lg shadow-gray-200 hover:shadow-teal-200 flex items-center justify-center gap-2 group/btn">
-                                        Postularme ahora
-                                        <ChevronRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
+                <VacantesSearchClient vacantes={vacantes} />
             ) : (
                 /* Empty State: Requisito de Diseño */
                 <div className="flex flex-col items-center justify-center py-20 px-4 bg-white rounded-[32px] border-2 border-dashed border-gray-100 text-center animate-in fade-in zoom-in duration-700">
