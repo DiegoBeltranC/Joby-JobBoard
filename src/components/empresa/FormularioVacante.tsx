@@ -263,10 +263,10 @@ export default function FormularioVacante({ onSuccess, onCancel }: FormularioVac
                                 </select>
                             </div>
                         </div>
-                        
                     </div>
+                </div>
 
-                    <div className="space-y-4">
+                <div className="space-y-4">
                         <div className="flex items-center gap-2 text-violet-700 border-b border-violet-50 pb-2">
                             <DollarSign className="w-5 h-5" />
                             <h3 className="font-bold">Sueldo y Plazo</h3>
