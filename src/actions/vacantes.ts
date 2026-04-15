@@ -16,6 +16,9 @@ const vacanteSchema = z.object({
     habilidades_req: z.array(z.string()).min(1, "Añade al menos una habilidad requerida"),
     sueldo_min: z.number().optional().nullable(),
     sueldo_max: z.number().optional().nullable(),
+    horario: z.string()
+        .regex(/^([01][0-9]|2[0-3]):[0-5][0-9] - ([01][0-9]|2[0-3]):[0-5][0-9]$/, "Formato inválido. Usa: HH:mm - HH:mm (24h)")
+        .optional().nullable(),
     fecha_limite: z.string().optional().nullable().transform(val => val ? new Date(val) : null),
 })
 
@@ -70,6 +73,7 @@ export async function crearVacanteAction(datos: any) {
                     habilidades_req: data.habilidades_req || [],
                     sueldo_min: data.sueldo_min,
                     sueldo_max: data.sueldo_max,
+                    horario: data.horario,
                     fecha_limite: data.fecha_limite,
                     activa: true,
                 }

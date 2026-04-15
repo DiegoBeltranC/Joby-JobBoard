@@ -8,13 +8,13 @@ export default function LandingPage() {
     <div className="min-h-screen flex flex-col font-sans text-slate-800 bg-white">
       {/* 1. HEADER */}
       <header className="px-6 py-4 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white/90 backdrop-blur-sm z-50">
-        <div className="flex items-center gap-2">
-          {/* Logo Placeholder */}
-          <div className="w-8 h-8 bg-emerald-700 rounded flex items-center justify-center text-white font-bold">J</div>
-          <span className="font-bold text-2xl tracking-tight text-slate-800">Joby</span>
-        </div>
+        <Link href="/" className="flex items-center gap-2">
+          {/* Logo UT */}
+          <div className="w-8 h-8 bg-primary rounded flex items-center justify-center text-white font-bold italic">UT</div>
+          <span className="font-bold text-xl tracking-tight text-foreground">Joby</span>
+        </Link>
         <nav className="flex items-center gap-4">
-          <Link href="/registro?tipo=empresa" className="hidden md:flex items-center gap-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-700 transition-colors">
+          <Link href="/registro?tipo=empresa" className="hidden md:flex items-center gap-1.5 text-sm font-medium text-primary hover:text-primary transition-colors">
             <Briefcase className="w-4 h-4" />
             ¿Eres Empresa?
           </Link>
@@ -202,8 +202,8 @@ export default function LandingPage() {
       <footer className="border-t border-gray-200 bg-white py-8">
         <div className="container mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-slate-500">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-emerald-700 rounded flex items-center justify-center text-white font-bold text-xs">J</div>
-            <span className="font-bold">Joby</span>
+            <div className="w-6 h-6 bg-primary rounded flex items-center justify-center text-white font-bold text-xs italic">UT</div>
+            <span className="font-bold text-foreground">Joby</span>
             <span className="hidden md:inline">| Plataforma de vacantes UT Chetumal</span>
           </div>
 

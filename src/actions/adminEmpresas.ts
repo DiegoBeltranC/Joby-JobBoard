@@ -2,6 +2,8 @@
 
 import { getSession } from "@/lib/session"
 import { prisma } from "@/lib/prisma"
+import { sendEmail } from "@/lib/mail"
+import { revalidatePath } from "next/cache"
 
 // Extraemos lógica repetitiva de validar admin
 async function validateAdmin() {
@@ -17,6 +19,32 @@ async function validateAdmin() {
     return admin;
 }
 
+// Helper interno para notificar sin bloquear la UI
+async function triggerNotification(empresaId: number, subject: string, title: string, message: string, type: "SUCCESS" | "WARNING" | "DANGER" | "INFO") {
+    try {
+        const empresa = await prisma.empresa.findUnique({
+            where: { id: empresaId },
+            include: { usuario: true }
+        });
+
+        if (empresa?.usuario?.correo) {
+            // Nota: No usamos await aquí para que sea "fire and forget" 
+            // y no retrasar la respuesta al Administrador.
+            sendEmail({
+                to: empresa.usuario.correo,
+                subject,
+                title,
+                message,
+                type,
+                buttonText: "Ir a mi Panel",
+                buttonUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/login`
+            });
+        }
+    } catch (error) {
+        console.error("Critical error triggering notification:", error);
+    }
+}
+
 export async function aprobarEmpresa(empresaId: number) {
     try {
         await validateAdmin();
@@ -30,7 +58,15 @@ export async function aprobarEmpresa(empresaId: number) {
         });
 
         // Opcional: Aquí se podría enviar email de Bienvenida a la empresa.
+        triggerNotification(
+            empresaId, 
+            "¡Felicidades! Cuenta Aprobada en Joby", 
+            "¡Tu empresa ha sido verificada!", 
+            "Nos complace informarte que tu perfil ha sido aprobado por la administración. Ya puedes comenzar a publicar vacantes y conectar con el talento de la UT Chetumal.",
+            "SUCCESS"
+        );
 
+        revalidatePath("/admin/dashboard");
         return { success: true };
     } catch (error: any) {
         return { error: error.message || "Error al aprobar empresa" };
@@ -62,6 +98,15 @@ export async function rechazarEmpresa(empresaId: number, motivo: string) {
             }
         });
 
+        triggerNotification(
+            empresaId, 
+            "Actualización sobre tu cuenta - Joby", 
+            "Cuenta no aprobada", 
+            `Lamentamos informarte que tu solicitud de registro ha sido rechazada por el siguiente motivo:\n\n"${motivo}"\n\nSi consideras que esto es un error, por favor contacta a soporte técnico.`,
+            "DANGER"
+        );
+
+        revalidatePath("/admin/dashboard");
         return { success: true };
     } catch (error: any) {
         return { error: error.message || "Error al rechazar empresa" };
@@ -93,8 +138,15 @@ export async function solicitarCorreccion(empresaId: number, asunto: string, men
         });
 
         // Simulación envío de Email
-        console.log(`[EMAIL SIMULADO]: Para empresa #${empresaId} | Asunto: ${asunto} | Mensaje: ${mensaje}`);
+        triggerNotification(
+            empresaId, 
+            `Acción Requerida: ${asunto}`, 
+            "Se requieren correcciones en tu perfil", 
+            `El administrador ha revisado tu perfil y solicita realizar los siguientes cambios para poder aprobar tu cuenta:\n\n"${mensaje}"\n\nPor favor, ingresa a tu panel para realizar las correcciones solicitadas.`,
+            "WARNING"
+        );
 
+        revalidatePath("/admin/dashboard");
         return { success: true };
     } catch (error: any) {
         return { error: error.message || "Error al solicitar corrección" };
@@ -133,6 +185,15 @@ export async function suspenderEmpresa(empresaId: number, motivo: string) {
             }
         });
 
+        triggerNotification(
+            empresaId, 
+            "AVISO IMPORTANTE: Cuenta Suspendida", 
+            "Tu cuenta ha sido suspendida", 
+            `Te informamos que tu cuenta y todas tus vacantes activas han sido suspendidas por el siguiente motivo:\n\n"${motivo}"\n\nEsta acción es inmediata. Si deseas apelar esta decisión, por favor comunícate con la coordinación de vinculación de la UTCH.`,
+            "DANGER"
+        );
+
+        revalidatePath("/admin/dashboard");
         return { success: true };
     } catch (error: any) {
         return { error: error.message || "Error al suspender empresa" };
