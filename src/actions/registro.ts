@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs"
 import { redirect } from "next/navigation"
 import { reenviarOTPAction } from "./auth"
 import { sendEmail } from "@/lib/mail"
+import { toTitleCase } from "@/lib/toTitleCase"
 
 export async function registrarEstudiante(datos: any) {
     try {
@@ -66,9 +67,9 @@ export async function registrarEstudiante(datos: any) {
                 otpExpiresAt: otpExpiration,
                 estudiante: {
                     create: {
-                        nombre: datos.nombre,
-                        apellidoPaterno: datos.apellidoPaterno,
-                        apellidoMaterno: datos.apellidoMaterno,
+                        nombre: toTitleCase(datos.nombre),
+                        apellidoPaterno: toTitleCase(datos.apellidoPaterno),
+                        apellidoMaterno: datos.apellidoMaterno ? toTitleCase(datos.apellidoMaterno) : null,
                         matricula: datos.matricula,
                         estatus_academico: datos.estatus_academico,
                         periodo_academico: datos.periodo_academico ? parseInt(datos.periodo_academico) : null,

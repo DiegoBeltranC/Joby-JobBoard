@@ -8,9 +8,14 @@ import * as z from "zod"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { CheckCircle2, ChevronRight, ArrowLeft, ShieldCheck, Building2, GraduationCap } from "lucide-react"
+import { CheckCircle2, ChevronRight, ArrowLeft, ShieldCheck, Building2, GraduationCap, Loader2 } from "lucide-react"
 import { registrarEstudiante } from "@/actions/registro"
 import { registrarEmpresa } from "@/actions/registroEmpresa"
+import {
+    verificarCorreoParaRegistro,
+    verificarMatriculaParaRegistro,
+    verificarRfcEmpresaParaRegistro,
+} from "@/actions/validacionesRegistro"
 import { useRouter, useSearchParams } from "next/navigation"
 import { toast } from "sonner"
 
@@ -88,6 +93,7 @@ export default function RegistroPage() {
         searchParams.get("tipo") === "empresa" ? "empresa" : "estudiante"
     )
     const [pasoActual, setPasoActual] = useState(1)
+    const [pasoComprobando, setPasoComprobando] = useState(false)
     const router = useRouter()
 
     const PASOS = tipoRegistro === "estudiante" ? PASOS_ESTUDIANTE : PASOS_EMPRESA
@@ -105,6 +111,8 @@ export default function RegistroPage() {
 
     const form = tipoRegistro === "estudiante" ? formEstudiante : formEmpresa
     const { register, handleSubmit, trigger, formState: { errors }, watch, getValues, setError } = form as any
+    const { formState: { isSubmitting: isSubmittingEstudiante } } = formEstudiante
+    const { formState: { isSubmitting: isSubmittingEmpresa } } = formEmpresa
 
     const estatusSeleccionado = tipoRegistro === "estudiante" ? formEstudiante.watch("estatus_academico") : null
 
@@ -119,23 +127,50 @@ export default function RegistroPage() {
     const colorPrimary = tipoRegistro === "estudiante" ? "primary" : "indigo-600"
     const colorPrimaryHover = tipoRegistro === "estudiante" ? "primary/90" : "indigo-700"
     const isEmpresa = tipoRegistro === "empresa"
+    const isSubmittingRegistro = isEmpresa ? isSubmittingEmpresa : isSubmittingEstudiante
 
     // ===== NAVEGACIÓN =====
     const avanzarPaso = async () => {
         const camposDelPaso = PASOS[pasoActual - 1].campos as any[]
         const pasoValido = await trigger(camposDelPaso)
+        if (!pasoValido) return
 
-        if (pasoValido) {
-            if (pasoActual === 1) {
-                const { password, confirmPassword } = getValues()
-                if (password !== confirmPassword) {
-                    setError("confirmPassword", { type: "manual", message: "Las contraseñas no coinciden" })
+        if (pasoActual === 1) {
+            const { password, confirmPassword } = getValues()
+            if (password !== confirmPassword) {
+                setError("confirmPassword", { type: "manual", message: "Las contraseñas no coinciden" })
+                return
+            }
+
+            setPasoComprobando(true)
+            try {
+                const correo = (getValues() as { correo: string }).correo
+                const resCorreo = await verificarCorreoParaRegistro(correo)
+                if (!resCorreo.ok) {
+                    setError("correo", { type: "manual", message: resCorreo.error })
                     return
                 }
+            } finally {
+                setPasoComprobando(false)
             }
-            if (pasoActual < PASOS.length) {
-                setPasoActual(pasoActual + 1)
+        }
+
+        if (tipoRegistro === "estudiante" && pasoActual === 2) {
+            setPasoComprobando(true)
+            try {
+                const values = formEstudiante.getValues()
+                const resMat = await verificarMatriculaParaRegistro(values.matricula, values.correo)
+                if (!resMat.ok) {
+                    setError("matricula", { type: "manual", message: resMat.error })
+                    return
+                }
+            } finally {
+                setPasoComprobando(false)
             }
+        }
+
+        if (pasoActual < PASOS.length) {
+            setPasoActual(pasoActual + 1)
         }
     }
 
@@ -151,7 +186,22 @@ export default function RegistroPage() {
             if (tipoRegistro === "estudiante") {
                 await formEstudiante.handleSubmit(onSubmitEstudiante)(e)
             } else {
-                await formEmpresa.handleSubmit(onSubmitEmpresa)(e)
+                await formEmpresa.handleSubmit(async (data: RegistroEmpresaValues) => {
+                    const rfcVal = (data.rfc ?? "").trim().toUpperCase()
+                    if (rfcVal) {
+                        setPasoComprobando(true)
+                        try {
+                            const resRfc = await verificarRfcEmpresaParaRegistro(rfcVal)
+                            if (!resRfc.ok) {
+                                formEmpresa.setError("rfc", { type: "manual", message: resRfc.error })
+                                return
+                            }
+                        } finally {
+                            setPasoComprobando(false)
+                        }
+                    }
+                    await onSubmitEmpresa(data)
+                })(e)
             }
         }
     }
@@ -443,13 +493,24 @@ export default function RegistroPage() {
                                 <Button
                                     type="button"
                                     onClick={avanzarPaso}
+                                    disabled={pasoComprobando}
                                     className={`font-bold ${isEmpresa ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : ''}`}
                                 >
-                                    Continuar <ChevronRight className="w-4 h-4 ml-2" />
+                                    {pasoComprobando ? (
+                                        <>
+                                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                            Comprobando…
+                                        </>
+                                    ) : (
+                                        <>
+                                            Continuar <ChevronRight className="w-4 h-4 ml-2" />
+                                        </>
+                                    )}
                                 </Button>
                             ) : (
                                 <Button
                                     type="submit"
+                                    disabled={isSubmittingRegistro}
                                     className={`font-bold px-8 ${isEmpresa ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : 'bg-primary hover:bg-primary/90 text-primary-foreground'}`}
                                 >
                                     Finalizar Registro

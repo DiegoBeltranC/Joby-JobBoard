@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { getSession } from "@/lib/session"
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
+import { esFechaCierreVacanteValida, parseFechaLimiteVacanteToLocalDate } from "@/lib/vacanteFechaLimite"
 
 // Esquema de validación para la vacante
 const vacanteSchema = z.object({
@@ -19,7 +20,13 @@ const vacanteSchema = z.object({
     horario: z.string()
         .regex(/^([01][0-9]|2[0-3]):[0-5][0-9] - ([01][0-9]|2[0-3]):[0-5][0-9]$/, "Formato inválido. Usa: HH:mm - HH:mm (24h)")
         .optional().nullable(),
-    fecha_limite: z.string().optional().nullable().transform(val => val ? new Date(val) : null),
+    fecha_limite: z
+        .string()
+        .min(1, "Selecciona la fecha de cierre de la vacante")
+        .refine(esFechaCierreVacanteValida, {
+            message: "La fecha de cierre debe ser como mínimo mañana",
+        })
+        .transform((val) => parseFechaLimiteVacanteToLocalDate(val)),
 })
 
 export async function crearVacanteAction(datos: any) {

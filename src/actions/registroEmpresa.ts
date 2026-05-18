@@ -3,12 +3,7 @@ import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
 import { reenviarOTPAction } from "./auth"
 import { sendEmail } from "@/lib/mail"
-
-function toTitleCase(str: string): string {
-    return str.trim().replace(/\w\S*/g, (txt) =>
-        txt.charAt(0).toUpperCase() + txt.substring(1).toLowerCase()
-    );
-}
+import { toTitleCase } from "@/lib/toTitleCase"
 
 export async function registrarEmpresa(datos: {
     correo: string;
