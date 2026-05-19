@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs"
 import { redirect } from "next/navigation"
 import { reenviarOTPAction } from "./auth"
 import { Resend } from "resend"
+import { toTitleCase } from "@/lib/toTitleCase"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -68,9 +69,11 @@ export async function registrarEstudiante(datos: any) {
                 otpExpiresAt: otpExpiration,
                 estudiante: {
                     create: {
-                        nombre: datos.nombre,
-                        apellidoPaterno: datos.apellidoPaterno,
-                        apellidoMaterno: datos.apellidoMaterno,
+                        nombre: toTitleCase(datos.nombre),
+                        apellidoPaterno: toTitleCase(datos.apellidoPaterno),
+                        apellidoMaterno: datos.apellidoMaterno?.trim()
+                            ? toTitleCase(datos.apellidoMaterno)
+                            : null,
                         matricula: datos.matricula,
                         estatus_academico: datos.estatus_academico,
                         periodo_academico: datos.periodo_academico ? parseInt(datos.periodo_academico) : null,
@@ -158,5 +161,39 @@ export async function registrarEstudiante(datos: any) {
         
         console.error("Error completo en registro:", error)
         return { success: false, error: `Error interno: ${error?.message || "Desconocido"}. Revisa la consola del servidor.` }
+    }
+}
+
+/** Misma lógica de correo que al registrar: bloquea duplicados verificados en paso 1 del wizard */
+export async function verificarCorreoDisponibleRegistro(correo: string) {
+    try {
+        const correoNormalizado = correo.trim().toLowerCase()
+
+        const usuarioExistente = await prisma.user.findUnique({
+            where: { correo: correoNormalizado },
+        })
+
+        if (!usuarioExistente) {
+            return { disponible: true as const }
+        }
+
+        if (!usuarioExistente.verifiedAt) {
+            const resReenviar = await reenviarOTPAction(correoNormalizado)
+            if (resReenviar.error) {
+                return { disponible: false as const, error: resReenviar.error }
+            }
+            return {
+                disponible: false as const,
+                redirect: `/verificar-correo?email=${encodeURIComponent(correoNormalizado)}`,
+            }
+        }
+
+        return {
+            disponible: false as const,
+            error: "Este correo ya está registrado en Joby.",
+        }
+    } catch (error) {
+        console.error("Error al verificar correo en registro:", error)
+        return { disponible: false as const, error: "No se pudo verificar el correo. Intenta de nuevo." }
     }
 }

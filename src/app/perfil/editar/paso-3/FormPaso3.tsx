@@ -32,7 +32,11 @@ export default function FormPaso3({ valoresIniciales, isTech, cvUrl }: { valores
             toast.error(result.error);
         } else {
             toast.dismiss(idCarga);
-            toast.success("¡Perfil completado!");
+            if (result.recienCompletado) {
+                toast.success("¡Perfil completo al 100%!");
+            } else {
+                toast.success("Enlaces guardados correctamente");
+            }
             router.push("/perfil");
         }
     };

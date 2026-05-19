@@ -3,6 +3,7 @@
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { marcarPerfilCompletoSiAplica, revalidateDashboardEstudiante } from "@/lib/syncPerfilEstudiante";
 import fs from "fs";
 import path from "path";
 
@@ -62,6 +63,8 @@ export async function uploadCVAction(formData: FormData) {
 
         revalidatePath("/perfil");
         revalidatePath("/perfil/editar/paso-3");
+        await marcarPerfilCompletoSiAplica(estudiante.id);
+        revalidateDashboardEstudiante();
 
         return { success: true, url: fileUrl };
     } catch (error) {
@@ -101,6 +104,8 @@ export async function deleteCVAction() {
 
         revalidatePath("/perfil");
         revalidatePath("/perfil/editar/paso-3");
+        await marcarPerfilCompletoSiAplica(estudiante.id);
+        revalidateDashboardEstudiante();
 
         return { success: true };
     } catch (error) {

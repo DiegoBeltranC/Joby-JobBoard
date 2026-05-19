@@ -3,14 +3,9 @@ import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
 import { Resend } from "resend"
 import { reenviarOTPAction } from "./auth"
+import { toTitleCase } from "@/lib/toTitleCase"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
-
-function toTitleCase(str: string): string {
-    return str.trim().replace(/\w\S*/g, (txt) =>
-        txt.charAt(0).toUpperCase() + txt.substring(1).toLowerCase()
-    );
-}
 
 export async function registrarEmpresa(datos: {
     correo: string;

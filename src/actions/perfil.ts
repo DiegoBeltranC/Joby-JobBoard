@@ -2,9 +2,25 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
-import { redirect } from "next/navigation";
 import { guardarArchivo, eliminarArchivo } from "@/lib/uploadService";
 import { DisponibilidadReubicacion, TipoContrato } from "@prisma/client";
+import { marcarPerfilCompletoSiAplica, revalidateDashboardEstudiante } from "@/lib/syncPerfilEstudiante";
+
+async function sincronizarHitoPerfilEstudiante(usuarioId: number): Promise<boolean> {
+    const usuario = await prisma.user.findUnique({
+        where: { id: usuarioId },
+        include: { estudiante: true },
+    });
+    if (!usuario?.estudiante) return false;
+
+    const recienCompletado = await marcarPerfilCompletoSiAplica(usuario.estudiante.id);
+    revalidateDashboardEstudiante();
+    revalidatePath("/perfil");
+    revalidatePath("/perfil/editar/paso-1");
+    revalidatePath("/perfil/editar/paso-2");
+    revalidatePath("/perfil/editar/paso-3");
+    return recienCompletado;
+}
 
 
 export async function guardarPaso1(data: { 
@@ -28,6 +44,7 @@ export async function guardarPaso1(data: {
                 bio: data.bio,
             }
         });
+        await sincronizarHitoPerfilEstudiante(session.userId);
         return { success: true };
     } catch (error) {
         return { error: "Error al guardar los datos" };
@@ -49,6 +66,7 @@ export async function guardarPaso2(data: { habilidades: string[]; idiomas: strin
                 idiomas: data.idiomas,
             }
         });
+        await sincronizarHitoPerfilEstudiante(session.userId);
         return { success: true };
     } catch (error) {
         return { error: "Error al guardar habilidades" };
@@ -77,7 +95,8 @@ export async function guardarPaso3(data: { linkedin?: string; github?: string })
         return { error: "Error al guardar los enlaces" };
     }
 
-    return { success: true };
+    const recienCompletado = await sincronizarHitoPerfilEstudiante(session.userId);
+    return { success: true, recienCompletado };
 }
 
 
@@ -99,7 +118,7 @@ export async function agregarProyecto(data: { nombre: string; url_enlace?: strin
                 fechaFin: data.fechaFin ? new Date(data.fechaFin + "T12:00:00Z") : null,
             }
         });
-        revalidatePath("/perfil");
+        await sincronizarHitoPerfilEstudiante(session.userId);
         return { success: true };
     } catch (error) {
         console.log(error);
@@ -125,7 +144,7 @@ export async function editarProyecto(id: number, data: { nombre: string; url_enl
                 fechaFin: data.fechaFin ? new Date(data.fechaFin + "T12:00:00Z") : null,
             }
         });
-        revalidatePath("/perfil");
+        await sincronizarHitoPerfilEstudiante(session.userId);
         return { success: true };
     } catch (error) {
         return { error: "Error al actualizar el proyecto" };
@@ -154,7 +173,7 @@ export async function eliminarProyecto(proyectoId: number) {
             }
         });
 
-        revalidatePath("/perfil");
+        await sincronizarHitoPerfilEstudiante(session.userId);
         return { success: true };
     } catch (error) {
         console.error("Error al eliminar proyecto:", error);
@@ -182,9 +201,10 @@ export async function agregarExperiencia(data: { puesto: string; empresa: string
                 fechaFin: data.fechaFin ? new Date(data.fechaFin + "T12:00:00Z") : null,
             }
         });
-        revalidatePath("/perfil");
+        await sincronizarHitoPerfilEstudiante(session.userId);
         return { success: true };
     } catch (error) {
+        console.error("Error al guardar la experiencia:", error);
         return { error: "Error al guardar la experiencia" };
     }
 }
@@ -207,7 +227,7 @@ export async function editarExperiencia(id: number, data: { puesto: string; empr
                 fechaFin: data.fechaFin ? new Date(data.fechaFin + "T12:00:00Z") : null,
             }
         });
-        revalidatePath("/perfil");
+        await sincronizarHitoPerfilEstudiante(session.userId);
         return { success: true };
     } catch (error) {
         return { error: "Error al actualizar la experiencia" };
@@ -226,7 +246,7 @@ export async function eliminarExperiencia(experienciaId: number) {
             where: { id: experienciaId, estudianteId: usuario.estudiante.id }
         });
 
-        revalidatePath("/perfil");
+        await sincronizarHitoPerfilEstudiante(session.userId);
         return { success: true };
     } catch (error) {
         return { error: "No se pudo eliminar la experiencia" };
@@ -261,7 +281,7 @@ export async function actualizarFotoPerfil(formData: FormData) {
             data: { foto_perfil_url: urlFoto }
         });
 
-        revalidatePath("/perfil");
+        await sincronizarHitoPerfilEstudiante(session.userId);
         return { success: true };
     } catch (error) {
         console.error("Error al actualizar foto:", error);
@@ -287,7 +307,7 @@ export async function eliminarFotoPerfil() {
             data: { foto_perfil_url: null }
         });
 
-        revalidatePath("/perfil");
+        await sincronizarHitoPerfilEstudiante(session.userId);
         return { success: true };
     } catch (error) {
         return { error: "No se pudo eliminar la foto" };

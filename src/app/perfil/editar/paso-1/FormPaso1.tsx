@@ -64,7 +64,7 @@ export default function FormPaso1({ valoresIniciales }: { valoresIniciales: Form
             {/* SECCIÓN 1: UBICACIÓN */}
             <div className="bg-gray-50 p-5 rounded-2xl border border-gray-100 space-y-5">
                 <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
-                    <MapPin className="w-4 h-4 text-teal-600" /> Logística
+                    <MapPin className="w-4 h-4 text-teal-600" /> Ubicación actual
                 </h3>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

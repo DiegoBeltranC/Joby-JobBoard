@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { CheckCircle2, ChevronRight, ArrowLeft, ShieldCheck, Building2, GraduationCap } from "lucide-react"
-import { registrarEstudiante } from "@/actions/registro"
+import { registrarEstudiante, verificarCorreoDisponibleRegistro } from "@/actions/registro"
 import { registrarEmpresa } from "@/actions/registroEmpresa"
 import { useRouter, useSearchParams } from "next/navigation"
 import { toast } from "sonner"
@@ -127,10 +127,25 @@ export default function RegistroPage() {
 
         if (pasoValido) {
             if (pasoActual === 1) {
-                const { password, confirmPassword } = getValues()
+                const { password, confirmPassword, correo } = getValues()
                 if (password !== confirmPassword) {
                     setError("confirmPassword", { type: "manual", message: "Las contraseñas no coinciden" })
                     return
+                }
+
+                if (isEmpresa) {
+                    const verificacionCorreo = await verificarCorreoDisponibleRegistro(correo)
+                    if (!verificacionCorreo.disponible) {
+                        if ("redirect" in verificacionCorreo && verificacionCorreo.redirect) {
+                            router.push(verificacionCorreo.redirect)
+                            return
+                        }
+                        setError("correo", {
+                            type: "manual",
+                            message: verificacionCorreo.error ?? "Este correo ya está registrado en Joby.",
+                        })
+                        return
+                    }
                 }
             }
             if (pasoActual < PASOS.length) {

@@ -4,8 +4,10 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { X, Building2 } from "lucide-react";
 import { agregarExperiencia, editarExperiencia } from "@/actions/perfil";
+import { useRouter } from "next/navigation";
 
 export default function ModalExperiencia({ experienciaInicial, onClose }: { experienciaInicial: any, onClose: () => void }) {
+    const router = useRouter();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const formatFecha = (fecha: Date | null) => fecha ? new Date(fecha).toISOString().split('T')[0] : "";
@@ -77,6 +79,7 @@ export default function ModalExperiencia({ experienciaInicial, onClose }: { expe
         } else {
             toast.dismiss(idCarga);
             toast.success(experienciaInicial ? "Experiencia actualizada" : "Experiencia guardada");
+            router.refresh();
             onClose();
         }
     };

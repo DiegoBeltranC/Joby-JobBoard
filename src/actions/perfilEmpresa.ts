@@ -3,15 +3,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { guardarArchivo, eliminarArchivo } from "@/lib/uploadService";
-
-// =============================================================================
-// UTILIDAD: Title Case (Primera letra mayúscula por cada palabra)
-// =============================================================================
-function toTitleCase(str: string): string {
-    return str.trim().replace(/\w\S*/g, (txt) =>
-        txt.charAt(0).toUpperCase() + txt.substring(1).toLowerCase()
-    );
-}
+import { toTitleCase } from "@/lib/toTitleCase";
 
 // =============================================================================
 // PASO 1: Datos Legales y Ubicación

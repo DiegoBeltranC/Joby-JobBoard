@@ -7,6 +7,7 @@ import { PlantillaCV } from "@/lib/pdf/PlantillaCV";
 import fs from "fs";
 import path from "path";
 import { revalidatePath } from "next/cache";
+import { marcarPerfilCompletoSiAplica, revalidateDashboardEstudiante } from "@/lib/syncPerfilEstudiante";
 import React from 'react';
 
 const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads", "cvs");
@@ -90,6 +91,8 @@ export async function generarCVAction() {
 
         revalidatePath("/perfil");
         revalidatePath("/perfil/editar/paso-3");
+        await marcarPerfilCompletoSiAplica(estudiante.id);
+        revalidateDashboardEstudiante();
 
         return { success: true, url: fileUrl };
     } catch (error) {
@@ -279,6 +282,8 @@ export async function saveMagicCVAction(formData: FormData) {
 
         revalidatePath("/perfil");
         revalidatePath("/perfil/editar/paso-3");
+        await marcarPerfilCompletoSiAplica(estudiante.id);
+        revalidateDashboardEstudiante();
 
         return { success: true, url: fileUrl };
     } catch (e) {

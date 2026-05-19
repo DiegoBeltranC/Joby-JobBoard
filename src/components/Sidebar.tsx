@@ -15,6 +15,8 @@ interface SidebarProps {
         ubicacion: string | null;
         progreso: number;
         faltantes?: string[];
+        faltantesAlerta?: string[];
+        perfilCompletado?: boolean;
         idiomas: string[];
         fotoUrl?: string | null;
         buscando: string | null;
@@ -105,8 +107,8 @@ export default function Sidebar({ perfil, onClose }: SidebarProps) {
                     </div>
                 )}
 
-                {/* Barra de progreso interactiva */}
-                {perfil && perfil.progreso < 100 && (
+                {/* Progreso: barra solo antes del hito de completado */}
+                {perfil && !perfil.perfilCompletado && perfil.progreso < 100 && (
                     <div className="w-full mt-6 px-1.5">
                         <div className="flex justify-between items-end text-xs mb-2">
                             <span className="text-gray-500 font-medium tracking-tight">Completar perfil</span>
@@ -120,7 +122,7 @@ export default function Sidebar({ perfil, onClose }: SidebarProps) {
                         {perfil.faltantes && perfil.faltantes.length > 0 ? (
                             <div className="mt-3 bg-red-50/50 p-2.5 rounded-lg border border-red-100/50 tour-faltantes-box">
                                 <p className="text-[10px] text-red-800 font-semibold mb-1.5 flex items-center gap-1">
-                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                                    <AlertTriangle className="w-3 h-3" />
                                     Te falta por completar:
                                 </p>
                                 <ul className="text-[10px] text-red-600/90 list-disc list-inside space-y-0.5 ml-1">
@@ -134,10 +136,31 @@ export default function Sidebar({ perfil, onClose }: SidebarProps) {
                         )}
                     </div>
                 )}
-                {perfil && perfil.progreso === 100 && (
-                    <div className="w-full mt-6 px-1.5 flex items-center justify-center gap-1.5 text-emerald-600 bg-emerald-50 py-2 rounded-xl border border-emerald-100">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                        <span className="text-xs font-bold tracking-tight">Perfil Completo</span>
+                {perfil && perfil.perfilCompletado && (
+                    <div className="w-full mt-6 px-1.5 space-y-2">
+                        <div className="flex items-center justify-center gap-1.5 text-emerald-600 bg-emerald-50 py-2 rounded-xl border border-emerald-100">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                            <span className="text-xs font-bold tracking-tight">Perfil Completo</span>
+                        </div>
+                        {perfil.faltantesAlerta && perfil.faltantesAlerta.length > 0 && (
+                            <div className="bg-amber-50/80 p-2.5 rounded-lg border border-amber-100/80">
+                                <p className="text-[10px] text-amber-900 font-semibold mb-1.5 flex items-center gap-1">
+                                    <AlertTriangle className="w-3 h-3 shrink-0" />
+                                    Tu perfil necesita atención:
+                                </p>
+                                <ul className="text-[10px] text-red-600/90 list-disc list-inside space-y-0.5 ml-1">
+                                    {perfil.faltantesAlerta.map((falta, i) => (
+                                        <li key={i}>{falta}</li>
+                                    ))}
+                                </ul>
+                                <Link
+                                    href="/perfil/editar/paso-1"
+                                    className="mt-2 block text-center text-[10px] font-bold text-teal-700 hover:text-teal-800 underline"
+                                >
+                                    Actualizar mi perfil
+                                </Link>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
