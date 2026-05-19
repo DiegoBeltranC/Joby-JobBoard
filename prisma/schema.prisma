@@ -144,6 +144,7 @@ model Estudiante {
   educacion_extra   EducacionExtra[] // Para TSU, Cursos y Certificados
   
   magicCVDraft      MagicCVDraft?
+  postulaciones     Postulacion[]
 
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
@@ -159,6 +160,7 @@ model Empresa {
   nombre_comercial    String   // Ej: "Hotel Xcaret"
   descripcion         String?  @db.Text // A qué se dedican
   logo_url            String?
+  banner_url          String?
   sitio_web           String?
   enlaces             Json?    // { "linkedin": "...", "facebook": "..." }
   
@@ -226,6 +228,8 @@ model Vacante {
   // Ubicación del puesto (Puede ser distinto a la ubicación de la empresa)
   estado              String?
   municipio           String?
+  horario             String? // Ej: "09:00 AM - 05:00 PM (L-V)" o "Turno matutino"
+  
   // El "Match" con los alumnos
   habilidades_req     String[] // ["React", "TypeScript"] <- Esto cruzará con las habilidades del estudiante
 
@@ -237,9 +241,37 @@ model Vacante {
   
   // Relaciones
   empresa             Empresa  @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  postulaciones       Postulacion[]
   
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
+}
+
+enum EstatusPostulacion {
+  ENVIADA
+  VISTA
+  EN_REVISION
+  ACEPTADA
+  RECHAZADA
+}
+
+model Postulacion {
+  id              Int      @id @default(autoincrement())
+  estudianteId    Int
+  vacanteId       Int
+  estatus         EstatusPostulacion @default(ENVIADA)
+  
+  // SNAPSHOTS (Inmutables)
+  cv_url_snapshot String?
+  perfil_snapshot Json?    // { bio: string, habilidades: string[], idiomas: string[] }
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @default(now()) @updatedAt
+
+  estudiante      Estudiante @relation(fields: [estudianteId], references: [id], onDelete: Cascade)
+  vacante         Vacante    @relation(fields: [vacanteId], references: [id], onDelete: Cascade)
+
+  @@unique([estudianteId, vacanteId])
 }
 
 // -----------------------------------------------------------------------------

@@ -15,8 +15,11 @@ import {
     ChevronRight,
     Search,
     Filter,
-    AlertCircle
+    AlertCircle,
+    Users
 } from "lucide-react"
+import { encodeId } from "@/lib/utils/hash"
+import Link from "next/link"
 
 export default function VacantesPage() {
     // Nota: El estatus real debería venir de la sesión o layout, 
@@ -142,7 +145,7 @@ export default function VacantesPage() {
                                         </div>
                                         <div className="flex items-center gap-1.5">
                                             <Clock className="w-4 h-4" />
-                                            {v.modalidad} • {v.tipo_contrato}
+                                            {v.modalidad} • {v.tipo_contrato} {v.horario && `• ${v.horario}`}
                                         </div>
                                         {v.fecha_limite && (
                                             <div className="flex items-center gap-1.5 text-amber-500">
@@ -156,6 +159,13 @@ export default function VacantesPage() {
                                     <button className="p-3 text-gray-400 hover:text-violet-600 hover:bg-violet-50 rounded-xl transition-all">
                                         <Filter className="w-5 h-5" />
                                     </button>
+                                    <Link 
+                                        href={`/empresa/candidatos/${encodeId(v.id)}`}
+                                        className="flex items-center gap-2 px-5 py-3 bg-teal-50 text-teal-700 font-bold rounded-xl hover:bg-teal-600 hover:text-white transition-all group/cand shadow-sm border border-teal-100"
+                                    >
+                                        <Users className="w-5 h-5 group-hover/cand:scale-110 transition-transform" />
+                                        Candidatos
+                                    </Link>
                                     <button 
                                         onClick={() => setVacanteSeleccionada(v)}
                                         className="flex items-center gap-2 px-5 py-3 bg-gray-50 text-gray-700 font-bold rounded-xl hover:bg-violet-600 hover:text-white transition-all group/btn shadow-sm"

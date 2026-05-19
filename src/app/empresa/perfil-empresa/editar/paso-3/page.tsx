@@ -28,9 +28,8 @@ export default async function Paso3EmpresaPage() {
             <h2 className="text-xl font-bold text-gray-800 border-b border-gray-100 pb-2 mb-6">Marketing y Presencia Digital</h2>
             <FormPaso3Empresa 
                 valoresIniciales={valoresIniciales} 
-                logoActualUrl={usuario.empresa.logo_url}
+                empresa={usuario.empresa}
                 fotosActuales={usuario.empresa.fotos_empresa}
-                nombreComercial={usuario.empresa.nombre_comercial}
             />
         </div>
     );
