@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { guardarArchivo, eliminarArchivo } from "@/lib/uploadService";
 import { toTitleCase } from "@/lib/toTitleCase";
+import { calcularProgresoEmpresa } from "@/lib/perfilEmpresa";
 
 // =============================================================================
 // PASO 1: Datos Legales y Ubicación
@@ -315,19 +316,8 @@ export async function enviarSolicitudVerificacion() {
             return { error: "Tu solicitud ya fue enviada o no se puede reenviar." };
         }
 
-        // Validar que el perfil esté al 100% (cálculo en servidor)
         const empresa = usuario.empresa;
-        const enlaces = (empresa.enlaces as { linkedin?: string; facebook?: string }) || {};
-        const tieneEnlace = !!(empresa.sitio_web || enlaces.linkedin || enlaces.facebook);
-
-        let progreso = 10; // Base
-        if (empresa.razon_social && empresa.rfc) progreso += 15;
-        if (empresa.estado && empresa.municipio) progreso += 10;
-        if (empresa.telefono_contacto) progreso += 10;
-        if (empresa.descripcion) progreso += 15;
-        if (tieneEnlace) progreso += 10;
-        if (empresa.logo_url) progreso += 15;
-        if (empresa.fotos_empresa.length > 0) progreso += 15;
+        const { progreso } = calcularProgresoEmpresa(empresa);
 
         if (progreso < 100) {
             return { error: `Tu perfil está al ${progreso}%. Complétalo al 100% para poder enviar la solicitud.` };

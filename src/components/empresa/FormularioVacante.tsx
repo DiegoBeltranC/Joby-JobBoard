@@ -4,7 +4,7 @@ import * as React from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
-import { crearVacanteAction } from "@/actions/vacantes"
+import { crearVacanteAction, editarVacanteAction } from "@/actions/vacantes"
 import { toast } from "sonner"
 import {
     Plus,
@@ -18,6 +18,7 @@ import {
     Clock,
     Check,
     ChevronsUpDown,
+    AlertCircle,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -57,8 +58,12 @@ const vacanteFormSchema = z.object({
         .string()
         .trim()
         .min(20, "La descripción debe ser más detallada (mín. 20 caracteres)"),
-    tipo_contrato: z.enum(["ESTADIA", "MEDIO_TIEMPO", "TIEMPO_COMPLETO"]),
-    modalidad: z.enum(["PRESENCIAL", "HIBRIDO", "REMOTO"]),
+    tipo_contrato: z.enum(["ESTADIA", "MEDIO_TIEMPO", "TIEMPO_COMPLETO"], {
+        message: "Selecciona un tipo de contrato",
+    }),
+    modalidad: z.enum(["PRESENCIAL", "HIBRIDO", "REMOTO"], {
+        message: "Selecciona una modalidad",
+    }),
     estado: z.string().min(2, "Selecciona un estado"),
     municipio: z.string().min(2, "Selecciona un municipio"),
     sueldo_min: z.string().optional(),
@@ -76,6 +81,7 @@ type VacanteFormValues = z.infer<typeof vacanteFormSchema>
 interface FormularioVacanteProps {
     onSuccess: () => void
     onCancel: () => void
+    vacanteAEditar?: any
 }
 
 function parseSueldo(raw: string | undefined): number | null {
@@ -84,16 +90,51 @@ function parseSueldo(raw: string | undefined): number | null {
     return Number.isFinite(n) ? n : null
 }
 
-export default function FormularioVacante({ onSuccess, onCancel }: FormularioVacanteProps) {
+const formatFechaToLocalString = (fechaInput: any) => {
+    if (!fechaInput) return getMinimaFechaCierreVacanteString();
+    const d = new Date(fechaInput);
+    if (isNaN(d.getTime())) return getMinimaFechaCierreVacanteString();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+}
+
+export default function FormularioVacante({ onSuccess, onCancel, vacanteAEditar }: FormularioVacanteProps) {
     const [inputHabilidad, setInputHabilidad] = React.useState("")
-    const [habilidadesSeleccionadas, setHabilidadesSeleccionadas] = React.useState<string[]>([])
+    const [habilidadesSeleccionadas, setHabilidadesSeleccionadas] = React.useState<string[]>(() => {
+        if (vacanteAEditar?.habilidades_req) {
+            return vacanteAEditar.habilidades_req.filter((h: string) => !h.includes(" - "))
+        }
+        return []
+    })
     const [idiomaTemp, setIdiomaTemp] = React.useState("")
     const [nivelTemp, setNivelTemp] = React.useState("")
-    const [idiomasSeleccionados, setIdiomasSeleccionados] = React.useState<string[]>([])
-    const [horaEntrada, setHoraEntrada] = React.useState("09:00")
-    const [horaSalida, setHoraSalida] = React.useState("18:00")
+    const [idiomasSeleccionados, setIdiomasSeleccionados] = React.useState<string[]>(() => {
+        const list = []
+        if (vacanteAEditar?.idiomas_req) {
+            list.push(...vacanteAEditar.idiomas_req)
+        }
+        if (vacanteAEditar?.habilidades_req) {
+            list.push(...vacanteAEditar.habilidades_req.filter((h: string) => h.includes(" - ")))
+        }
+        return list
+    })
+    const [horaEntrada, setHoraEntrada] = React.useState(() => {
+        if (vacanteAEditar?.horario && horarioRegex.test(vacanteAEditar.horario)) {
+            return vacanteAEditar.horario.split(" - ")[0]
+        }
+        return "09:00"
+    })
+    const [horaSalida, setHoraSalida] = React.useState(() => {
+        if (vacanteAEditar?.horario && horarioRegex.test(vacanteAEditar.horario)) {
+            return vacanteAEditar.horario.split(" - ")[1]
+        }
+        return "18:00"
+    })
     const [openEstado, setOpenEstado] = React.useState(false)
     const [openMunicipio, setOpenMunicipio] = React.useState(false)
+    const [errorRequisitos, setErrorRequisitos] = React.useState(false)
 
     const {
         register,
@@ -104,15 +145,15 @@ export default function FormularioVacante({ onSuccess, onCancel }: FormularioVac
     } = useForm<VacanteFormValues>({
         resolver: zodResolver(vacanteFormSchema),
         defaultValues: {
-            titulo: "",
-            descripcion: "",
-            tipo_contrato: "ESTADIA",
-            modalidad: "PRESENCIAL",
-            estado: "Quintana Roo",
-            municipio: "Othón P. Blanco",
-            sueldo_min: "",
-            sueldo_max: "",
-            fecha_limite: getMinimaFechaCierreVacanteString(),
+            titulo: vacanteAEditar?.titulo || "",
+            descripcion: vacanteAEditar?.descripcion || "",
+            tipo_contrato: vacanteAEditar?.tipo_contrato || "" as any,
+            modalidad: vacanteAEditar?.modalidad || "" as any,
+            estado: vacanteAEditar?.estado || "",
+            municipio: vacanteAEditar?.municipio || "",
+            sueldo_min: vacanteAEditar?.sueldo_min != null ? String(vacanteAEditar.sueldo_min) : "",
+            sueldo_max: vacanteAEditar?.sueldo_max != null ? String(vacanteAEditar.sueldo_max) : "",
+            fecha_limite: formatFechaToLocalString(vacanteAEditar?.fecha_limite),
         },
     })
 
@@ -144,6 +185,7 @@ export default function FormularioVacante({ onSuccess, onCancel }: FormularioVac
 
         const capitalizada = limpia.charAt(0).toUpperCase() + limpia.slice(1).toLowerCase()
         setHabilidadesSeleccionadas([...habilidadesSeleccionadas, capitalizada])
+        setErrorRequisitos(false)
         setInputHabilidad("")
     }
 
@@ -162,6 +204,7 @@ export default function FormularioVacante({ onSuccess, onCancel }: FormularioVac
             return
         }
         setIdiomasSeleccionados([...idiomasSeleccionados, formato])
+        setErrorRequisitos(false)
         setIdiomaTemp("")
         setNivelTemp("")
     }
@@ -171,11 +214,8 @@ export default function FormularioVacante({ onSuccess, onCancel }: FormularioVac
     }
 
     const onSubmit = async (data: VacanteFormValues) => {
-        const requisitosFusionados = [...habilidadesSeleccionadas, ...idiomasSeleccionados]
-        if (requisitosFusionados.length === 0) {
-            toast.error("Requisito faltante", {
-                description: "Debes añadir al menos una habilidad o idioma.",
-            })
+        if (habilidadesSeleccionadas.length === 0 && idiomasSeleccionados.length === 0) {
+            setErrorRequisitos(true)
             return
         }
 
@@ -194,7 +234,8 @@ export default function FormularioVacante({ onSuccess, onCancel }: FormularioVac
             modalidad: data.modalidad,
             estado: data.estado,
             municipio: data.municipio,
-            habilidades_req: requisitosFusionados,
+            habilidades_req: habilidadesSeleccionadas,
+            idiomas_req: idiomasSeleccionados,
             sueldo_min,
             sueldo_max,
             horario,
@@ -202,12 +243,18 @@ export default function FormularioVacante({ onSuccess, onCancel }: FormularioVac
         }
 
         try {
-            const res = await crearVacanteAction(datos)
+            let res;
+            if (vacanteAEditar) {
+                res = await editarVacanteAction(vacanteAEditar.id, datos)
+            } else {
+                res = await crearVacanteAction(datos)
+            }
+
             if (res.success) {
                 toast.success(res.message)
                 onSuccess()
             } else {
-                toast.error("Error al publicar", { description: res.error })
+                toast.error("Error al procesar", { description: res.error })
             }
         } catch {
             toast.error("Error crítico", {
@@ -216,15 +263,34 @@ export default function FormularioVacante({ onSuccess, onCancel }: FormularioVac
         }
     }
 
+    const tienePostulaciones = vacanteAEditar?._count?.postulaciones > 0
+
     return (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-lg overflow-hidden animate-in zoom-in-95 duration-300 max-h-[90vh] overflow-y-auto">
+            {/* Banner de Advertencia si está en edición y tiene postulantes */}
+            {vacanteAEditar && tienePostulaciones && (
+                <div className="bg-amber-50 border-b border-amber-200 p-4 flex items-start gap-3">
+                    <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                    <div>
+                        <p className="text-sm font-bold text-amber-900">
+                            Vacante con postulaciones activas ({vacanteAEditar._count.postulaciones} alumnos)
+                        </p>
+                        <p className="text-xs text-amber-700 mt-0.5 leading-relaxed">
+                            Esta vacante ya tiene alumnos postulados. El tipo de contrato no se podrá modificar para proteger el estatus de los candidatos. Si modificas otros campos, asegúrate de que no afecte drásticamente las condiciones acordadas.
+                        </p>
+                    </div>
+                </div>
+            )}
+
             <div className="relative z-10 flex items-start justify-between gap-4 p-5 bg-violet-50/40 border-b border-violet-100">
                 <div>
                     <h2 className="text-lg font-bold text-violet-900 flex items-center gap-2">
                         <Sparkles className="w-5 h-5 text-violet-600" />
-                        Nueva Vacante
+                        {vacanteAEditar ? "Editar Vacante" : "Nueva Vacante"}
                     </h2>
-                    <p className="text-sm text-gray-600 mt-1">Completa los datos para publicar en Joby.</p>
+                    <p className="text-sm text-gray-600 mt-1">
+                        {vacanteAEditar ? "Modifica los datos de la oferta laboral." : "Completa los datos para publicar en Joby."}
+                    </p>
                 </div>
                 <Button
                     type="button"
@@ -291,16 +357,23 @@ export default function FormularioVacante({ onSuccess, onCancel }: FormularioVac
                                 </Label>
                                 <select
                                     id="vacante-tipo-contrato"
+                                    disabled={tienePostulaciones}
                                     className={cn(
-                                        "w-full rounded-lg border border-gray-300 bg-white p-2.5 text-sm focus:ring-2 focus:ring-violet-500 outline-none",
+                                        "w-full rounded-lg border border-gray-300 bg-white p-2.5 text-sm focus:ring-2 focus:ring-violet-500 outline-none disabled:bg-gray-100 disabled:cursor-not-allowed",
                                         errors.tipo_contrato && "border-red-500"
                                     )}
                                     {...register("tipo_contrato")}
                                 >
+                                    <option value="">Selecciona una opción...</option>
                                     <option value="ESTADIA">Estadía Profesional</option>
                                     <option value="MEDIO_TIEMPO">Medio Tiempo</option>
                                     <option value="TIEMPO_COMPLETO">Tiempo Completo</option>
                                 </select>
+                                {tienePostulaciones && (
+                                    <p className="text-[10px] text-amber-600 font-semibold mt-1">
+                                        Bloqueado por postulaciones activas.
+                                    </p>
+                                )}
                                 {errors.tipo_contrato && (
                                     <p className="text-xs text-red-500">{errors.tipo_contrato.message}</p>
                                 )}
@@ -317,6 +390,7 @@ export default function FormularioVacante({ onSuccess, onCancel }: FormularioVac
                                     )}
                                     {...register("modalidad")}
                                 >
+                                    <option value="">Selecciona una opción...</option>
                                     <option value="PRESENCIAL">Presencial</option>
                                     <option value="HIBRIDO">Híbrido</option>
                                     <option value="REMOTO">Remoto</option>
@@ -512,7 +586,7 @@ export default function FormularioVacante({ onSuccess, onCancel }: FormularioVac
                             <Input
                                 id="vacante-fecha-limite"
                                 type="date"
-                                min={getMinimaFechaCierreVacanteString()}
+                                min={vacanteAEditar?.fecha_limite ? formatFechaToLocalString(vacanteAEditar.fecha_limite) : getMinimaFechaCierreVacanteString()}
                                 className={cn(errors.fecha_limite && "border-red-500 focus-visible:ring-red-200")}
                                 {...register("fecha_limite")}
                             />
@@ -526,7 +600,10 @@ export default function FormularioVacante({ onSuccess, onCancel }: FormularioVac
                     </div>
                 </div>
 
-                <div className="bg-gray-50 p-5 rounded-2xl border border-gray-100 space-y-4">
+                <div className={cn(
+                    "bg-gray-50 p-5 rounded-2xl border space-y-4 transition-colors",
+                    errorRequisitos ? "border-red-500 bg-red-50/10" : "border-gray-100"
+                )}>
                     <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
                         <Wrench className="w-4 h-4 text-violet-600" />
                         Habilidades requeridas
@@ -591,7 +668,10 @@ export default function FormularioVacante({ onSuccess, onCancel }: FormularioVac
                     </div>
                 </div>
 
-                <div className="bg-violet-50/40 p-5 rounded-2xl border border-violet-100 space-y-4">
+                <div className={cn(
+                    "p-5 rounded-2xl border space-y-4 transition-colors",
+                    errorRequisitos ? "bg-red-50/10 border-red-500" : "bg-violet-50/40 border-violet-100"
+                )}>
                     <h3 className="text-sm font-bold text-violet-900 flex items-center gap-2">
                         <Languages className="w-4 h-4 text-violet-600" />
                         Idiomas requeridos
@@ -651,6 +731,11 @@ export default function FormularioVacante({ onSuccess, onCancel }: FormularioVac
                         </div>
                     )}
                 </div>
+                {errorRequisitos && (
+                    <p className="text-sm text-red-500 font-medium animate-in fade-in-50 duration-200">
+                        * Debes añadir al menos una habilidad o un idioma requerido.
+                    </p>
+                )}
 
                 <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-3 pt-4 border-t border-gray-100">
                     <Button

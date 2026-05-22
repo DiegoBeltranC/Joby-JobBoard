@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import { encodeId } from "@/lib/hash";
 import { calcularProgresoEstudiante } from "@/lib/perfilEstudiante";
 import { obtenerEstudianteYSincronizarHito } from "@/lib/syncPerfilEstudiante";
 import BienvenidaPerfilCompleto from "./BienvenidaPerfilCompleto";
@@ -80,6 +81,7 @@ export default async function InicioPage() {
             createdAt: true,
             empresa: {
                 select: {
+                    id: true,
                     nombre_comercial: true,
                     logo_url: true
                 }
@@ -215,10 +217,15 @@ export default async function InicioPage() {
                                 </div>
 
                                 <div className="mt-6">
-                                    <button className="w-full py-3.5 bg-gray-900 hover:bg-teal-600 text-white font-black rounded-2xl transition-all shadow-lg shadow-gray-200 hover:shadow-teal-200 flex items-center justify-center gap-2 group/btn">
+                                    <Link
+                                        href={`/perfil-publico-empresa/${encodeId(v.empresa.id)}?vacante=${encodeId(v.id)}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="w-full py-3.5 bg-gray-900 hover:bg-teal-600 text-white font-black rounded-2xl transition-all shadow-lg shadow-gray-200 hover:shadow-teal-200 flex items-center justify-center gap-2 group/btn"
+                                    >
                                         Postularme ahora
                                         <ChevronRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
-                                    </button>
+                                    </Link>
                                 </div>
                             </div>
                         </div>

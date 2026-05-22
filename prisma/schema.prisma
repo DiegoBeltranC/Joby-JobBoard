@@ -232,6 +232,7 @@ model Vacante {
   
   // El "Match" con los alumnos
   habilidades_req     String[] // ["React", "TypeScript"] <- Esto cruzará con las habilidades del estudiante
+  idiomas_req         String[] // ["Inglés - B2", "Francés - A1"] <- Esto cruzará con los idiomas del estudiante
 
   // Datos opcionales y control
   sueldo_min          Int?     // Para filtros de búsqueda (opcional)

@@ -70,7 +70,10 @@ export default function DetalleVacanteModal({ vacante, onClose, onUpdate }: Deta
     }
 
     const habilidades = (vacante.habilidades_req || []).filter((h: string) => !h.includes(" - "))
-    const idiomas = (vacante.habilidades_req || []).filter((h: string) => h.includes(" - "))
+    const idiomas = [
+        ...(vacante.idiomas_req || []),
+        ...(vacante.habilidades_req || []).filter((h: string) => h.includes(" - ")),
+    ]
 
     return (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-lg overflow-hidden animate-in zoom-in-95 duration-300 max-h-[90vh] flex flex-col w-full max-w-2xl">

@@ -204,7 +204,7 @@ export default function FormPaso3Empresa({ valoresIniciales, empresa, fotosActua
                 <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
                     <Globe className="w-4 h-4 text-violet-600" /> Presencia en Internet
                 </h3>
-                <p className="text-xs text-gray-500">Al menos un enlace es necesario para completar tu perfil al 100%.</p>
+                <p className="text-xs text-gray-500">Opcional. Ayuda a que los candidatos conozcan más sobre tu empresa.</p>
 
                 <div className="space-y-4">
                     <div className="space-y-1.5">

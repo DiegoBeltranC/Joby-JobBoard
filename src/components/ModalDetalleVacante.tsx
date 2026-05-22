@@ -108,14 +108,14 @@ export default function ModalDetalleVacante({ vacante, onClose }: ModalDetalleVa
                             Habilidades y Requisitos
                         </h3>
                         <div className="flex flex-wrap gap-2">
-                            {(vacante.habilidades_req || []).map((req: string, idx: number) => (
+                            {[...(vacante.habilidades_req || []), ...(vacante.idiomas_req || [])].map((req: string, idx: number) => (
                                 <span key={idx} className="px-3.5 py-2 bg-white border border-slate-100 rounded-2xl text-[11px] font-bold text-slate-700 shadow-sm flex items-center gap-2">
                                     <div className="w-1 h-1 rounded-full bg-teal-400" />
                                     {req}
                                 </span>
                             ))}
-                            {(vacante.habilidades_req || []).length === 0 && (
-                                <p className="text-xs text-slate-400 italic">No se especificaron requisitos técnicos.</p>
+                            {(vacante.habilidades_req || []).length === 0 && (vacante.idiomas_req || []).length === 0 && (
+                                <p className="text-xs text-slate-400 italic">No se especificaron requisitos técnicos o idiomas.</p>
                             )}
                         </div>
                     </div>

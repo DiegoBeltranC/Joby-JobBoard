@@ -13,8 +13,7 @@ import {
     Clock, 
     MapPin, 
     ChevronRight,
-    Search,
-    Filter,
+    Pencil,
     AlertCircle,
     Users
 } from "lucide-react"
@@ -31,6 +30,7 @@ export default function VacantesPage() {
     const [isLoading, setIsLoading] = useState(true)
     const [mostrarForm, setMostrarForm] = useState(false)
     const [vacanteSeleccionada, setVacanteSeleccionada] = useState<any | null>(null)
+    const [vacanteAEditar, setVacanteAEditar] = useState<any | null>(null)
     const [estatusEmpresa, setEstatusEmpresa] = useState<string>("PENDIENTE") 
 
     useEffect(() => {
@@ -53,6 +53,17 @@ export default function VacantesPage() {
         setVacantes(data)
     }
 
+    const abrirCrearForm = () => {
+        setVacanteAEditar(null)
+        setMostrarForm(true)
+    }
+
+    const abrirEditarForm = (vacante: any) => {
+        setVacanteSeleccionada(null)
+        setVacanteAEditar(vacante)
+        setMostrarForm(true)
+    }
+
     const estaAprobada = estatusEmpresa === "APROBADA"
 
     return (
@@ -68,7 +79,7 @@ export default function VacantesPage() {
                 </div>
                 
                 <button
-                    onClick={() => setMostrarForm(true)}
+                    onClick={abrirCrearForm}
                     disabled={!estaAprobada}
                     className={`flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl font-black transition-all shadow-lg active:scale-95 ${
                         estaAprobada 
@@ -118,7 +129,7 @@ export default function VacantesPage() {
                         </p>
                         {estaAprobada && (
                             <button
-                                onClick={() => setMostrarForm(true)}
+                                onClick={abrirCrearForm}
                                 className="bg-violet-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-violet-700 transition-all shadow-md active:scale-95"
                             >
                                 Publicar mi primera vacante
@@ -156,8 +167,14 @@ export default function VacantesPage() {
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <button className="p-3 text-gray-400 hover:text-violet-600 hover:bg-violet-50 rounded-xl transition-all">
-                                        <Filter className="w-5 h-5" />
+                                    <button
+                                        type="button"
+                                        onClick={() => abrirEditarForm(v)}
+                                        title="Editar vacante"
+                                        aria-label="Editar vacante"
+                                        className="p-3 text-gray-400 hover:text-violet-600 hover:bg-violet-50 rounded-xl transition-all"
+                                    >
+                                        <Pencil className="w-5 h-5" />
                                     </button>
                                     <Link 
                                         href={`/empresa/candidatos/${encodeId(v.id)}`}
@@ -185,8 +202,9 @@ export default function VacantesPage() {
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
                     <div className="w-full max-w-4xl my-8">
                         <FormularioVacante 
-                            onSuccess={() => { setMostrarForm(false); cargarVacantes(); }}
-                            onCancel={() => setMostrarForm(false)}
+                            vacanteAEditar={vacanteAEditar}
+                            onSuccess={() => { setMostrarForm(false); setVacanteAEditar(null); cargarVacantes(); }}
+                            onCancel={() => { setMostrarForm(false); setVacanteAEditar(null); }}
                         />
                     </div>
                 </div>
