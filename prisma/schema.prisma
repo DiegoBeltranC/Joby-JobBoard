@@ -55,6 +55,14 @@ enum ModalidadTrabajo {
   HIBRIDO
   REMOTO
 }
+
+enum EstatusVacante {
+  ABIERTA
+  PAUSADA
+  VENCIDA
+  CERRADA
+}
+
 enum RolUsuario {
   ESTUDIANTE
   EMPRESA
@@ -237,8 +245,9 @@ model Vacante {
   // Datos opcionales y control
   sueldo_min          Int?     // Para filtros de búsqueda (opcional)
   sueldo_max          Int?
-  activa              Boolean  @default(true) // Si la empresa ya contrató, la pasa a false
+  estatus             EstatusVacante @default(ABIERTA)
   fecha_limite        DateTime? // Cuándo caduca la oferta
+  cerrada_en          DateTime? // Cuándo la empresa cerró la convocatoria
   
   // Relaciones
   empresa             Empresa  @relation(fields: [empresaId], references: [id], onDelete: Cascade)

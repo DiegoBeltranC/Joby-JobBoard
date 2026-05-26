@@ -6,6 +6,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import PostulacionCard from "./PostulacionCard";
+import { prioridadOrdenEstatus } from "@/lib/vacanteEstatus";
+import { EstatusVacante } from "@prisma/client";
 
 export default async function MisPostulacionesPage() {
     const session = await getSession();
@@ -31,7 +33,12 @@ export default async function MisPostulacionesPage() {
 
     if (!usuario?.estudiante) redirect("/");
 
-    const postulaciones = usuario.estudiante.postulaciones;
+    const postulaciones = [...usuario.estudiante.postulaciones].sort((a, b) => {
+        const pa = prioridadOrdenEstatus(a.vacante.estatus as EstatusVacante)
+        const pb = prioridadOrdenEstatus(b.vacante.estatus as EstatusVacante)
+        if (pa !== pb) return pa - pb
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    });
 
     return (
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 max-w-6xl mx-auto px-6 py-12">

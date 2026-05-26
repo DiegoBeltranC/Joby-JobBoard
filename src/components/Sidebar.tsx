@@ -172,8 +172,26 @@ export default function Sidebar({ perfil, onClose }: SidebarProps) {
                     Buscar Vacantes
                 </Link>
 
-                <Link href="#" className="flex items-center gap-3 p-3.5 text-gray-500 hover:text-gray-800 hover:bg-gray-50 rounded-xl font-medium transition-all group">
-                    <svg className="w-5 h-5 text-gray-400 group-hover:text-gray-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                <Link
+                    href="/mis-postulaciones"
+                    className={`flex items-center gap-3 p-3.5 rounded-xl font-medium transition-all ${
+                        pathname === "/mis-postulaciones" || pathname?.startsWith("/mis-postulaciones/")
+                            ? "text-teal-800 bg-teal-50 font-semibold shadow-sm"
+                            : "text-gray-500 hover:text-gray-800 hover:bg-gray-50 group"
+                    }`}
+                >
+                    <svg
+                        className={`w-5 h-5 ${
+                            pathname === "/mis-postulaciones" || pathname?.startsWith("/mis-postulaciones/")
+                                ? "text-teal-600"
+                                : "text-gray-400 group-hover:text-gray-600 transition-colors"
+                        }`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
                     Mis Postulaciones
                 </Link>
 

@@ -16,26 +16,49 @@ import {
     PlayCircle,
     Info,
     AlertTriangle,
+    CalendarClock,
 } from "lucide-react"
-import { cambiarEstatusVacanteAction, eliminarVacanteAction } from "@/actions/vacantes"
+import {
+    cambiarEstatusVacanteAction,
+    cerrarVacanteAction,
+    eliminarVacanteAction,
+} from "@/actions/vacantes"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import {
+    clasesBadgeEstatus,
+    clasesEncabezadoDetalleVacante,
+    etiquetaEstatusVacante,
+} from "@/lib/vacanteEstatus"
 
 interface DetalleVacanteModalProps {
     vacante: any
     onClose: () => void
     onUpdate: () => void
+    onExtender?: () => void
 }
 
-export default function DetalleVacanteModal({ vacante, onClose, onUpdate }: DetalleVacanteModalProps) {
+export default function DetalleVacanteModal({
+    vacante,
+    onClose,
+    onUpdate,
+    onExtender,
+}: DetalleVacanteModalProps) {
     const [isPending, setIsPending] = useState(false)
     const [confirmarEliminar, setConfirmarEliminar] = useState(false)
+    const [confirmarCerrar, setConfirmarCerrar] = useState(false)
 
-    const handleToggleEstatus = async () => {
+    const estatus = vacante.estatus as string
+    const esCerrada = estatus === "CERRADA"
+    const esVencida = estatus === "VENCIDA"
+    const esAbierta = estatus === "ABIERTA"
+    const esPausada = estatus === "PAUSADA"
+
+    const handlePausar = async () => {
         setIsPending(true)
         try {
-            const res = await cambiarEstatusVacanteAction(vacante.id, !vacante.activa)
+            const res = await cambiarEstatusVacanteAction(vacante.id, "PAUSADA")
             if (res.success) {
                 toast.success(res.message)
                 onUpdate()
@@ -44,9 +67,46 @@ export default function DetalleVacanteModal({ vacante, onClose, onUpdate }: Deta
                 toast.error(res.error)
             }
         } catch {
-            toast.error("Error al actualizar estatus")
+            toast.error("Error al pausar la vacante")
         } finally {
             setIsPending(false)
+        }
+    }
+
+    const handleReactivar = async () => {
+        setIsPending(true)
+        try {
+            const res = await cambiarEstatusVacanteAction(vacante.id, "ABIERTA")
+            if (res.success) {
+                toast.success(res.message)
+                onUpdate()
+                onClose()
+            } else {
+                toast.error(res.error)
+            }
+        } catch {
+            toast.error("Error al reactivar la vacante")
+        } finally {
+            setIsPending(false)
+        }
+    }
+
+    const handleCerrar = async () => {
+        setIsPending(true)
+        try {
+            const res = await cerrarVacanteAction(vacante.id)
+            if (res.success) {
+                toast.success(res.message)
+                onUpdate()
+                onClose()
+            } else {
+                toast.error(res.error)
+            }
+        } catch {
+            toast.error("Error al cerrar la vacante")
+        } finally {
+            setIsPending(false)
+            setConfirmarCerrar(false)
         }
     }
 
@@ -77,17 +137,20 @@ export default function DetalleVacanteModal({ vacante, onClose, onUpdate }: Deta
 
     return (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-lg overflow-hidden animate-in zoom-in-95 duration-300 max-h-[90vh] flex flex-col w-full max-w-2xl">
-            <div className="relative z-10 flex flex-col gap-4 p-5 bg-violet-50/40 border-b border-violet-100 shrink-0">
+            <div
+                className={cn(
+                    "relative z-10 flex flex-col gap-4 p-5 border-b shrink-0",
+                    clasesEncabezadoDetalleVacante(estatus)
+                )}
+            >
                 <div className="flex items-start justify-between gap-3">
                     <span
                         className={cn(
-                            "inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold",
-                            vacante.activa
-                                ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
-                                : "bg-amber-100 text-amber-900 border border-amber-200"
+                            "inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold border",
+                            clasesBadgeEstatus(estatus)
                         )}
                     >
-                        {vacante.activa ? "Publicación Activa" : "Publicación Pausada"}
+                        {etiquetaEstatusVacante(estatus)}
                     </span>
                     <Button
                         type="button"
@@ -100,6 +163,16 @@ export default function DetalleVacanteModal({ vacante, onClose, onUpdate }: Deta
                         <X className="w-5 h-5" />
                     </Button>
                 </div>
+                {esVencida && (
+                    <p className="text-xs text-red-700 font-medium">
+                        La fecha de cierre ya pasó. Extiende la convocatoria o ciérrala definitivamente.
+                    </p>
+                )}
+                {esCerrada && (
+                    <p className="text-xs text-slate-600 font-medium">
+                        Convocatoria cerrada. Solo puedes consultar el detalle y los candidatos.
+                    </p>
+                )}
                 <div>
                     <h2 className="text-lg font-bold text-violet-900 flex items-center gap-2">
                         <Briefcase className="w-5 h-5 text-violet-600 shrink-0" />
@@ -210,9 +283,19 @@ export default function DetalleVacanteModal({ vacante, onClose, onUpdate }: Deta
                                 Publicada el: {new Date(vacante.createdAt).toLocaleDateString()}
                             </p>
                             {vacante.fecha_limite && (
-                                <p className="text-xs text-amber-600 font-black">
+                                <p
+                                    className={cn(
+                                        "text-xs font-black",
+                                        esVencida ? "text-red-600" : "text-amber-600"
+                                    )}
+                                >
                                     Límite de postulación:{" "}
                                     {new Date(vacante.fecha_limite).toLocaleDateString()}
+                                </p>
+                            )}
+                            {vacante.cerrada_en && (
+                                <p className="text-xs text-slate-600 font-medium">
+                                    Cerrada el: {new Date(vacante.cerrada_en).toLocaleDateString()}
                                 </p>
                             )}
                         </div>
@@ -222,75 +305,113 @@ export default function DetalleVacanteModal({ vacante, onClose, onUpdate }: Deta
 
             <div className="p-5 bg-gray-50 border-t border-gray-100 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 shrink-0">
                 <div className="flex flex-wrap items-center gap-2">
-                    {confirmarEliminar ? (
-                        <div className="flex flex-wrap items-center gap-2 animate-in slide-in-from-left-2">
-                            <span className="text-xs font-semibold text-red-700 flex items-center gap-1.5 bg-red-50 px-3 py-2 rounded-lg border border-red-100">
-                                <AlertTriangle className="w-4 h-4 shrink-0" />
-                                ¿CONFIRMAS ELIMINAR?
-                            </span>
+                    {!esCerrada &&
+                        (confirmarEliminar ? (
+                            <div className="flex flex-wrap items-center gap-2 animate-in slide-in-from-left-2">
+                                <span className="text-xs font-semibold text-red-700 flex items-center gap-1.5 bg-red-50 px-3 py-2 rounded-lg border border-red-100">
+                                    <AlertTriangle className="w-4 h-4 shrink-0" />
+                                    ¿CONFIRMAS ELIMINAR?
+                                </span>
+                                <Button
+                                    type="button"
+                                    onClick={handleEliminar}
+                                    disabled={isPending}
+                                    className="bg-red-600 hover:bg-red-700 text-white text-xs font-black uppercase rounded-lg tracking-tight"
+                                >
+                                    SÍ, BORRAR
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setConfirmarEliminar(false)}
+                                    className="text-xs text-gray-600"
+                                >
+                                    Cancelar
+                                </Button>
+                            </div>
+                        ) : (
                             <Button
                                 type="button"
-                                onClick={handleEliminar}
-                                disabled={isPending}
-                                className="bg-red-600 hover:bg-red-700 text-white text-xs font-black uppercase rounded-lg tracking-tight"
+                                variant="outline"
+                                onClick={() => setConfirmarEliminar(true)}
+                                className="border-red-200 text-red-700 hover:bg-red-50 hover:text-red-800"
                             >
-                                SÍ, BORRAR
+                                <Trash2 className="w-4 h-4 mr-2" />
+                                Eliminar Vacante
                             </Button>
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setConfirmarEliminar(false)}
-                                className="text-xs text-gray-600"
-                            >
-                                Cancelar
-                            </Button>
-                        </div>
-                    ) : (
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => setConfirmarEliminar(true)}
-                            className="border-red-200 text-red-700 hover:bg-red-50 hover:text-red-800"
-                        >
-                            <Trash2 className="w-4 h-4 mr-2" />
-                            Eliminar Vacante
-                        </Button>
-                    )}
+                        ))}
                 </div>
 
-                <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center gap-2 sm:justify-end">
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        onClick={onClose}
-                        className="text-gray-600 hover:text-violet-900"
-                    >
-                        Cerrar
-                    </Button>
-                    <Button
-                        type="button"
-                        onClick={handleToggleEstatus}
-                        disabled={isPending}
-                        className={cn(
-                            "font-semibold rounded-xl shadow-sm disabled:opacity-50",
-                            vacante.activa
-                                ? "bg-amber-100 text-amber-900 hover:bg-amber-200 border border-amber-200"
-                                : "bg-emerald-100 text-emerald-900 hover:bg-emerald-200 border border-emerald-200"
-                        )}
-                    >
-                        {vacante.activa ? (
-                            <>
-                                <PauseCircle className="w-4 h-4 mr-2" />
-                                Pausar Vacante
-                            </>
+                <div className="flex flex-row flex-wrap items-center gap-2 sm:justify-end">
+                    {esVencida && onExtender && (
+                        <Button
+                            type="button"
+                            onClick={onExtender}
+                            disabled={isPending}
+                            className="bg-violet-600 hover:bg-violet-700 text-white font-semibold rounded-xl shadow-sm"
+                        >
+                            <CalendarClock className="w-4 h-4 mr-2" />
+                            Extender convocatoria
+                        </Button>
+                    )}
+
+                    {esAbierta && (
+                        <Button
+                            type="button"
+                            onClick={handlePausar}
+                            disabled={isPending}
+                            className="bg-amber-100 text-amber-900 hover:bg-amber-200 border border-amber-200 font-semibold rounded-xl"
+                        >
+                            <PauseCircle className="w-4 h-4 mr-2" />
+                            Pausar
+                        </Button>
+                    )}
+
+                    {esPausada && (
+                        <Button
+                            type="button"
+                            onClick={handleReactivar}
+                            disabled={isPending}
+                            className="bg-emerald-100 text-emerald-900 hover:bg-emerald-200 border border-emerald-200 font-semibold rounded-xl"
+                        >
+                            <PlayCircle className="w-4 h-4 mr-2" />
+                            Reactivar
+                        </Button>
+                    )}
+
+                    {!esCerrada &&
+                        (confirmarCerrar ? (
+                            <div className="flex flex-wrap items-center gap-2">
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    onClick={handleCerrar}
+                                    disabled={isPending}
+                                    className="bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl"
+                                >
+                                    Confirmar cierre
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setConfirmarCerrar(false)}
+                                >
+                                    No
+                                </Button>
+                            </div>
                         ) : (
-                            <>
-                                <PlayCircle className="w-4 h-4 mr-2" />
-                                Reactivar
-                            </>
-                        )}
-                    </Button>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => setConfirmarCerrar(true)}
+                                disabled={isPending}
+                                className="border-red-300 bg-red-50 text-red-700 hover:bg-red-100 hover:text-red-800 font-semibold rounded-xl"
+                            >
+                                Cerrar convocatoria
+                            </Button>
+                        ))}
                 </div>
             </div>
         </div>

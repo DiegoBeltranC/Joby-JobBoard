@@ -18,6 +18,7 @@ import {
     DollarSign
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { clasesBadgeEstatus, etiquetaEstatusVacante } from "@/lib/vacanteEstatus";
 import { cancelarPostulacionAction } from "@/actions/postulaciones";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -82,6 +83,8 @@ export default function PostulacionCard({ postulacion }: PostulacionCardProps) {
     const minutos = Math.floor(segundosTotales / 60);
     const segundos = segundosTotales % 60;
     const tiempoFormateado = `${minutos}:${segundos.toString().padStart(2, '0')}`;
+    const estatusVacante = postulacion.vacante?.estatus as string | undefined;
+    const vacanteNoAbierta = estatusVacante && estatusVacante !== "ABIERTA";
 
     return (
         <div className="bg-white rounded-[32px] p-6 md:p-8 border border-gray-100 shadow-sm hover:shadow-xl hover:border-teal-100 transition-all duration-300 group">
@@ -117,6 +120,16 @@ export default function PostulacionCard({ postulacion }: PostulacionCardProps) {
                                 <Calendar className="w-3 h-3" />
                                 Enviada el {new Date(postulacion.createdAt).toLocaleDateString()}
                             </span>
+                            {vacanteNoAbierta && estatusVacante && (
+                                <span
+                                    className={cn(
+                                        "px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border",
+                                        clasesBadgeEstatus(estatusVacante)
+                                    )}
+                                >
+                                    Convocatoria {etiquetaEstatusVacante(estatusVacante).toLowerCase()}
+                                </span>
+                            )}
                         </div>
                         <h3 className="text-xl md:text-2xl font-black text-gray-900 leading-tight truncate pr-4">
                             {postulacion.vacante.titulo}

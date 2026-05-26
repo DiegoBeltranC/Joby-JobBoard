@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma"
 import { getSession } from "@/lib/session"
 import { revalidatePath } from "next/cache"
+import { esVisibleParaEstudiantes } from "@/lib/vacanteEstatus"
 
 import fs from 'fs';
 import path from 'path';
@@ -23,6 +24,21 @@ export async function postularVacanteAction(formData: FormData) {
         const opcionCV = formData.get("opcionCV") as string; // "perfil" o "nuevo"
         const vacanteId = parseInt(vacanteIdStr);
         const estudianteId = usuario.estudiante.id;
+
+        const vacante = await prisma.vacante.findUnique({
+            where: { id: vacanteId },
+            include: { empresa: { select: { estatus_verificacion: true } } },
+        });
+
+        if (!vacante) {
+            return { error: "La vacante no existe o ya no está disponible." };
+        }
+
+        if (!esVisibleParaEstudiantes(vacante)) {
+            return {
+                error: "Esta convocatoria ya no acepta postulaciones (cerrada o vencida).",
+            };
+        }
 
         // 1. Verificar si ya existe una postulación
         const postulacionExistente = await prisma.postulacion.findUnique({

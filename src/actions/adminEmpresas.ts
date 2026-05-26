@@ -171,7 +171,7 @@ export async function suspenderEmpresa(empresaId: number, motivo: string) {
         // 2. Apagamos todas sus vacantes automáticamente
         await prisma.vacante.updateMany({
             where: { empresaId },
-            data: { activa: false }
+            data: { estatus: "PAUSADA" }
         });
 
         // 3. Registramos la suspensión

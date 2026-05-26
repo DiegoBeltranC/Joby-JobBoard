@@ -12,13 +12,22 @@ import {
     ShieldCheck, 
     Clock, 
     MapPin, 
-    ChevronRight,
     Pencil,
     AlertCircle,
-    Users
+    Users,
+    CalendarClock,
 } from "lucide-react"
 import { encodeId } from "@/lib/utils/hash"
 import Link from "next/link"
+import ExtenderVacanteModal from "@/components/empresa/ExtenderVacanteModal"
+import {
+    esEditableCompleta,
+    clasesBadgeEstatus,
+    clasesTarjetaVacanteEstatus,
+    etiquetaEstatusVacante,
+} from "@/lib/vacanteEstatus"
+
+type FiltroVacantes = "activas" | "vencidas" | "cerradas"
 
 export default function VacantesPage() {
     // Nota: El estatus real debería venir de la sesión o layout, 
@@ -31,6 +40,8 @@ export default function VacantesPage() {
     const [mostrarForm, setMostrarForm] = useState(false)
     const [vacanteSeleccionada, setVacanteSeleccionada] = useState<any | null>(null)
     const [vacanteAEditar, setVacanteAEditar] = useState<any | null>(null)
+    const [vacanteParaExtender, setVacanteParaExtender] = useState<any | null>(null)
+    const [filtroTab, setFiltroTab] = useState<FiltroVacantes>("activas")
     const [estatusEmpresa, setEstatusEmpresa] = useState<string>("PENDIENTE") 
 
     useEffect(() => {
@@ -65,6 +76,20 @@ export default function VacantesPage() {
     }
 
     const estaAprobada = estatusEmpresa === "APROBADA"
+
+    const vacantesFiltradas = (vacantes || []).filter((v) => {
+        if (filtroTab === "activas") {
+            return v.estatus === "ABIERTA" || v.estatus === "PAUSADA"
+        }
+        if (filtroTab === "vencidas") return v.estatus === "VENCIDA"
+        return v.estatus === "CERRADA"
+    })
+
+    const tabs: { id: FiltroVacantes; label: string }[] = [
+        { id: "activas", label: "Activas" },
+        { id: "vencidas", label: "Vencidas" },
+        { id: "cerradas", label: "Cerradas" },
+    ]
 
     return (
         <div className="space-y-8 animate-in fade-in duration-700">
@@ -111,6 +136,26 @@ export default function VacantesPage() {
                 </div>
             )}
 
+            {/* Filtros por estatus */}
+            {(vacantes || []).length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                    {tabs.map((tab) => (
+                        <button
+                            key={tab.id}
+                            type="button"
+                            onClick={() => setFiltroTab(tab.id)}
+                            className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+                                filtroTab === tab.id
+                                    ? "bg-violet-600 text-white shadow-md"
+                                    : "bg-white text-gray-600 border border-gray-200 hover:border-violet-200"
+                            }`}
+                        >
+                            {tab.label}
+                        </button>
+                    ))}
+                </div>
+            )}
+
             {/* Listado de Vacantes */}
             <div className="grid grid-cols-1 gap-4">
                 {isLoading ? (
@@ -136,18 +181,38 @@ export default function VacantesPage() {
                             </button>
                         )}
                     </div>
+                ) : vacantesFiltradas.length === 0 ? (
+                    <div className="text-center py-16 bg-white rounded-3xl border-2 border-dashed border-gray-100">
+                        <p className="text-gray-500 font-medium">No hay vacantes en esta categoría.</p>
+                    </div>
                 ) : (
-                    (vacantes || []).map((v) => (
-                        <div key={v.id} className="bg-white p-6 rounded-3xl border border-gray-100 hover:border-violet-200 hover:shadow-xl hover:shadow-violet-500/5 transition-all group">
+                    vacantesFiltradas.map((v) => (
+                        <div
+                            key={v.id}
+                            className={`relative bg-white p-6 rounded-3xl border transition-all group ${clasesTarjetaVacanteEstatus(v.estatus)}`}
+                        >
+                            {esEditableCompleta(v) && (
+                                <button
+                                    type="button"
+                                    onClick={() => abrirEditarForm(v)}
+                                    title="Editar vacante"
+                                    aria-label="Editar vacante"
+                                    className="absolute top-4 right-4 md:hidden inline-flex items-center justify-center h-9 w-9 rounded-lg border border-gray-200 bg-white text-gray-400 hover:text-violet-600 hover:border-violet-200 hover:bg-violet-50 transition-all"
+                                >
+                                    <Pencil className="w-4 h-4" />
+                                </button>
+                            )}
                             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                                <div className="space-y-1">
-                                    <div className="flex items-center gap-2">
-                                        <h3 className="text-xl font-black text-gray-800 group-hover:text-violet-600 transition-colors uppercase tracking-tight">{v.titulo}</h3>
-                                        {v.activa ? (
-                                             <span className="px-2 py-0.5 bg-emerald-50 text-emerald-600 text-[10px] font-black rounded-lg uppercase tracking-wider">Activa</span>
-                                        ) : (
-                                            <span className="px-2 py-0.5 bg-gray-100 text-gray-500 text-[10px] font-black rounded-lg uppercase tracking-wider">Inactiva</span>
-                                        )}
+                                <div className={`space-y-1 min-w-0 flex-1 ${esEditableCompleta(v) ? "pr-10 md:pr-0" : ""}`}>
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        <h3 className="text-xl font-black text-gray-800 group-hover:text-violet-600 transition-colors tracking-tight">
+                                            {v.titulo}
+                                        </h3>
+                                        <span
+                                            className={`px-2 py-0.5 text-[10px] font-black rounded-lg uppercase tracking-wider border ${clasesBadgeEstatus(v.estatus)}`}
+                                        >
+                                            {etiquetaEstatusVacante(v.estatus)}
+                                        </span>
                                     </div>
                                     <div className="flex flex-wrap items-center gap-4 text-sm text-gray-400 font-medium">
                                         <div className="flex items-center gap-1.5">
@@ -156,40 +221,63 @@ export default function VacantesPage() {
                                         </div>
                                         <div className="flex items-center gap-1.5">
                                             <Clock className="w-4 h-4" />
-                                            {v.modalidad} • {v.tipo_contrato} {v.horario && `• ${v.horario}`}
+                                            {v.modalidad} • {v.tipo_contrato}{" "}
+                                            {v.horario && `• ${v.horario}`}
                                         </div>
                                         {v.fecha_limite && (
-                                            <div className="flex items-center gap-1.5 text-amber-500">
+                                            <div
+                                                className={`flex items-center gap-1.5 ${
+                                                    v.estatus === "VENCIDA"
+                                                        ? "text-red-600 font-semibold"
+                                                        : "text-amber-500"
+                                                }`}
+                                            >
                                                 <AlertCircle className="w-4 h-4" />
-                                                Cierra el {new Date(v.fecha_limite).toLocaleDateString()}
+                                                Cierra el{" "}
+                                                {new Date(v.fecha_limite).toLocaleDateString()}
                                             </div>
                                         )}
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => abrirEditarForm(v)}
-                                        title="Editar vacante"
-                                        aria-label="Editar vacante"
-                                        className="p-3 text-gray-400 hover:text-violet-600 hover:bg-violet-50 rounded-xl transition-all"
-                                    >
-                                        <Pencil className="w-5 h-5" />
-                                    </button>
-                                    <Link 
-                                        href={`/empresa/candidatos/${encodeId(v.id)}`}
-                                        className="flex items-center gap-2 px-5 py-3 bg-teal-50 text-teal-700 font-bold rounded-xl hover:bg-teal-600 hover:text-white transition-all group/cand shadow-sm border border-teal-100"
-                                    >
-                                        <Users className="w-5 h-5 group-hover/cand:scale-110 transition-transform" />
-                                        Candidatos
-                                    </Link>
-                                    <button 
-                                        onClick={() => setVacanteSeleccionada(v)}
-                                        className="flex items-center gap-2 px-5 py-3 bg-gray-50 text-gray-700 font-bold rounded-xl hover:bg-violet-600 hover:text-white transition-all group/btn shadow-sm"
-                                    >
-                                        Ver Detalles
-                                        <ChevronRight className="w-5 h-5 group-hover/btn:translate-x-1 transition-transform" />
-                                    </button>
+                                <div className="flex flex-col gap-2 shrink-0 w-full md:w-auto">
+                                    {v.estatus === "VENCIDA" && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setVacanteParaExtender(v)}
+                                            title="Extender convocatoria"
+                                            className="inline-flex items-center justify-center gap-2 h-10 px-4 w-full md:w-auto bg-violet-600 text-white text-sm font-bold rounded-xl hover:bg-violet-700 transition-all whitespace-nowrap"
+                                        >
+                                            <CalendarClock className="w-4 h-4 shrink-0" />
+                                            Extender convocatoria
+                                        </button>
+                                    )}
+                                    <div className="grid grid-cols-2 md:flex md:flex-row md:items-center gap-2">
+                                        <Link
+                                            href={`/empresa/candidatos/${encodeId(v.id)}`}
+                                            className="inline-flex items-center justify-center gap-2 h-10 px-3 md:px-4 bg-teal-600 text-white text-sm font-bold rounded-xl hover:bg-teal-700 transition-all group/cand shadow-sm whitespace-nowrap"
+                                        >
+                                            <Users className="w-4 h-4 shrink-0" />
+                                            <span className="truncate">Candidatos</span>
+                                        </Link>
+                                        <button
+                                            type="button"
+                                            onClick={() => setVacanteSeleccionada(v)}
+                                            className="inline-flex items-center justify-center h-10 px-3 md:px-4 text-sm font-semibold text-gray-600 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 hover:text-violet-700 hover:border-violet-200 transition-all whitespace-nowrap"
+                                        >
+                                            Ver detalles
+                                        </button>
+                                        {esEditableCompleta(v) && (
+                                            <button
+                                                type="button"
+                                                onClick={() => abrirEditarForm(v)}
+                                                title="Editar vacante"
+                                                aria-label="Editar vacante"
+                                                className="hidden md:inline-flex items-center justify-center h-10 w-10 shrink-0 rounded-xl border border-gray-200 bg-white text-gray-400 hover:text-violet-600 hover:border-violet-200 hover:bg-violet-50 transition-all"
+                                            >
+                                                <Pencil className="w-4 h-4" />
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -217,6 +305,27 @@ export default function VacantesPage() {
                         vacante={vacanteSeleccionada}
                         onClose={() => setVacanteSeleccionada(null)}
                         onUpdate={cargarVacantes}
+                        onExtender={
+                            vacanteSeleccionada.estatus === "VENCIDA"
+                                ? () => {
+                                      setVacanteParaExtender(vacanteSeleccionada)
+                                      setVacanteSeleccionada(null)
+                                  }
+                                : undefined
+                        }
+                    />
+                </div>
+            )}
+
+            {vacanteParaExtender && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                    <ExtenderVacanteModal
+                        vacante={vacanteParaExtender}
+                        onSuccess={() => {
+                            setVacanteParaExtender(null)
+                            cargarVacantes()
+                        }}
+                        onCancel={() => setVacanteParaExtender(null)}
                     />
                 </div>
             )}

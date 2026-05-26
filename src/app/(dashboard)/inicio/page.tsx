@@ -62,14 +62,11 @@ export default async function InicioPage() {
     const vacantes = await prisma.vacante.findMany({
         take: 30, // Anti-DoS
         where: {
-            activa: true,
+            estatus: "ABIERTA",
             empresa: {
-                estatus_verificacion: "APROBADA" // Solo empresas validadas por UTCH
+                estatus_verificacion: "APROBADA",
             },
-            OR: [
-                { fecha_limite: null },
-                { fecha_limite: { gte: new Date() } }
-            ]
+            OR: [{ fecha_limite: null }, { fecha_limite: { gte: new Date() } }],
         },
         select: {
             id: true,

@@ -135,6 +135,7 @@ export default function FormularioVacante({ onSuccess, onCancel, vacanteAEditar 
     const [openEstado, setOpenEstado] = React.useState(false)
     const [openMunicipio, setOpenMunicipio] = React.useState(false)
     const [errorRequisitos, setErrorRequisitos] = React.useState(false)
+    const [confirmarGuardar, setConfirmarGuardar] = React.useState(false)
 
     const {
         register,
@@ -252,6 +253,7 @@ export default function FormularioVacante({ onSuccess, onCancel, vacanteAEditar 
 
             if (res.success) {
                 toast.success(res.message)
+                setConfirmarGuardar(false)
                 onSuccess()
             } else {
                 toast.error("Error al procesar", { description: res.error })
@@ -263,7 +265,23 @@ export default function FormularioVacante({ onSuccess, onCancel, vacanteAEditar 
         }
     }
 
+    const solicitarConfirmacionGuardar = () => {
+        handleSubmit(
+            () => {
+                if (habilidadesSeleccionadas.length === 0 && idiomasSeleccionados.length === 0) {
+                    setErrorRequisitos(true)
+                    setConfirmarGuardar(false)
+                    return
+                }
+                setErrorRequisitos(false)
+                setConfirmarGuardar(true)
+            },
+            () => setConfirmarGuardar(false)
+        )()
+    }
+
     const tienePostulaciones = vacanteAEditar?._count?.postulaciones > 0
+    const esEdicion = !!vacanteAEditar
 
     return (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-lg overflow-hidden animate-in zoom-in-95 duration-300 max-h-[90vh] overflow-y-auto">
@@ -741,18 +759,48 @@ export default function FormularioVacante({ onSuccess, onCancel, vacanteAEditar 
                     <Button
                         type="button"
                         variant="ghost"
-                        onClick={onCancel}
+                        onClick={() => {
+                            setConfirmarGuardar(false)
+                            onCancel()
+                        }}
                         className="text-gray-600 hover:text-gray-900 sm:w-auto"
                     >
                         Descartar
                     </Button>
-                    <Button
-                        type="submit"
-                        disabled={isSubmitting}
-                        className="bg-violet-600 hover:bg-violet-700 text-white font-semibold rounded-xl shadow-sm sm:w-auto sm:min-w-[200px]"
-                    >
-                        {isSubmitting ? "Publicando…" : "Confirmar publicación"}
-                    </Button>
+                    {confirmarGuardar ? (
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:justify-end">
+                            <Button
+                                type="submit"
+                                disabled={isSubmitting}
+                                className="bg-violet-600 hover:bg-violet-700 text-white font-semibold rounded-xl shadow-sm sm:min-w-[200px]"
+                            >
+                                {isSubmitting
+                                    ? esEdicion
+                                        ? "Guardando…"
+                                        : "Publicando…"
+                                    : esEdicion
+                                      ? "Confirmar cambios"
+                                      : "Confirmar publicación"}
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                disabled={isSubmitting}
+                                onClick={() => setConfirmarGuardar(false)}
+                                className="text-gray-600"
+                            >
+                                No
+                            </Button>
+                        </div>
+                    ) : (
+                        <Button
+                            type="button"
+                            onClick={solicitarConfirmacionGuardar}
+                            className="border-violet-300 bg-violet-50 text-violet-800 hover:bg-violet-100 hover:text-violet-900 font-semibold rounded-xl sm:min-w-[200px]"
+                        >
+                            {esEdicion ? "Guardar cambios" : "Publicar vacante"}
+                        </Button>
+                    )}
                 </div>
             </form>
         </div>

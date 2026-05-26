@@ -81,7 +81,10 @@ export default async function EmpresaPublicPage({ params, searchParams }: Params
             enlaces: true,
             fotos_empresa: true,
             vacantes: {
-                where: { activa: true },
+                where: {
+                    estatus: "ABIERTA",
+                    OR: [{ fecha_limite: null }, { fecha_limite: { gte: new Date() } }],
+                },
                 select: {
                     id: true,
                     titulo: true,
@@ -292,7 +295,7 @@ export default async function EmpresaPublicPage({ params, searchParams }: Params
                                 <span className="w-10 h-10 bg-teal-100 rounded-2xl flex items-center justify-center">
                                     <Building2 className="w-5 h-5 text-teal-600" />
                                 </span>
-                                Nuestra Cultura y Misión
+                                Descripción de la vacante
                             </h2>
                             <p className="text-gray-600 text-xl leading-relaxed whitespace-pre-line">
                                 {empresa.descripcion || "Esta empresa aún no ha proporcionado una descripción detallada."}
@@ -304,40 +307,7 @@ export default async function EmpresaPublicPage({ params, searchParams }: Params
                             <GallerySection fotos={empresa.fotos_empresa} />
                         )}
 
-                        {/* OTRAS VACANTES */}
-                        <section>
-                            <h2 className="text-2xl font-black text-gray-900 mb-8 flex items-center gap-4">
-                                <span className="w-10 h-10 bg-teal-100 rounded-2xl flex items-center justify-center">
-                                    <Briefcase className="w-5 h-5 text-teal-600" />
-                                </span>
-                                Otras posiciones abiertas
-                            </h2>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {otrasVacantes.map((v) => (
-                                    <Link 
-                                        key={v.id} 
-                                        href={`/perfil-publico-empresa/${hashId}?vacante=${encodeId(v.id)}`}
-                                        className="bg-white p-8 rounded-[32px] border border-gray-100 hover:border-teal-100 hover:shadow-xl transition-all group"
-                                    >
-                                        <h3 className="text-xl font-black text-gray-800 mb-4 group-hover:text-teal-700 transition-colors">
-                                            {v.titulo}
-                                        </h3>
-                                        <div className="flex flex-wrap gap-2 mb-6">
-                                            <span className="px-3 py-1 bg-gray-50 text-gray-500 rounded-lg text-[10px] font-black uppercase tracking-widest">{v.modalidad}</span>
-                                            {v.horario && <span className="px-3 py-1 bg-violet-50 text-violet-600 rounded-lg text-[10px] font-black uppercase tracking-widest">{v.horario}</span>}
-                                            <span className="px-3 py-1 bg-gray-50 text-gray-500 rounded-lg text-[10px] font-black uppercase tracking-widest">{v.tipo_contrato?.replace('_', ' ')}</span>
-                                        </div>
-                                        <div className="flex items-center justify-between mt-auto pt-6 border-t border-gray-50">
-                                            <div className="flex items-center gap-2 text-xs font-bold text-gray-400">
-                                                <MapPin className="w-4 h-4" />
-                                                {v.municipio}
-                                            </div>
-                                            <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-teal-500 transform group-hover:translate-x-1 transition-all" />
-                                        </div>
-                                    </Link>
-                                ))}
-                            </div>
-                        </section>
+
                     </div>
 
                     {/* COLUMNA DERECHA (SIDEBAR) */}
