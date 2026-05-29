@@ -117,7 +117,7 @@ export default function LoginPage() {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Contraseña</Label>
-                <Link href="#" className={`text-sm font-medium hover:underline ${isEmpresa ? 'text-indigo-600' : 'text-primary'}`}>
+                <Link href="/recuperar-contrasena" className={`text-sm font-medium hover:underline ${isEmpresa ? 'text-indigo-600' : 'text-primary'}`}>
                   ¿Olvidaste tu contraseña?
                 </Link>
               </div>

@@ -357,3 +357,15 @@ model MagicCVDraft {
   
   estudiante   Estudiante @relation(fields: [estudianteId], references: [id], onDelete: Cascade)
 }
+
+// -----------------------------------------------------------------------------
+// TOKENS DE RECUPERACIÓN DE CONTRASEÑA
+// -----------------------------------------------------------------------------
+model PasswordResetToken {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
