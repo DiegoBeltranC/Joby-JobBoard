@@ -5,6 +5,8 @@ import { getSession } from "@/lib/session";
 import { guardarArchivo, eliminarArchivo } from "@/lib/uploadService";
 import { DisponibilidadReubicacion, TipoContrato } from "@prisma/client";
 import { marcarPerfilCompletoSiAplica, revalidateDashboardEstudiante } from "@/lib/syncPerfilEstudiante";
+import { sendEmail } from "@/lib/mail";
+import bcrypt from "bcryptjs";
 
 async function sincronizarHitoPerfilEstudiante(usuarioId: number): Promise<boolean> {
     const usuario = await prisma.user.findUnique({
@@ -23,12 +25,12 @@ async function sincronizarHitoPerfilEstudiante(usuarioId: number): Promise<boole
 }
 
 
-export async function guardarPaso1(data: { 
-    estado: string; 
-    municipio: string; 
-    reubicacion: DisponibilidadReubicacion; 
+export async function guardarPaso1(data: {
+    estado: string;
+    municipio: string;
+    reubicacion: DisponibilidadReubicacion;
     tipos_contrato: TipoContrato[]; // 👈 Nuevo
-    bio: string 
+    bio: string
 }) {
     const session = await getSession();
     if (!session) return { error: "No autorizado" };
@@ -311,5 +313,244 @@ export async function eliminarFotoPerfil() {
         return { success: true };
     } catch (error) {
         return { error: "No se pudo eliminar la foto" };
+    }
+}
+
+export async function actualizarConfiguracionEstudiante(data: {
+    nombre: string;
+    apellidoPaterno: string;
+    apellidoMaterno?: string;
+    matricula: string;
+    carreraId: number;
+}) {
+    const session = await getSession();
+    if (!session) return { error: "No autorizado" };
+
+    if (!data.nombre.trim()) return { error: "El nombre es requerido" };
+    if (!data.apellidoPaterno.trim()) return { error: "El apellido paterno es requerido" };
+    if (!/^\d{10}$/.test(data.matricula.trim())) {
+        return { error: "La matrícula debe tener exactamente 10 números" };
+    }
+
+    try {
+        const usuario = await prisma.user.findUnique({
+            where: { id: session.userId },
+            include: { estudiante: { include: { carrera: true } } }
+        });
+
+        if (!usuario || !usuario.estudiante) {
+            return { error: "Estudiante no encontrado" };
+        }
+
+        const estudiante = usuario.estudiante;
+
+        // Validar matrícula única
+        const estudianteExistente = await prisma.estudiante.findFirst({
+            where: {
+                matricula: data.matricula.trim(),
+                NOT: {
+                    usuarioId: session.userId
+                }
+            }
+        });
+
+        if (estudianteExistente) {
+            return { error: "Esta matrícula ya está registrada por otro estudiante" };
+        }
+
+        // 1. Detección de cambios y validación de Cooldown del Nombre
+        const nombreCambio =
+            estudiante.nombre !== data.nombre.trim() ||
+            estudiante.apellidoPaterno !== data.apellidoPaterno.trim() ||
+            (estudiante.apellidoMaterno || "") !== (data.apellidoMaterno?.trim() || "");
+
+        if (nombreCambio) {
+            // Verificar cooldown de 30 días
+            if (estudiante.nombre_modificado_at) {
+                const msTranscurridos = Date.now() - new Date(estudiante.nombre_modificado_at).getTime();
+                const diasTranscurridos = msTranscurridos / (1000 * 60 * 60 * 24);
+                if (diasTranscurridos < 30) {
+                    return { error: "No puedes modificar tu nombre todavía. Cooldown de 30 días activo." };
+                }
+            }
+        }
+
+        // 2. Detección de cambios y validación de Carrera
+        const carreraCambio = estudiante.carreraId !== data.carreraId;
+
+        if (carreraCambio) {
+            if (estudiante.cambio_carrera_usado) {
+                return { error: "Ya has utilizado tu único cambio de carrera permitido." };
+            }
+        }
+
+        // Preparar datos para actualización
+        const updateData: any = {
+            nombre: data.nombre.trim(),
+            apellidoPaterno: data.apellidoPaterno.trim(),
+            apellidoMaterno: data.apellidoMaterno?.trim() || null,
+            carreraId: data.carreraId,
+        };
+
+        if (nombreCambio) {
+            updateData.nombre_modificado_at = new Date();
+        }
+
+        if (carreraCambio) {
+            updateData.cambio_carrera_usado = true;
+        }
+
+        // Realizar la actualización en la BD
+        await prisma.estudiante.update({
+            where: { usuarioId: session.userId },
+            data: updateData
+        });
+
+        // 3. Enviar correo de notificación consolidado
+        if (nombreCambio || carreraCambio) {
+            let detalles = "Se han realizado cambios de seguridad importantes en tu perfil:\n\n";
+
+            if (nombreCambio) {
+                detalles += `* Nombre modificado de:\n  "${estudiante.nombre} ${estudiante.apellidoPaterno} ${estudiante.apellidoMaterno || ""}"\n  a:\n  "${data.nombre.trim()} ${data.apellidoPaterno.trim()} ${data.apellidoMaterno?.trim() || ""}"\n\n`;
+            }
+
+            if (carreraCambio) {
+                const nuevaCarrera = await prisma.carrera.findUnique({
+                    where: { id: data.carreraId }
+                });
+                detalles += `* Carrera modificada de:\n  "${estudiante.carrera.nombre}"\n  a:\n  "${nuevaCarrera?.nombre || "Nueva Carrera"}"\n\n`;
+            }
+
+            await sendEmail({
+                to: usuario.correo,
+                subject: "Cambios de seguridad en tu cuenta - Joby",
+                title: "¡Configuración de Perfil Actualizada!",
+                message: `${detalles}Si no realizaste estos cambios, por favor cambia tu contraseña inmediatamente o contacta a soporte.`,
+                type: "WARNING"
+            });
+        }
+
+        await sincronizarHitoPerfilEstudiante(session.userId);
+        revalidatePath("/perfil");
+        revalidatePath("/inicio");
+        return { success: true };
+    } catch (error) {
+        console.error("Error al actualizar la configuración:", error);
+        return { error: "Error interno al actualizar la configuración" };
+    }
+}
+
+export async function actualizarPasswordEstudiante(data: {
+    passwordActual: string;
+    passwordNuevo: string;
+}) {
+    const session = await getSession();
+    if (!session) return { error: "No autorizado" };
+
+    if (!data.passwordActual || !data.passwordNuevo) {
+        return { error: "Todos los campos son obligatorios" };
+    }
+
+    if (data.passwordNuevo.length < 8) {
+        return { error: "La nueva contraseña debe tener al menos 8 caracteres" };
+    }
+
+    try {
+        const usuario = await prisma.user.findUnique({
+            where: { id: session.userId }
+        });
+
+        if (!usuario) return { error: "Usuario no encontrado" };
+
+        const passwordMatch = await bcrypt.compare(data.passwordActual, usuario.password_hash);
+        if (!passwordMatch) {
+            return { error: "La contraseña actual es incorrecta" };
+        }
+
+        const hashed = await bcrypt.hash(data.passwordNuevo, 10);
+
+        await prisma.user.update({
+            where: { id: session.userId },
+            data: { password_hash: hashed }
+        });
+
+        // Enviar correo de aviso de seguridad
+        await sendEmail({
+            to: usuario.correo,
+            subject: "Tu contraseña ha sido cambiada - Joby",
+            title: "¡Contraseña Actualizada!",
+            message: `Hola,\n\nTe informamos que la contraseña de tu cuenta en la Bolsa Educativa Joby ha sido actualizada con éxito.\n\nSi no realizaste este cambio, por favor contacta a soporte de inmediato.`,
+            type: "WARNING"
+        });
+
+        return { success: true };
+    } catch (error) {
+        console.error("Error al actualizar la contraseña:", error);
+        return { error: "Error interno al actualizar la contraseña" };
+    }
+}
+
+export async function suspenderCuentaEstudiante(data: {
+    passwordActual: string;
+}) {
+    const session = await getSession();
+    if (!session) return { error: "No autorizado" };
+
+    if (!data.passwordActual) {
+        return { error: "La contraseña es requerida para confirmar" };
+    }
+
+    try {
+        const usuario = await prisma.user.findUnique({
+            where: { id: session.userId },
+            include: { estudiante: true }
+        });
+
+        if (!usuario) return { error: "Usuario no encontrado" };
+
+        const passwordMatch = await bcrypt.compare(data.passwordActual, usuario.password_hash);
+        if (!passwordMatch) {
+            return { error: "La contraseña actual es incorrecta" };
+        }
+
+        const estudianteId = usuario.estudiante?.id;
+        if (!estudianteId) {
+            return { error: "Estudiante no encontrado" };
+        }
+
+        // 1. Borrar todas sus postulaciones inmediatamente
+        await prisma.postulacion.deleteMany({
+            where: { estudianteId }
+        });
+
+        // 2. Establecer deletedAt y scheduledDeletionAt (+15 días)
+        const fechaLimite = new Date(Date.now() + 15 * 24 * 60 * 60 * 1000);
+        await prisma.user.update({
+            where: { id: session.userId },
+            data: {
+                deletedAt: new Date(),
+                scheduledDeletionAt: fechaLimite
+            }
+        });
+
+        // 3. Enviar correo de aviso
+        const fechaFormateada = fechaLimite.toLocaleDateString("es-MX", {
+            day: "numeric",
+            month: "long",
+            year: "numeric"
+        });
+
+        await sendEmail({
+            to: usuario.correo,
+            subject: "Aviso: Proceso de eliminación de cuenta iniciado - Joby",
+            title: "Proceso de eliminación iniciado",
+            message: `Hola,\n\nTe informamos que tu solicitud para suspender y eliminar tu cuenta ha sido procesada.\n\n* Tu perfil ya no es visible para las empresas.\n* Todas tus postulaciones activas han sido eliminadas.\n* Tienes hasta el ${fechaFormateada} para reactivar tu cuenta iniciando sesión y aceptando el aviso que aparecerá.\n\nSi no realizaste esta solicitud, inicia sesión inmediatamente para cancelar el proceso.`,
+            type: "WARNING"
+        });
+
+        return { success: true };
+    } catch (error) {
+        console.error("Error al suspender cuenta:", error);
+        return { error: "Error interno al suspender la cuenta" };
     }
 }

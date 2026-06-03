@@ -6,8 +6,8 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ShieldCheck, Briefcase, GraduationCap, Building2 } from "lucide-react"
-import { loginAction } from "@/actions/auth"
+import { ShieldCheck, Briefcase, GraduationCap, Building2, AlertTriangle, Loader2 } from "lucide-react"
+import { loginAction, reactivarCuentaAction } from "@/actions/auth"
 import { toast } from "sonner"
 
 export default function LoginPage() {
@@ -16,6 +16,10 @@ export default function LoginPage() {
     searchParams.get("tipo") === "empresa" ? "empresa" : "estudiante"
   )
   const [loading, setLoading] = useState(false)
+  const [suspendedInfo, setSuspendedInfo] = useState<{ email: string; scheduledDeletionAt: string } | null>(null)
+  const [showReactivateModal, setShowReactivateModal] = useState(false)
+  const [reactivationPassword, setReactivationPassword] = useState("")
+  const [reactivationLoading, setReactivationLoading] = useState(false)
   const router = useRouter()
 
   const isEmpresa = tipoLogin === "empresa"
@@ -27,6 +31,10 @@ export default function LoginPage() {
     const idCarga = toast.loading("Verificando credenciales...")
     const formData = new FormData(event.currentTarget)
     formData.set("tipo", tipoLogin)
+    const redirectParam = searchParams.get("redirect")
+    if (redirectParam) {
+      formData.set("redirect", redirectParam)
+    }
     const result = await loginAction(formData)
 
     if (result?.error) {
@@ -38,9 +46,16 @@ export default function LoginPage() {
     } else if ((result as any)?.redirect) {
       toast.dismiss(idCarga)
       router.push((result as any).redirect)
+    } else if ((result as any)?.suspended) {
+      toast.dismiss(idCarga)
+      setSuspendedInfo({ email: result.email, scheduledDeletionAt: result.scheduledDeletionAt })
+      setShowReactivateModal(true)
+      setLoading(false)
     } else if (result?.success) {
       toast.success("¡Bienvenido a Joby!", { id: idCarga })
-      if (result.rol === "EMPRESA") {
+      if (redirectParam) {
+        router.push(redirectParam)
+      } else if (result.rol === "EMPRESA") {
         router.push("/empresa/inicio")
       } else {
         router.push("/inicio")
@@ -68,11 +83,10 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => setTipoLogin("estudiante")}
-                className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-bold transition-all duration-300 ${
-                  !isEmpresa
+                className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-bold transition-all duration-300 ${!isEmpresa
                     ? 'bg-white text-primary shadow-sm'
                     : 'text-gray-500 hover:text-gray-700'
-                }`}
+                  }`}
               >
                 <GraduationCap className="w-4 h-4" />
                 Estudiante
@@ -80,11 +94,10 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => setTipoLogin("empresa")}
-                className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-bold transition-all duration-300 ${
-                  isEmpresa
+                className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-bold transition-all duration-300 ${isEmpresa
                     ? 'bg-white text-indigo-600 shadow-sm'
                     : 'text-gray-500 hover:text-gray-700'
-                }`}
+                  }`}
               >
                 <Building2 className="w-4 h-4" />
                 Empresa
@@ -175,11 +188,10 @@ export default function LoginPage() {
               </p>
             </div>
 
-            <div className={`flex items-center justify-center gap-2 text-sm font-medium py-2 px-4 rounded-full w-fit mx-auto ${
-              isEmpresa
+            <div className={`flex items-center justify-center gap-2 text-sm font-medium py-2 px-4 rounded-full w-fit mx-auto ${isEmpresa
                 ? 'text-indigo-600 bg-indigo-100'
                 : 'text-primary bg-primary/10'
-            }`}>
+              }`}>
               {isEmpresa
                 ? <><Building2 className="w-4 h-4" /> Portal empresarial</>
                 : <><ShieldCheck className="w-4 h-4" /> Acceso exclusivo UT</>}
@@ -187,6 +199,85 @@ export default function LoginPage() {
           </div>
         </div>
       </main>
+
+      {/* Modal de Reactivación de Cuenta */}
+      {showReactivateModal && suspendedInfo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl p-8 border border-gray-100 animate-in zoom-in-95 duration-200 space-y-6">
+            <div className="flex items-center gap-3 text-amber-600">
+              <AlertTriangle className="w-8 h-8 animate-bounce" />
+              <h3 className="text-xl font-black">Cuenta Suspendida</h3>
+            </div>
+            
+            <p className="text-sm text-gray-600 leading-relaxed">
+              Tu cuenta se encuentra suspendida temporalmente y está programada para ser eliminada permanentemente el <span className="font-bold text-gray-900">{suspendedInfo.scheduledDeletionAt}</span>.
+            </p>
+
+            <p className="text-sm text-gray-600">
+              ¿Deseas cancelar el proceso de eliminación y reactivar tu cuenta ahora? Ingresa tu contraseña para confirmar:
+            </p>
+
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="reactivationPassword">Contraseña *</Label>
+                <Input
+                  id="reactivationPassword"
+                  type="password"
+                  value={reactivationPassword}
+                  onChange={(e) => setReactivationPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="border-gray-200 focus-visible:ring-teal-500"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowReactivateModal(false);
+                  setSuspendedInfo(null);
+                  setReactivationPassword("");
+                }}
+                className="w-full sm:w-1/2 h-12 rounded-2xl bg-gray-50 hover:bg-gray-100 text-gray-605 text-xs sm:text-sm font-bold transition-all border border-gray-100 cursor-pointer"
+              >
+                No, mantener suspendida
+              </button>
+              <button
+                type="button"
+                disabled={!reactivationPassword || reactivationLoading}
+                onClick={async () => {
+                  setReactivationLoading(true);
+                  const idCarga = toast.loading("Reactivando cuenta...");
+                  const formData = new FormData();
+                  formData.set("email", suspendedInfo.email);
+                  formData.set("password", reactivationPassword);
+                  try {
+                    const res = await reactivarCuentaAction(formData);
+                    if (res?.error) {
+                      toast.error(res.error, { id: idCarga });
+                    } else {
+                      toast.success("¡Bienvenido de nuevo a Bolsa Educativa! Cuenta reactivada.", { id: idCarga });
+                      router.push(res.rol === "EMPRESA" ? "/empresa/inicio" : "/inicio");
+                    }
+                  } catch (err) {
+                    toast.error("Ocurrió un error inesperado al reactivar la cuenta.", { id: idCarga });
+                  } finally {
+                    setReactivationLoading(false);
+                    setShowReactivateModal(false);
+                    setSuspendedInfo(null);
+                    setReactivationPassword("");
+                  }
+                }}
+                className="w-full sm:w-1/2 h-12 rounded-2xl bg-teal-600 hover:bg-teal-700 disabled:bg-gray-100 disabled:text-gray-400 text-white text-xs sm:text-sm font-bold transition-all shadow-lg shadow-teal-100 disabled:shadow-none cursor-pointer flex items-center justify-center gap-2"
+              >
+                {reactivationLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                Sí, reactivar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

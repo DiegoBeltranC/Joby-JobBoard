@@ -153,7 +153,8 @@ export default function RecuperarContrasenaPage() {
               )}
 
               <div className="p-4 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 rounded-2xl text-sm border border-emerald-100 dark:border-emerald-950">
-                Hemos procesado tu solicitud. Si el correo electrónico coincide con alguna cuenta en nuestro sistema, recibirás instrucciones en unos momentos.
+                Hemos procesado tu solicitud. 
+                recibirás instrucciones en unos momentos.
               </div>
               <p className="text-muted-foreground text-xs">
                 ¿No recibiste el correo? Revisa tu carpeta de spam o correo no deseado.

@@ -9,9 +9,10 @@ import Link from "next/link"
 
 interface OTPClientProps {
     email: string
+    redirect?: string
 }
 
-export default function OTPClient({ email }: OTPClientProps) {
+export default function OTPClient({ email, redirect }: OTPClientProps) {
     const router = useRouter()
     const [otp, setOtp] = useState<string[]>(Array(6).fill(""))
     const [isVerifying, setIsVerifying] = useState(false)
@@ -76,9 +77,13 @@ export default function OTPClient({ email }: OTPClientProps) {
             }
         } else {
             toast.success("¡Cuenta verificada exitosamente!", { id: idCarga })
-            // Redirigimos al inicio según el rol
-            const target = res.rol === "EMPRESA" ? "/empresa/inicio" : "/inicio"
-            router.push(target)
+            // Redirigimos al inicio según el rol o al redirect url
+            if (redirect) {
+                router.push(redirect)
+            } else {
+                const target = res.rol === "EMPRESA" ? "/empresa/inicio" : "/inicio"
+                router.push(target)
+            }
         }
     }
 

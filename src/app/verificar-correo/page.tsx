@@ -4,6 +4,7 @@ import OTPClient from "./OTPClient"
 interface PageProps {
     searchParams: Promise<{
         email?: string
+        redirect?: string
     }>
 }
 
@@ -17,7 +18,7 @@ export default async function VerificarCorreoPage({ searchParams }: PageProps) {
 
     return (
         <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-            <OTPClient email={params.email} />
+            <OTPClient email={params.email} redirect={params.redirect} />
         </div>
     )
 }

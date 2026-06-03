@@ -103,6 +103,10 @@ model User {
   otpCode       String?     
   otpExpiresAt  DateTime?
   
+  // --- CAMPOS PARA SUSPENSIÓN Y ELIMINACIÓN ---
+  deletedAt           DateTime?
+  scheduledDeletionAt DateTime?
+  
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
@@ -142,6 +146,10 @@ model Estudiante {
   enlaces           Json?    // { "linkedin": "...", "github": "..." }
   cv_url            String?
   perfil_completado_at DateTime? // Hito: llegó al 100% al menos una vez (no se revierte)
+  
+  // Reglas de negocio de configuración
+  cambio_carrera_usado Boolean   @default(false)
+  nombre_modificado_at DateTime?
   
   // Relaciones
   usuario           User           @relation(fields: [usuarioId], references: [id], onDelete: Cascade)

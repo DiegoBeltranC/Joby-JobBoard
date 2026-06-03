@@ -1,9 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
-import { 
-    Globe, 
-    MapPin, 
-    Building2, 
+import {
+    Globe,
+    MapPin,
+    Building2,
     Briefcase,
     ChevronRight,
     Search,
@@ -24,6 +24,7 @@ import PostularButton from "@/components/PostularButton";
 import { cn } from "@/lib/utils";
 import GallerySection from "@/components/GallerySection";
 import { headers } from "next/headers";
+import { calcularProgresoEstudiante } from "@/lib/perfilEstudiante";
 
 interface Params {
     params: Promise<{ id: string }>;
@@ -61,7 +62,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 export default async function EmpresaPublicPage({ params, searchParams }: Params) {
     const { id: hashId } = await params;
     const { vacante: vacanteHash } = await searchParams;
-    
+
     const empresaId = decodeId(hashId);
     if (!empresaId) notFound();
 
@@ -104,35 +105,48 @@ export default async function EmpresaPublicPage({ params, searchParams }: Params
 
     if (!empresa) notFound();
 
-    const highlightedVacante = highlightedVacanteId 
-        ? empresa.vacantes.find(v => v.id === highlightedVacanteId) 
+    const highlightedVacante = highlightedVacanteId
+        ? empresa.vacantes.find(v => v.id === highlightedVacanteId)
         : null;
-    
-    const otrasVacantes = highlightedVacante 
+
+    const otrasVacantes = highlightedVacante
         ? empresa.vacantes.filter(v => v.id !== highlightedVacanteId)
         : empresa.vacantes;
 
     const session = await getSession();
     let yaPostulado = false;
     let tieneCVPerfil = false;
+    let esPerfilCompleto = false;
 
-    if (session && highlightedVacanteId) {
+    if (session) {
         const usuarioInfo = await prisma.user.findUnique({
             where: { id: session.userId },
-            include: { estudiante: true }
-        });
-        
-        if (usuarioInfo?.estudiante) {
-            tieneCVPerfil = !!usuarioInfo.estudiante.cv_url;
-            const postulacion = await prisma.postulacion.findUnique({
-                where: {
-                    estudianteId_vacanteId: {
-                        estudianteId: usuarioInfo.estudiante.id,
-                        vacanteId: highlightedVacanteId
+            include: {
+                estudiante: {
+                    include: {
+                        experiencias: true,
+                        proyectos: true
                     }
                 }
-            });
-            yaPostulado = !!postulacion;
+            }
+        });
+
+        if (usuarioInfo?.estudiante) {
+            tieneCVPerfil = !!usuarioInfo.estudiante.cv_url;
+            const { progreso } = calcularProgresoEstudiante(usuarioInfo.estudiante);
+            esPerfilCompleto = progreso >= 100 || !!usuarioInfo.estudiante.perfil_completado_at;
+
+            if (highlightedVacanteId) {
+                const postulacion = await prisma.postulacion.findUnique({
+                    where: {
+                        estudianteId_vacanteId: {
+                            estudianteId: usuarioInfo.estudiante.id,
+                            vacanteId: highlightedVacanteId
+                        }
+                    }
+                });
+                yaPostulado = !!postulacion;
+            }
         }
     }
 
@@ -146,16 +160,17 @@ export default async function EmpresaPublicPage({ params, searchParams }: Params
         return <ExternalLink className="w-5 h-5" />;
     };
 
-    const enlaces = empresa.enlaces as Record<string, string> || {};
+    const enlaces = Object.entries(empresa.enlaces as Record<string, string> || {})
+        .filter(([_, url]) => url && url.trim() !== "");
 
     const host = (await headers()).get("host");
     // Detectar si es un entorno local (localhost, 127.0.0.1, o IPs de red local 192.168.x.x)
-    const isLocal = host?.includes("localhost") || 
-                   host?.includes("127.0.0.1") || 
-                   host?.startsWith("192.168.") || 
-                   host?.startsWith("172.") || 
-                   host?.startsWith("10.");
-                   
+    const isLocal = host?.includes("localhost") ||
+        host?.includes("127.0.0.1") ||
+        host?.startsWith("192.168.") ||
+        host?.startsWith("172.") ||
+        host?.startsWith("10.");
+
     const protocol = isLocal ? "http" : "https";
     const shortUrl = `${protocol}://${host}/e/${hashId}`;
 
@@ -184,9 +199,9 @@ export default async function EmpresaPublicPage({ params, searchParams }: Params
                     <div className="flex flex-col md:flex-row items-center md:items-end gap-8 w-full">
                         <div className="w-48 h-48 bg-white rounded-[40px] p-2 shadow-2xl border-8 border-white/20 shrink-0 transform -rotate-1 hover:rotate-0 transition-transform duration-500 overflow-hidden">
                             {empresa.logo_url ? (
-                                <img 
-                                    src={empresa.logo_url} 
-                                    alt={empresa.nombre_comercial} 
+                                <img
+                                    src={empresa.logo_url}
+                                    alt={empresa.nombre_comercial}
                                     className="w-full h-full object-cover rounded-[32px]"
                                 />
                             ) : (
@@ -215,13 +230,15 @@ export default async function EmpresaPublicPage({ params, searchParams }: Params
                                         {new URL(empresa.sitio_web).hostname}
                                     </a>
                                 )}
-                                <div className="flex gap-4">
-                                    {Object.entries(enlaces).map(([platform, url]) => (
-                                        <a key={platform} href={url} target="_blank" className="p-2 bg-white/5 hover:bg-white/20 rounded-xl text-gray-300 hover:text-white transition-all">
-                                            {getSocialIcon(platform)}
-                                        </a>
-                                    ))}
-                                </div>
+                                {enlaces.length > 0 && (
+                                    <div className="flex gap-4">
+                                        {enlaces.map(([platform, url]) => (
+                                            <a key={platform} href={url} target="_blank" className="p-2 bg-white/5 hover:bg-white/20 rounded-xl text-gray-300 hover:text-white transition-all">
+                                                {getSocialIcon(platform)}
+                                            </a>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -232,15 +249,15 @@ export default async function EmpresaPublicPage({ params, searchParams }: Params
             {/* CONTENIDO PRINCIPAL */}
             <main className="max-w-6xl mx-auto px-6 -mt-10 relative z-20 pb-24">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-                    
+
                     {/* COLUMNA IZQUIERDA (CONTENIDO) */}
                     <div className="lg:col-span-8 space-y-12">
-                        
+
                         {/* VACANTE DESTACADA */}
                         {highlightedVacante && (
                             <section className="bg-white rounded-[48px] p-10 shadow-2xl border-4 border-teal-500/20 relative overflow-hidden group">
                                 <div className="absolute top-0 right-0 w-40 h-40 bg-teal-500/5 rounded-full -mr-20 -mt-20 blur-3xl"></div>
-                                
+
                                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
                                     <div>
                                         <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-teal-50 text-teal-700 rounded-full text-[10px] font-black uppercase tracking-widest mb-4">
@@ -279,12 +296,14 @@ export default async function EmpresaPublicPage({ params, searchParams }: Params
                                     </p>
                                 </div>
 
-                                <PostularButton 
-                                    vacanteId={highlightedVacante.id} 
+                                <PostularButton
+                                    vacanteId={highlightedVacante.id}
                                     vacanteTitulo={highlightedVacante.titulo}
                                     empresaNombre={empresa.nombre_comercial}
                                     tieneCVPerfil={tieneCVPerfil}
-                                    yaPostulado={yaPostulado} 
+                                    yaPostulado={yaPostulado}
+                                    isLoggedIn={!!session}
+                                    esPerfilCompleto={esPerfilCompleto}
                                 />
                             </section>
                         )}
@@ -313,7 +332,7 @@ export default async function EmpresaPublicPage({ params, searchParams }: Params
                     {/* COLUMNA DERECHA (SIDEBAR) */}
                     <div className="lg:col-span-4 space-y-8">
                         <div className="flex justify-center w-full -mt-24 mb-8">
-                            <ShareButton 
+                            <ShareButton
                                 title={empresa.nombre_comercial}
                                 text={`¡Mira las vacantes de ${empresa.nombre_comercial} en Joby!`}
                                 url={shortUrl}
@@ -327,25 +346,35 @@ export default async function EmpresaPublicPage({ params, searchParams }: Params
                                 Búsqueda Rápida
                             </h3>
                             <div className="space-y-4">
-                                <Link 
-                                    href="/inicio" 
+                                <Link
+                                    href="/inicio"
                                     className="block w-full py-4 bg-gray-50 hover:bg-gray-100 text-gray-600 font-bold rounded-2xl text-center transition-all"
                                 >
                                     Ver todas las vacantes
                                 </Link>
-                                <div className="pt-6 border-t border-gray-100">
-                                    <p className="text-xs font-bold text-gray-400 mb-4 flex items-center gap-2">
-                                        <ExternalLink className="w-3 h-3" />
-                                        Sigue a {empresa.nombre_comercial} en redes
-                                    </p>
-                                    <div className="grid grid-cols-2 gap-3">
-                                        {Object.entries(enlaces).map(([platform, url]) => (
-                                            <a key={platform} href={url} target="_blank" className="flex items-center gap-2 px-3 py-2 bg-gray-50 hover:bg-teal-50 rounded-xl text-gray-500 hover:text-teal-700 transition-colors text-xs font-bold uppercase tracking-tighter">
-                                                {platform}
-                                            </a>
-                                        ))}
+                                {session && (
+                                    <Link
+                                        href="/inicio"
+                                        className="block w-full py-4 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-2xl text-center transition-all shadow-md hover:shadow-lg"
+                                    >
+                                        Ir a mi Panel
+                                    </Link>
+                                )}
+                                {enlaces.length > 0 && (
+                                    <div className="pt-6 border-t border-gray-100">
+                                        <p className="text-xs font-bold text-gray-400 mb-4 flex items-center gap-2">
+                                            <ExternalLink className="w-3 h-3" />
+                                            Sigue a {empresa.nombre_comercial} en redes
+                                        </p>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            {enlaces.map(([platform, url]) => (
+                                                <a key={platform} href={url} target="_blank" className="flex items-center gap-2 px-3 py-2 bg-gray-50 hover:bg-teal-50 rounded-xl text-gray-500 hover:text-teal-700 transition-colors text-xs font-bold uppercase tracking-tighter">
+                                                    {platform}
+                                                </a>
+                                            ))}
+                                        </div>
                                     </div>
-                                </div>
+                                )}
                             </div>
                         </div>
                     </div>

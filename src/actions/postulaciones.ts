@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { getSession } from "@/lib/session"
 import { revalidatePath } from "next/cache"
 import { esVisibleParaEstudiantes } from "@/lib/vacanteEstatus"
+import { calcularProgresoEstudiante } from "@/lib/perfilEstudiante"
 
 import fs from 'fs';
 import path from 'path';
@@ -15,10 +16,22 @@ export async function postularVacanteAction(formData: FormData) {
 
         const usuario = await prisma.user.findUnique({
             where: { id: session.userId },
-            include: { estudiante: true }
+            include: { 
+                estudiante: {
+                    include: {
+                        experiencias: true,
+                        proyectos: true
+                    }
+                } 
+            }
         });
 
         if (!usuario?.estudiante) return { error: "Solo los estudiantes pueden postularse." };
+
+        const { progreso } = calcularProgresoEstudiante(usuario.estudiante);
+        if (progreso < 100 && !usuario.estudiante.perfil_completado_at) {
+            return { error: "Tu perfil debe estar al 100% para poder postularte." };
+        }
 
         const vacanteIdStr = formData.get("vacanteId") as string;
         const opcionCV = formData.get("opcionCV") as string; // "perfil" o "nuevo"
