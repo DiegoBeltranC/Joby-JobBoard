@@ -31,7 +31,7 @@ const registroEstudianteSchema = z.object({
     apellidoMaterno: z.string().trim().optional(),
     matricula: z.string().trim().regex(/^\d{10}$/, "La matrícula debe tener exactamente 10 números"),
     carreraId: z.string().min(1, "Selecciona tu carrera"),
-    estatus_academico: z.enum(["ACTIVO", "EGRESADO"], { required_error: "Selecciona tu estatus" }),
+    estatus_academico: z.enum(["ACTIVO", "EGRESADO"]),
     periodo_academico: z.string().optional(),
 }).superRefine((data, ctx) => {
     if (data.password !== data.confirmPassword) {
@@ -174,7 +174,8 @@ export default function RegistroPage() {
     // ===== SUBMIT ESTUDIANTE =====
     const onSubmitEstudiante = async (data: RegistroEstudianteValues) => {
         const idCarga = toast.loading("Creando tu cuenta en Joby...")
-        const respuesta = await registrarEstudiante(data)
+        const redirectUrl = searchParams.get("redirect")
+        const respuesta = await registrarEstudiante(data, redirectUrl || undefined)
         if (!respuesta.success) {
             toast.dismiss(idCarga)
             toast.error("Hubo un problema", { description: respuesta.error })
@@ -186,7 +187,8 @@ export default function RegistroPage() {
             router.push(respuesta.redirect)
         } else {
             toast.success("¡Bienvenido a Joby!", { description: "Tu cuenta ha sido creada exitosamente." })
-            router.push("/login")
+            const redirectSuffix = redirectUrl ? `?redirect=${encodeURIComponent(redirectUrl)}` : ""
+            router.push(`/login${redirectSuffix}`)
         }
     }
 

@@ -8,8 +8,10 @@ import { sendEmail } from "@/lib/mail"
 import { toTitleCase } from "@/lib/toTitleCase"
 const resend = new Resend(process.env.RESEND_API_KEY)
 
-export async function registrarEstudiante(datos: any) {
+export async function registrarEstudiante(datos: any, redirectTarget?: string) {
     try {
+        const redirectSuffix = redirectTarget ? `&redirect=${encodeURIComponent(redirectTarget)}` : ""
+
         // 1. Verificar si el correo ya existe
         const usuarioExistente = await prisma.user.findUnique({
             where: { correo: datos.correo }
@@ -19,7 +21,7 @@ export async function registrarEstudiante(datos: any) {
         if (usuarioExistente && !usuarioExistente.verifiedAt) {
             // El usuario existe pero no está verificado. Renovar su OTP.
             await reenviarOTPAction(datos.correo)
-            redirect(`/verificar-correo?email=${encodeURIComponent(datos.correo)}`)
+            redirect(`/verificar-correo?email=${encodeURIComponent(datos.correo)}${redirectSuffix}`)
         }
 
         // Si ya está verificado, no podemos dejarlo registrarse
@@ -39,7 +41,7 @@ export async function registrarEstudiante(datos: any) {
             // Alumno en limbo por matrícula
             const resReenviar = await reenviarOTPAction(matriculaExistente.usuario.correo)
             if (resReenviar.error) return { success: false, error: resReenviar.error }
-            return { success: true, redirect: `/verificar-correo?email=${encodeURIComponent(matriculaExistente.usuario.correo)}` }
+            return { success: true, redirect: `/verificar-correo?email=${encodeURIComponent(matriculaExistente.usuario.correo)}${redirectSuffix}` }
         }
 
         // 2. Encriptar la contraseña
@@ -96,10 +98,10 @@ export async function registrarEstudiante(datos: any) {
         if (!resMail.success) {
             console.error("Mail Error al Registrar:", resMail.error)
             // No bloqueamos el registro si el correo falla, avisamos al usuario
-            return { success: true, redirect: `/verificar-correo?email=${encodeURIComponent(datos.correo)}&warning=mail_failed` }
+            return { success: true, redirect: `/verificar-correo?email=${encodeURIComponent(datos.correo)}${redirectSuffix}&warning=mail_failed` }
         }
 
-        return { success: true, redirect: `/verificar-correo?email=${encodeURIComponent(datos.correo)}` }
+        return { success: true, redirect: `/verificar-correo?email=${encodeURIComponent(datos.correo)}${redirectSuffix}` }
 
     } catch (error: any) {
         // En Next.js 13/14, si tiramos un redirect, tira un error llamado NEXT_REDIRECT

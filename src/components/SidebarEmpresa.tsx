@@ -61,7 +61,7 @@ export default function SidebarEmpresa({ perfil, onClose }: SidebarEmpresaProps)
 
     return (
         <>
-            <aside className="flex flex-col w-80 bg-white border-r border-gray-200 h-screen sticky top-0 rounded-r-[20px] drop-shadow-sm z-40">
+            <aside className="flex flex-col w-80 bg-white border-r border-gray-200 h-screen sticky top-0 rounded-r-[20px] drop-shadow-sm z-40 overflow-y-auto no-scrollbar">
             <div className="p-6">
                 <span className="font-bold text-violet-700 text-xl tracking-tight">Joby</span>
                 <span className="ml-2 text-[10px] font-bold text-violet-400 uppercase tracking-wider bg-violet-50 px-2 py-0.5 rounded-full">Empresa</span>
@@ -216,7 +216,7 @@ export default function SidebarEmpresa({ perfil, onClose }: SidebarEmpresaProps)
             </div>
 
             {/* Navegación */}
-            <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto mt-2">
+            <nav className="flex-1 p-4 space-y-1.5 mt-2">
                 <Link href="/empresa/inicio" className={`flex items-center gap-3 p-3.5 rounded-xl font-medium transition-all ${pathname === '/empresa/inicio' ? 'text-violet-800 bg-violet-50 font-semibold shadow-sm' : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50 group'}`}>
                     <svg className={`w-5 h-5 ${pathname === '/empresa/inicio' ? 'text-violet-600' : 'text-gray-400 group-hover:text-gray-600 transition-colors'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
                     Inicio
