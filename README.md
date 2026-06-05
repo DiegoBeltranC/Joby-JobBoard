@@ -56,7 +56,7 @@ npx prisma db seed
 
 *Si el seed fue exitoso, verás un mensaje verde en la consola.*
 
-### 5. Iniciar el Servidor de Desarrollo
+### 5. Iniciar el Servidor de Desarroll
 ```bash
 npm run dev
 ```
@@ -75,14 +75,4 @@ npm run dev
 ## 💡 Notas Importantes para el Equipo
 * **Cambios en la Base de Datos:** Si alguien del equipo modifica el archivo `schema.prisma`, debes hacer un `git pull` y luego ejecutar `npx prisma db push` y `npx prisma generate` en tu terminal para sincronizar tu entorno.
 
-
-
-
-
-
-
-
-
-
-
-
+## Login

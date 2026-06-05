@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mapas de Arquitectura — JobBy</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
+:root {
+  --bg:#0f1117; --card:#1a1d27; --border:#2a2d3e;
+  --teal:#0d9488; --teal2:#14b8a6; --text:#e2e8f0; --muted:#8892a4;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+header{background:linear-gradient(135deg,#0d948822,#0f1117);border-bottom:1px solid var(--border);padding:2.5rem 2rem;text-align:center;}
+header h1{font-size:2rem;font-weight:800;background:linear-gradient(90deg,#0d9488,#4facfe);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+header p{color:var(--muted);margin-top:.4rem;font-size:.9rem;}
+.container{max-width:1100px;margin:0 auto;padding:3rem 1.5rem;display:flex;flex-direction:column;gap:4rem;}
+
+/* Cards */
+.card{background:var(--card);border:1px solid var(--border);border-radius:1.5rem;overflow:hidden;}
+.card-header{padding:1.4rem 2rem;display:flex;align-items:center;gap:1rem;border-bottom:1px solid var(--border);}
+.badge{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;}
+.card-header h2{font-size:1.15rem;font-weight:700;}
+.card-header p{color:var(--muted);font-size:.82rem;margin-top:.15rem;}
+.card-body{padding:2rem;}
+
+/* Nodes */
+.node{border-radius:10px;padding:.5rem 1rem;font-size:.78rem;font-weight:600;border:1.5px solid transparent;display:inline-flex;align-items:center;gap:.35rem;white-space:nowrap;transition:transform .2s;}
+.node:hover{transform:translateY(-2px);}
+.row{display:flex;align-items:center;justify-content:center;gap:.7rem;flex-wrap:wrap;}
+.col{display:flex;flex-direction:column;gap:.4rem;align-items:center;}
+
+/* Color themes */
+.a{background:#0d948822;border-color:#0d948866;color:#5eead4;}
+.b{background:#6c63ff22;border-color:#6c63ff66;color:#a99fff;}
+.c{background:#f7971e22;border-color:#f7971e66;color:#ffc76e;}
+.d{background:#ff658422;border-color:#ff658466;color:#ff9eb5;}
+.e{background:#4facfe22;border-color:#4facfe66;color:#96d4ff;}
+.ba{background:#0d9488;}
+.bb{background:#6c63ff;}
+.bc{background:#f7971e;}
+.bd{background:#ff6584;}
+.be{background:#4facfe;}
+
+.arrow{width:2px;height:28px;opacity:.4;}
+.arrowh{width:28px;height:2px;opacity:.4;flex-shrink:0;}
+.da{background:linear-gradient(180deg,#0d9488,transparent);}
+.db{background:linear-gradient(180deg,#6c63ff,transparent);}
+.dc{background:linear-gradient(180deg,#f7971e,transparent);}
+.dd{background:linear-gradient(180deg,#ff6584,transparent);}
+.de{background:linear-gradient(180deg,#4facfe,transparent);}
+.dha{background:linear-gradient(90deg,#0d9488,transparent);}
+.dhb{background:linear-gradient(90deg,#6c63ff,transparent);}
+.dhc{background:linear-gradient(90deg,#f7971e,transparent);}
+.dhd{background:linear-gradient(90deg,#ff6584,transparent);}
+.dhe{background:linear-gradient(90deg,#4facfe,transparent);}
+
+.lbl{font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;text-align:center;margin-bottom:.3rem;}
+.box{background:#ffffff07;border:1px dashed #ffffff15;border-radius:12px;padding:.9rem 1.4rem;}
+.tag{display:inline-block;background:#ffffff10;border-radius:6px;font-size:.68rem;padding:.12rem .45rem;color:var(--muted);margin:.1rem;}
+.note{background:#ffffff05;border-left:3px solid;border-radius:0 8px 8px 0;padding:.7rem 1rem;font-size:.78rem;color:var(--muted);margin-top:1.2rem;line-height:1.6;}
+.note b{color:var(--text);}
+.diagram{display:flex;flex-direction:column;align-items:center;gap:.5rem;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🗺️ Mapas de Arquitectura</h1>
+  <p>Proyecto: <strong>JobBy</strong> — Bolsa de Trabajo UT Chetumal &nbsp;·&nbsp; Next.js 15 + PostgreSQL + Prisma</p>
+</header>
+
+<div class="container">
+
+<!-- ══════════════════════════════════════════
+     1. ARQUITECTURA EN CAPAS
+══════════════════════════════════════════ -->
+<div class="card">
+  <div class="card-header">
+    <div class="badge ba">🏛️</div>
+    <div>
+      <h2>1. Arquitectura en Capas</h2>
+      <p>Cada capa tiene una responsabilidad única y solo habla con la capa inmediata inferior.</p>
+    </div>
+  </div>
+  <div class="card-body">
+    <div class="diagram">
+
+      <div class="lbl">Capa 1 — Presentación (UI)</div>
+      <div class="box" style="border-color:#0d948844;width:100%;max-width:680px;">
+        <div class="row">
+          <div class="node a">🖥️ page.tsx (Landing)</div>
+          <div class="node a">🔐 /login</div>
+          <div class="node a">📝 /registro</div>
+          <div class="node a">📊 /dashboard</div>
+          <div class="node a">🏢 /empresa</div>
+          <div class="node a">⚙️ /admin</div>
+        </div>
+      </div>
+
+      <div class="arrow da"></div>
+      <span style="font-size:.7rem;color:var(--muted);">Server Actions (use server)</span>
+
+      <div class="lbl">Capa 2 — Lógica de Negocio (Server Actions)</div>
+      <div class="box" style="border-color:#0d948844;width:100%;max-width:680px;">
+        <div class="row">
+          <div class="node a">🔑 auth.ts</div>
+          <div class="node a">📋 registro.ts</div>
+          <div class="node a">👤 perfil.ts</div>
+          <div class="node a">💼 vacantes.ts</div>
+          <div class="node a">🏢 perfilEmpresa.ts</div>
+          <div class="node a">🛡️ adminEmpresas.ts</div>
+          <div class="node a">📄 cvGenerator.ts</div>
+        </div>
+      </div>
+
+      <div class="arrow da"></div>
+      <span style="font-size:.7rem;color:var(--muted);">Prisma ORM queries</span>
+
+      <div class="lbl">Capa 3 — Acceso a Datos (ORM)</div>
+      <div class="box" style="border-color:#0d948844;width:100%;max-width:680px;">
+        <div class="row">
+          <div class="node a">🔷 prisma.ts (cliente)</div>
+          <div class="node a">📐 schema.prisma</div>
+          <div class="node a">🌱 seed.ts</div>
+          <div class="node a">📁 session.ts</div>
+        </div>
+      </div>
+
+      <div class="arrow da"></div>
+      <span style="font-size:.7rem;color:var(--muted);">SQL / TCP</span>
+
+      <div class="lbl">Capa 4 — Base de Datos</div>
+      <div class="box" style="border-color:#0d948844;width:100%;max-width:680px;">
+        <div class="row">
+          <div class="node a">🐘 PostgreSQL</div>
+          <div class="node a">👤 User</div>
+          <div class="node a">🎓 Estudiante</div>
+          <div class="node a">🏢 Empresa</div>
+          <div class="node a">💼 Vacante</div>
+          <div class="node a">📄 MagicCVDraft</div>
+        </div>
+      </div>
+
+      <div class="arrow da"></div>
+      <span style="font-size:.7rem;color:var(--muted);">SMTP / API</span>
+
+      <div class="lbl">Capa 5 — Servicios Externos</div>
+      <div class="box" style="border-color:#0d948844;width:100%;max-width:680px;">
+        <div class="row">
+          <div class="node a">📧 Resend API (OTP Email)</div>
+          <div class="node a">☁️ uploadService.ts (Fotos/CV)</div>
+        </div>
+      </div>
+    </div>
+    <div class="note" style="border-color:#0d9488;">
+      <b>Flujo real:</b> El usuario llena el formulario en <b>/login</b> → el componente llama a <b>loginAction()</b> (Server Action) → esta consulta a <b>Prisma</b> → Prisma ejecuta SQL en <b>PostgreSQL</b>. Si necesita OTP, invoca <b>Resend API</b>. Ninguna capa salta a otra que no sea la adyacente.
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     2. CLIENTE-SERVIDOR
+══════════════════════════════════════════ -->
+<div class="card">
+  <div class="card-header">
+    <div class="badge bb">🔗</div>
+    <div>
+      <h2>2. Cliente-Servidor</h2>
+      <p>El navegador solicita páginas/acciones al servidor Next.js, que responde con HTML o datos.</p>
+    </div>
+  </div>
+  <div class="card-body">
+    <div class="diagram">
+      <div class="row" style="align-items:stretch;gap:1.5rem;flex-wrap:wrap;">
+
+        <div style="background:#6c63ff12;border:1.5px solid #6c63ff33;border-radius:14px;padding:1.2rem;min-width:200px;">
+          <div class="lbl">CLIENTE (Navegador)</div>
+          <div class="col">
+            <div class="node b">🖥️ React Components</div>
+            <div class="node b">🎨 Tailwind CSS</div>
+            <div class="node b">🧩 shadcn/ui</div>
+            <div class="node b">👤 Estudiante / Empresa</div>
+          </div>
+        </div>
+
+        <div class="col" style="gap:.5rem;">
+          <div style="font-size:.68rem;color:#6c63ff;">HTTP GET (SSR / RSC)</div>
+          <div style="font-size:1.4rem;">→</div>
+          <div style="font-size:.68rem;color:#6c63ff;">Server Action POST</div>
+          <div style="font-size:1.4rem;">→</div>
+          <div style="font-size:.68rem;color:#6c63ff;">← HTML / JSON</div>
+          <div style="font-size:1.4rem;">←</div>
+        </div>
+
+        <div style="background:#6c63ff12;border:1.5px solid #6c63ff33;border-radius:14px;padding:1.2rem;min-width:220px;">
+          <div class="lbl">SERVIDOR (Next.js 15)</div>
+          <div class="col">
+            <div class="node b">⚙️ App Router (RSC)</div>
+            <div class="node b">🔒 Middleware / Session</div>
+            <div class="node b">📦 Server Actions</div>
+            <div class="node b">🔷 Prisma Client</div>
+          </div>
+        </div>
+
+        <div class="col" style="gap:.5rem;">
+          <div style="font-size:.68rem;color:#6c63ff;">SQL TCP</div>
+          <div style="font-size:1.4rem;">→</div>
+          <div style="font-size:.68rem;color:#6c63ff;">← Rows</div>
+          <div style="font-size:1.4rem;">←</div>
+        </div>
+
+        <div style="background:#6c63ff12;border:1.5px solid #6c63ff33;border-radius:14px;padding:1.2rem;min-width:180px;">
+          <div class="lbl">BASE DE DATOS</div>
+          <div class="col">
+            <div class="node b">🐘 PostgreSQL</div>
+            <div class="node b">🗂️ 10+ tablas</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+    <div class="note" style="border-color:#6c63ff;">
+      Next.js 15 usa <b>React Server Components (RSC)</b>: la mayor parte del HTML se genera en el servidor, el cliente recibe páginas listas. Los formularios usan <b>Server Actions</b> (POST directo al servidor sin API REST explícita). Las cookies de sesión se manejan 100% en el servidor.
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     3. MICROSERVICIOS
+══════════════════════════════════════════ -->
+<div class="card">
+  <div class="card-header">
+    <div class="badge bc">🧩</div>
+    <div>
+      <h2>3. Microservicios</h2>
+      <p>Dominios funcionales independientes que podrían desplegarse por separado.</p>
+    </div>
+  </div>
+  <div class="card-body">
+    <div class="diagram">
+      <div class="node c" style="font-size:.9rem;padding:.6rem 1.5rem;">🌐 Frontend — Next.js App Router (API Gateway interno)</div>
+      <div class="arrow dc"></div>
+
+      <div class="row" style="align-items:stretch;gap:1rem;flex-wrap:wrap;">
+
+        <div style="background:#f7971e12;border:1.5px dashed #f7971e33;border-radius:14px;padding:1rem;min-width:160px;text-align:center;">
+          <div class="lbl">Auth Service</div>
+          <div class="col">
+            <div class="node c">🔑 auth.ts</div>
+            <div class="tag">loginAction</div>
+            <div class="tag">logoutAction</div>
+            <div class="tag">verificarOTP</div>
+            <div class="tag">Cookies JWT</div>
+            <div class="tag">Resend Email</div>
+          </div>
+        </div>
+
+        <div style="background:#f7971e12;border:1.5px dashed #f7971e33;border-radius:14px;padding:1rem;min-width:160px;text-align:center;">
+          <div class="lbl">User Service</div>
+          <div class="col">
+            <div class="node c">👤 registro.ts</div>
+            <div class="node c">🎓 perfil.ts</div>
+            <div class="tag">Estudiante</div>
+            <div class="tag">bcrypt hash</div>
+            <div class="tag">OTP code</div>
+          </div>
+        </div>
+
+        <div style="background:#f7971e12;border:1.5px dashed #f7971e33;border-radius:14px;padding:1rem;min-width:160px;text-align:center;">
+          <div class="lbl">Empresa Service</div>
+          <div class="col">
+            <div class="node c">🏢 perfilEmpresa.ts</div>
+            <div class="node c">📋 registroEmpresa.ts</div>
+            <div class="tag">CRUD empresa</div>
+            <div class="tag">Galería fotos</div>
+            <div class="tag">EstatusEmpresa</div>
+          </div>
+        </div>
+
+        <div style="background:#f7971e12;border:1.5px dashed #f7971e33;border-radius:14px;padding:1rem;min-width:160px;text-align:center;">
+          <div class="lbl">Vacantes Service</div>
+          <div class="col">
+            <div class="node c">💼 vacantes.ts</div>
+            <div class="tag">CRUD vacantes</div>
+            <div class="tag">TipoContrato</div>
+            <div class="tag">ModalidadTrabajo</div>
+          </div>
+        </div>
+
+        <div style="background:#f7971e12;border:1.5px dashed #f7971e33;border-radius:14px;padding:1rem;min-width:160px;text-align:center;">
+          <div class="lbl">Admin Service</div>
+          <div class="col">
+            <div class="node c">🛡️ adminEmpresas.ts</div>
+            <div class="node c">⚙️ adminConfig.ts</div>
+            <div class="tag">Aprobar/Rechazar</div>
+            <div class="tag">HistorialComunicacion</div>
+          </div>
+        </div>
+
+        <div style="background:#f7971e12;border:1.5px dashed #f7971e33;border-radius:14px;padding:1rem;min-width:160px;text-align:center;">
+          <div class="lbl">CV Service</div>
+          <div class="col">
+            <div class="node c">📄 cvGenerator.ts</div>
+            <div class="node c">🖼️ cv.ts</div>
+            <div class="tag">MagicCVDraft</div>
+            <div class="tag">PDF export</div>
+            <div class="tag">uploadService</div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="arrow dc"></div>
+      <div class="node c" style="font-size:.85rem;">🐘 PostgreSQL — Base de datos compartida</div>
+    </div>
+    <div class="note" style="border-color:#f7971e;">
+      Hoy los servicios comparten la misma BD y proceso (monolito modular). En una evolución real, cada <b>Server Action domain</b> podría extraerse a su propio microservicio con BD propia: el <b>Auth Service</b> con Redis para sesiones, el <b>CV Service</b> con almacenamiento en S3, etc.
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     4. SOA
+══════════════════════════════════════════ -->
+<div class="card">
+  <div class="card-header">
+    <div class="badge bd">🔌</div>
+    <div>
+      <h2>4. Arquitectura Orientada a Servicios (SOA)</h2>
+      <p>Servicios con contratos bien definidos, comunicados a través de un bus de servicios.</p>
+    </div>
+  </div>
+  <div class="card-body">
+    <div class="diagram">
+
+      <div class="row" style="flex-wrap:wrap;gap:1.2rem;align-items:stretch;">
+
+        <div style="background:#ff658412;border:1.5px solid #ff658433;border-radius:14px;padding:1rem 1.2rem;text-align:center;min-width:160px;">
+          <div class="lbl">Consumidores</div>
+          <div class="col">
+            <div class="node d">🎓 Estudiante</div>
+            <div class="node d">🏢 Empresa</div>
+            <div class="node d">🛡️ Admin</div>
+          </div>
+        </div>
+
+        <div class="col" style="justify-content:center;">
+          <div style="font-size:.68rem;color:#ff6584;text-align:center;">Contrato:<br>FormData / Cookies</div>
+          <div style="font-size:1.4rem;text-align:center;">⇄</div>
+        </div>
+
+        <div style="background:#ff658412;border:2px solid #ff658455;border-radius:14px;padding:1.2rem 1.5rem;min-width:240px;text-align:center;">
+          <div class="lbl">BUS DE SERVICIOS</div>
+          <div class="node d" style="width:100%;justify-content:center;margin-bottom:.6rem;">🚌 Next.js App Router + Middleware</div>
+          <div class="row" style="gap:.3rem;">
+            <div class="tag">Autenticación cookie</div>
+            <div class="tag">Autorización por rol</div>
+            <div class="tag">Enrutamiento RSC</div>
+            <div class="tag">Revalidación caché</div>
+          </div>
+        </div>
+
+        <div class="col" style="justify-content:center;">
+          <div style="font-size:.68rem;color:#ff6584;text-align:center;">Contrato:<br>Prisma types</div>
+          <div style="font-size:1.4rem;text-align:center;">⇄</div>
+        </div>
+
+        <div style="background:#ff658412;border:1.5px solid #ff658433;border-radius:14px;padding:1rem 1.2rem;min-width:180px;">
+          <div class="lbl">Servicios Proveedores</div>
+          <div class="col">
+            <div class="node d">🔑 Auth Service</div>
+            <div class="node d">👤 Perfil Service</div>
+            <div class="node d">💼 Vacantes Service</div>
+            <div class="node d">📄 CV Service</div>
+            <div class="node d">🛡️ Admin Service</div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="row" style="margin-top:1rem;">
+        <div class="node d">📋 Contrato entrada: FormData tipado</div>
+        <div class="node d">📋 Contrato salida: {error?} | {success, data}</div>
+        <div class="node d">📋 Auth: Cookie "session" firmada</div>
+      </div>
+
+    </div>
+    <div class="note" style="border-color:#ff6584;">
+      Cada <b>Server Action</b> actúa como un servicio con contrato explícito: recibe <b>FormData</b> y retorna siempre <code>{error: string}</code> o <code>{success: true, ...}</code>. El <b>Middleware de Next.js</b> hace las veces de bus: valida la sesión y redirige según el rol antes de que el request llegue al servicio.
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     5. MONOLÍTICA
+══════════════════════════════════════════ -->
+<div class="card">
+  <div class="card-header">
+    <div class="badge be">🧱</div>
+    <div>
+      <h2>5. Arquitectura Monolítica</h2>
+      <p>Toda la aplicación vive en un único proceso desplegable.</p>
+    </div>
+  </div>
+  <div class="card-body">
+    <div class="diagram">
+
+      <div style="background:#4facfe10;border:2px solid #4facfe33;border-radius:18px;padding:2rem;width:100%;max-width:700px;">
+        <div style="text-align:center;color:#4facfe;font-weight:700;font-size:.85rem;text-transform:uppercase;letter-spacing:.1em;margin-bottom:1.4rem;">
+          📦 MONOLITO — JobBy (Un solo proceso Node.js)
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.8rem;">
+          <div style="background:#ffffff08;border-radius:10px;padding:.8rem;text-align:center;">
+            <div class="lbl">UI / Rutas</div>
+            <div class="col" style="gap:.3rem;">
+              <div class="node e" style="font-size:.72rem;">/login</div>
+              <div class="node e" style="font-size:.72rem;">/registro</div>
+              <div class="node e" style="font-size:.72rem;">/dashboard</div>
+              <div class="node e" style="font-size:.72rem;">/empresa</div>
+              <div class="node e" style="font-size:.72rem;">/admin</div>
+              <div class="node e" style="font-size:.72rem;">/perfil</div>
+            </div>
+          </div>
+          <div style="background:#ffffff08;border-radius:10px;padding:.8rem;text-align:center;">
+            <div class="lbl">Lógica de Negocio</div>
+            <div class="col" style="gap:.3rem;">
+              <div class="node e" style="font-size:.72rem;">auth.ts</div>
+              <div class="node e" style="font-size:.72rem;">registro.ts</div>
+              <div class="node e" style="font-size:.72rem;">perfil.ts</div>
+              <div class="node e" style="font-size:.72rem;">vacantes.ts</div>
+              <div class="node e" style="font-size:.72rem;">adminEmpresas.ts</div>
+              <div class="node e" style="font-size:.72rem;">cvGenerator.ts</div>
+            </div>
+          </div>
+          <div style="background:#ffffff08;border-radius:10px;padding:.8rem;text-align:center;">
+            <div class="lbl">Datos / Infra</div>
+            <div class="col" style="gap:.3rem;">
+              <div class="node e" style="font-size:.72rem;">prisma.ts</div>
+              <div class="node e" style="font-size:.72rem;">session.ts</div>
+              <div class="node e" style="font-size:.72rem;">uploadService.ts</div>
+              <div class="node e" style="font-size:.72rem;">schema.prisma</div>
+              <div class="node e" style="font-size:.72rem;">PostgreSQL</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:1rem;text-align:center;font-size:.75rem;color:#4facfe88;">
+          Todo desplegado en un solo servidor &nbsp;·&nbsp; Un solo <code>npm run build</code> &nbsp;·&nbsp; Un solo proceso Node.js
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:1rem;flex-wrap:wrap;gap:.5rem;">
+        <div class="node e">✅ Fácil de desarrollar</div>
+        <div class="node e">✅ Deploy simple (Vercel / VPS)</div>
+        <div class="node e">✅ Sin latencia entre servicios</div>
+        <div class="node e">⚠️ Escala todo junto</div>
+        <div class="node e">⚠️ Un error crítico afecta todo</div>
+      </div>
+
+    </div>
+    <div class="note" style="border-color:#4facfe;">
+      JobBy <b>nació y opera como monolito</b>: un solo repositorio, un solo build, un solo despliegue en Vercel. Es la elección correcta para un proyecto universitario. La modularidad interna (domains en <code>/actions</code>, componentes en <code>/components</code>) permite que en el futuro se pueda <b>extraer microservicios</b> sin reescribir todo.
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════
+     CONCLUSIONES — Punto 5
+══════════════════════════════════════════ -->
+<style>
+.conclusion-card{background:linear-gradient(135deg,#0d948811,#6c63ff0a);border:1px solid #0d948844;border-radius:1.5rem;overflow:hidden;}
+.conclusion-header{padding:1.6rem 2rem;display:flex;align-items:center;gap:1.2rem;border-bottom:1px solid #0d948833;background:linear-gradient(90deg,#0d948814,transparent);}
+.conclusion-header h2{font-size:1.25rem;font-weight:800;background:linear-gradient(90deg,#14b8a6,#4facfe);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.conclusion-header p{color:var(--muted);font-size:.83rem;margin-top:.2rem;}
+.conclusion-body{padding:2rem 2.2rem;display:flex;flex-direction:column;gap:2rem;}
+
+.choice-block{border-radius:1rem;padding:1.6rem 1.8rem;position:relative;overflow:hidden;}
+.choice-block::before{content:'';position:absolute;top:0;left:0;width:4px;height:100%;border-radius:4px 0 0 4px;}
+.choice-first{background:#0d948810;border:1px solid #0d948833;}
+.choice-first::before{background:linear-gradient(180deg,#0d9488,#14b8a6);}
+.choice-second{background:#6c63ff10;border:1px solid #6c63ff33;}
+.choice-second::before{background:linear-gradient(180deg,#6c63ff,#a99fff);}
+
+.choice-label{display:inline-flex;align-items:center;gap:.5rem;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;padding:.3rem .8rem;border-radius:99px;margin-bottom:.9rem;}
+.label-first{background:#0d948822;color:#5eead4;border:1px solid #0d948866;}
+.label-second{background:#6c63ff22;color:#a99fff;border:1px solid #6c63ff66;}
+
+.choice-title{font-size:1.05rem;font-weight:700;margin-bottom:.6rem;}
+.choice-title span{font-size:.85rem;font-weight:400;color:var(--muted);margin-left:.4rem;}
+.choice-text{color:#cbd5e1;font-size:.86rem;line-height:1.8;margin-bottom:1.1rem;}
+.choice-text b{color:var(--text);}
+
+.criteria-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:.7rem;margin-top:.5rem;}
+.criterion{background:#ffffff07;border:1px solid #ffffff10;border-radius:.75rem;padding:.75rem 1rem;}
+.criterion-title{font-size:.68rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:.35rem;display:flex;align-items:center;gap:.35rem;}
+.criterion-val{font-size:.82rem;color:var(--text);line-height:1.5;}
+.badge-ok{color:#34d399;}
+.badge-warn{color:#fbbf24;}
+
+.divider-line{height:1px;background:linear-gradient(90deg,transparent,#ffffff15,transparent);margin:.5rem 0;}
+</style>
+
+<div class="card conclusion-card">
+  <div class="conclusion-header">
+    <div class="badge" style="background:#0d9488;font-size:1.4rem;width:50px;height:50px;border-radius:14px;">💡</div>
+    <div>
+      <h2>5. Conclusiones — ¿Qué arquitectura elegiría?</h2>
+      <p>Análisis basado en el proyecto JobBy: escalabilidad, equipo, mantenibilidad y presupuesto.</p>
+    </div>
+  </div>
+  <div class="conclusion-body">
+
+    <!-- PRIMERA ELECCIÓN -->
+    <div class="choice-block choice-first">
+      <div class="choice-label label-first">🥇 Primera elección</div>
+      <div class="choice-title">Arquitectura en Capas <span>— Layered Architecture</span></div>
+      <p class="choice-text">
+        Para el proyecto <b>JobBy</b>, elegiría la <b>Arquitectura en Capas</b> como primera opción.
+        Esta arquitectura organiza el sistema en cuatro capas bien definidas (Presentación → Lógica de Negocio → Acceso a Datos → Base de Datos),
+        lo que se alinea perfectamente con el stack elegido: <b>Next.js 15 con Server Actions</b> actúa como capa de presentación y negocio,
+        <b>Prisma ORM</b> como capa de acceso a datos y <b>PostgreSQL</b> como capa de persistencia.
+        <br><br>
+        Esta separación de responsabilidades hace que cada parte del sistema sea <b>fácil de entender, depurar y modificar</b>
+        de forma independiente. Si se necesita cambiar la lógica de vacantes, solo se toca <code>vacantes.ts</code>
+        sin afectar la UI ni la base de datos. Es la arquitectura que <b>ya implementamos de forma natural</b> en el proyecto,
+        lo que significa que no hay costo de curva de aprendizaje adicional.
+      </p>
+      <div class="criteria-grid">
+        <div class="criterion">
+          <div class="criterion-title"><span class="badge-ok">▲</span> Escalabilidad deseada</div>
+          <div class="criterion-val">Escala verticalmente de forma sencilla. Para un proyecto universitario con crecimiento moderado es suficiente; en el futuro puede evolucionar a microservicios extrayendo capas.</div>
+        </div>
+        <div class="criterion">
+          <div class="criterion-title"><span class="badge-ok">▲</span> Tamaño del equipo</div>
+          <div class="criterion-val">Ideal para equipos pequeños (2–5 personas). Las capas actúan como fronteras naturales de trabajo: un miembro trabaja en UI, otro en Server Actions, otro en el schema de BD.</div>
+        </div>
+        <div class="criterion">
+          <div class="criterion-title"><span class="badge-ok">▲</span> Mantenibilidad y modularidad</div>
+          <div class="criterion-val">Alta mantenibilidad: cada capa tiene una única responsabilidad. Agregar una nueva feature solo requiere tocar el archivo de acción correspondiente y la página asociada.</div>
+        </div>
+        <div class="criterion">
+          <div class="criterion-title"><span class="badge-ok">▲</span> Presupuesto y tiempo</div>
+          <div class="criterion-val">Costo mínimo: un solo deploy en Vercel (gratis). Tiempo de desarrollo corto porque Next.js ya impone esta estructura. No se necesita infraestructura adicional.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider-line"></div>
+
+    <!-- SEGUNDA ELECCIÓN -->
+    <div class="choice-block choice-second">
+      <div class="choice-label label-second">🥈 Segunda elección</div>
+      <div class="choice-title">Arquitectura Cliente-Servidor <span>— Client-Server</span></div>
+      <p class="choice-text">
+        Como segunda opción elegiría la <b>Arquitectura Cliente-Servidor</b>. En este modelo existen dos actores
+        bien diferenciados: el <b>cliente</b> (el navegador del usuario) que hace solicitudes, y el <b>servidor</b>
+        (Next.js corriendo en un VPS o en Vercel) que procesa esas solicitudes y responde con datos o páginas completas.
+        La comunicación entre ambos ocurre siempre a través de HTTP, con una frontera clara de quién pide y quién responde.
+        <br><br>
+        En JobBy esta arquitectura se ve de forma muy concreta: cuando un estudiante abre <code>/dashboard</code>,
+        el navegador le hace un <b>HTTP GET</b> al servidor → Next.js ejecuta el <b>React Server Component</b> en el servidor,
+        consulta PostgreSQL a través de Prisma y devuelve el <b>HTML ya armado</b> al cliente. No hay API REST intermedia,
+        no hay JSON de ida y vuelta: el servidor entrega la página lista para renderizar.
+        Cuando el estudiante envía un formulario (postular a una vacante, editar su perfil),
+        el navegador dispara un <b>Server Action POST</b> → el servidor valida, escribe en BD y responde con el nuevo estado.
+        El cliente nunca toca la base de datos directamente; toda la lógica sensible vive y muere en el servidor.
+        <br><br>
+        Esto la hace la segunda arquitectura más adecuada porque <b>Next.js ya implementa este modelo de forma nativa</b>:
+        el Middleware de autenticación actúa como guardián del servidor, el App Router decide qué componente ejecutar en el servidor
+        y cuáles en el cliente, y las cookies de sesión nunca abandonan el lado del servidor.
+        A diferencia de microservicios o SOA, no se necesita coordinar múltiples procesos, gestionar contratos entre APIs
+        ni montar infraestructura adicional. Un único servidor resuelve todo, reduciendo la complejidad operativa a <b>casi cero</b>.
+      </p>
+      <div class="criteria-grid">
+        <div class="criterion">
+          <div class="criterion-title"><span class="badge-warn">◆</span> Escalabilidad deseada</div>
+          <div class="criterion-val">
+            Escala horizontalmente levantando más instancias del servidor Next.js detrás de un balanceador de carga.
+            Vercel hace esto automáticamente con <b>Edge Functions y serverless</b>: cada ruta puede escalar de forma independiente
+            sin tocar el código. Para la carga esperada de una bolsa universitaria es más que suficiente.
+            La única limitación aparece si el tráfico crece exponencialmente, caso en el que habría que separar
+            el servidor de BD en su propia instancia — algo trivial sin reescribir lógica.
+          </div>
+        </div>
+        <div class="criterion">
+          <div class="criterion-title"><span class="badge-ok">▲</span> Tamaño del equipo</div>
+          <div class="criterion-val">
+            Ideal para equipos pequeños (2–4 personas). La división cliente/servidor es el vocabulario base
+            de cualquier desarrollador web: todos saben qué va en el navegador y qué en el servidor.
+            No se necesitan especialistas en DevOps, orquestación de contenedores ni diseño de contratos entre APIs.
+            Un solo miembro puede arrancar el proyecto completo con <code>npm run dev</code> y trabajar
+            en ambos lados de la frontera sin fricción.
+          </div>
+        </div>
+        <div class="criterion">
+          <div class="criterion-title"><span class="badge-warn">◆</span> Mantenibilidad y modularidad</div>
+          <div class="criterion-val">
+            La mantenibilidad es buena siempre que se mantenga disciplina interna: si el código del servidor
+            crece sin organización, puede convertirse en un monolito difícil de navegar.
+            Por eso la combinamos con la Arquitectura en Capas: las capas imponen el orden interno
+            (cada Server Action en su dominio, Prisma solo en la capa de acceso a datos)
+            mientras que cliente-servidor define la frontera externa. Juntas resuelven
+            tanto la organización como la separación de responsabilidades.
+          </div>
+        </div>
+        <div class="criterion">
+          <div class="criterion-title"><span class="badge-ok">▲</span> Presupuesto y tiempo</div>
+          <div class="criterion-val">
+            Costo de infraestructura: <b>$0</b> con Vercel plan gratuito.
+            Tiempo de implementación: prácticamente nulo porque Next.js 15 impone esta arquitectura por diseño —
+            no hay que tomar decisiones sobre cómo estructurar el cliente y el servidor,
+            el framework ya lo resuelve con el App Router, los Server Components y los Server Actions.
+            Esto libera al equipo para enfocarse en la lógica de negocio en lugar de la infraestructura.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- NOTA FINAL -->
+    <div class="note" style="border-color:#0d9488;background:#0d948808;margin-top:.5rem;">
+      <b>Reflexión final:</b> Ambas arquitecturas no son excluyentes — en la práctica, <b>JobBy las combina</b>:
+      usa la separación Cliente-Servidor que provee Next.js y, dentro del servidor, organiza el código en Capas.
+      Esta combinación ofrece lo mejor de los dos modelos: simplicidad operativa del cliente-servidor y claridad de responsabilidades de las capas.
+      Para un proyecto universitario con equipo reducido, presupuesto limitado y plazos de entrega cortos,
+      esta combinación es la decisión técnica más sólida y pragmática.
+    </div>
+
+  </div>
+</div>
+
+</div><!-- /container -->
+</body>
+</html>
