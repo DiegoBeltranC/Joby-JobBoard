@@ -83,3 +83,4 @@ npm run dev
 
 ## Login
 ## Versión 1.0.0
+## Fix: validación de contraseña
