@@ -75,3 +75,4 @@ npm run dev
 ## 💡 Notas Importantes para el Equipo
 * **Cambios en la Base de Datos:** Si alguien del equipo modifica el archivo `schema.prisma`, debes hacer un `git pull` y luego ejecutar `npx prisma db push` y `npx prisma generate` en tu terminal para sincronizar tu entorno.
 
+## Versión 1.0.0
