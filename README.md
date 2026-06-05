@@ -56,7 +56,7 @@ npx prisma db seed
 
 *Si el seed fue exitoso, verás un mensaje verde en la consola.*
 
-### 5. Iniciar el Servidor de Desarrollo
+### 5. Iniciar el Servidor de Desarroll
 ```bash
 npm run dev
 ```
