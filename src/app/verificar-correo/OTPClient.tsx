@@ -1,23 +1,68 @@
 "use client"
 
-import { useState, useRef, KeyboardEvent, ClipboardEvent } from "react"
+import { useState, useRef, useEffect, KeyboardEvent, ClipboardEvent } from "react"
 import { useRouter } from "next/navigation"
-import { reenviarOTPAction, verificarOTPAction } from "@/actions/auth"
+import { reenviarOTPAction, verificarOTPAction, establecerCookieRegistroPendienteAction, cancelarRegistroPendienteAction, prepararModificacionCorreoAction } from "@/actions/auth"
 import { toast } from "sonner"
 import { ArrowLeft, Loader2, Mail } from "lucide-react"
 import Link from "next/link"
+import { useCountdown } from "@/hooks/useCountdown"
 
 interface OTPClientProps {
     email: string
     redirect?: string
+    initialCooldown?: number
+    isInitiallyBlocked?: boolean
+    status?: string
 }
 
-export default function OTPClient({ email, redirect }: OTPClientProps) {
+export default function OTPClient({ 
+    email, 
+    redirect, 
+    initialCooldown = 0, 
+    isInitiallyBlocked = false,
+    status
+}: OTPClientProps) {
     const router = useRouter()
     const [otp, setOtp] = useState<string[]>(Array(6).fill(""))
     const [isVerifying, setIsVerifying] = useState(false)
     const [isResending, setIsResending] = useState(false)
+    const [isBlocked, setIsBlocked] = useState(isInitiallyBlocked)
+    const { secondsLeft: cooldown, startCountdown } = useCountdown(initialCooldown)
     const inputRefs = useRef<(HTMLInputElement | null)[]>([])
+
+    // Sincronizar el temporizador con el tiempo restante real al montar o si este cambia
+    useEffect(() => {
+        // 1. Establecer cookie registro_pendiente de forma segura en este navegador
+        const setPendingCookie = async () => {
+            await establecerCookieRegistroPendienteAction(email)
+        }
+        setPendingCookie()
+
+        // 2. Limpiar la URL eliminando los parámetros de búsqueda de forma limpia y transparente
+        if (typeof window !== "undefined") {
+            const url = new URL(window.location.href)
+            if (url.searchParams.has("email") || url.searchParams.has("redirect") || url.searchParams.has("status")) {
+                window.history.replaceState({}, "", url.pathname)
+            }
+        }
+    }, [email])
+
+    // Alerta si el código ya había sido enviado previamente y no ha expirado
+    useEffect(() => {
+        if (status === "already_sent") {
+            toast.info("Ya tienes un código de verificación activo para este correo. Por favor, revísalo en tu bandeja de entrada.", {
+                id: "already_sent_toast"
+            })
+        }
+    }, [status])
+
+    // Sincronizar el temporizador si el cooldown inicial cambia
+    useEffect(() => {
+        if (initialCooldown > 0) {
+            startCountdown(initialCooldown)
+        }
+    }, [initialCooldown, startCountdown])
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
         const val = e.target.value
@@ -57,6 +102,32 @@ export default function OTPClient({ email, redirect }: OTPClientProps) {
         inputRefs.current[focusIndex]?.focus()
     }
 
+    const handleCancel = async () => {
+        setIsVerifying(true)
+        const res = await prepararModificacionCorreoAction(email)
+        if (res.error) {
+            toast.error(res.error)
+            setIsVerifying(false)
+        } else {
+            // Guardar el correo actual como correoAnterior en el cache de sesión
+            if (typeof window !== "undefined") {
+                const cacheKey = res.rol === "EMPRESA" ? "registro_empresa_cache" : "registro_estudiante_cache"
+                const cacheRaw = sessionStorage.getItem(cacheKey)
+                if (cacheRaw) {
+                    try {
+                        const cache = JSON.parse(cacheRaw)
+                        cache.correoAnterior = email
+                        sessionStorage.setItem(cacheKey, JSON.stringify(cache))
+                    } catch (e) {
+                        console.error(e)
+                    }
+                }
+            }
+            const target = res.rol === "EMPRESA" ? "/registro?tipo=empresa" : "/registro?tipo=estudiante"
+            router.push(target)
+        }
+    }
+
     const handleVerifyClick = async () => {
         const fullCode = otp.join("")
         if (fullCode.length < 6) {
@@ -77,6 +148,10 @@ export default function OTPClient({ email, redirect }: OTPClientProps) {
             }
         } else {
             toast.success("¡Cuenta verificada exitosamente!", { id: idCarga })
+            if (typeof window !== "undefined") {
+                sessionStorage.removeItem("registro_estudiante_cache")
+                sessionStorage.removeItem("registro_empresa_cache")
+            }
             // Redirigimos al inicio según el rol o al redirect url
             if (redirect) {
                 router.push(redirect)
@@ -88,14 +163,27 @@ export default function OTPClient({ email, redirect }: OTPClientProps) {
     }
 
     const handleResendClick = async () => {
+        if (cooldown > 0 || isBlocked) return
         setIsResending(true)
         const idCarga = toast.loading("Generando nuevo código...")
         
         const res = await reenviarOTPAction(email)
         if (res.error) {
             toast.error(res.error, { id: idCarga })
+            // Sincronizar el cooldown del cliente con el tiempo restante real devuelto por el servidor
+            if (res.error.includes("excedido") || res.error.includes("máximo")) {
+                setIsBlocked(true)
+            } else if (res.tiempo_restante) {
+                startCountdown(res.tiempo_restante)
+            } else {
+                const match = res.error.match(/espera (\d+) segundos/)
+                if (match) {
+                    startCountdown(parseInt(match[1]))
+                }
+            }
         } else {
             toast.success("Te hemos enviado un nuevo código al correo.", { id: idCarga })
+            startCountdown(60) // Cooldown de 60 segundos
             setOtp(Array(6).fill(""))
             inputRefs.current[0]?.focus()
         }
@@ -104,20 +192,31 @@ export default function OTPClient({ email, redirect }: OTPClientProps) {
 
     return (
         <div className="bg-white p-8 md:p-10 rounded-3xl shadow-xl w-full max-w-md animate-in fade-in zoom-in-95 duration-500">
-            <Link href="/login" className="inline-flex items-center text-sm font-medium text-gray-400 hover:text-teal-600 transition-colors mb-6">
+            <button 
+                onClick={handleCancel}
+                disabled={isVerifying || isResending}
+                className="inline-flex items-center text-sm font-medium text-gray-400 hover:text-teal-600 transition-colors mb-6 disabled:opacity-50"
+            >
                 <ArrowLeft className="w-4 h-4 mr-1" />
                 Volver
-            </Link>
+            </button>
 
             <div className="w-16 h-16 bg-teal-50 rounded-2xl flex items-center justify-center mb-6">
                 <Mail className="w-8 h-8 text-teal-600" />
             </div>
 
             <h1 className="text-2xl font-bold text-gray-900 mb-2">Revisa tu correo</h1>
-            <p className="text-gray-500 text-sm mb-8 leading-relaxed">
+            <div className="text-gray-500 text-sm mb-8 leading-relaxed">
                 Hemos enviado un código seguro de 6 dígitos a la dirección <br/>
-                <span className="font-semibold text-teal-700">{email}</span>
-            </p>
+                <span className="font-semibold text-teal-700 block my-1">{email}</span>
+                <button 
+                    onClick={handleCancel}
+                    disabled={isVerifying || isResending}
+                    className="text-xs text-gray-400 hover:text-teal-600 font-medium underline mt-2 block disabled:opacity-50 transition-colors"
+                >
+                    ¿Te equivocaste de correo? Modificar correo
+                </button>
+            </div>
 
             <div className="flex justify-between gap-2 mb-8">
                 {otp.map((digit, index) => (
@@ -154,10 +253,16 @@ export default function OTPClient({ email, redirect }: OTPClientProps) {
                     ¿No recibiste el correo?{" "}
                     <button 
                         onClick={handleResendClick} 
-                        disabled={isResending || isVerifying}
+                        disabled={isResending || isVerifying || cooldown > 0 || isBlocked}
                         className="font-bold text-teal-600 hover:underline disabled:opacity-50 disabled:hover:no-underline"
                     >
-                        {isResending ? "Enviando..." : "Click para reenviar"}
+                        {isResending 
+                            ? "Enviando..." 
+                            : isBlocked 
+                                ? "Reenvíos bloqueados"
+                                : cooldown > 0 
+                                    ? `Reenviar en ${cooldown}s` 
+                                    : "Reenviar código"}
                     </button>
                 </p>
             </div>

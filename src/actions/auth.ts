@@ -55,6 +55,29 @@ export async function loginAction(formData: FormData) {
 
     // Edge Case: Limbo de Usuario (Estudiante o Empresa no verificados)
     if ((user.rol === "ESTUDIANTE" || user.rol === "EMPRESA") && !user.verifiedAt) {
+      // Validación de expiración universal:
+      // Si otpExpiresAt ya pasó, limpiamos otpCode, otpExpiresAt, intentos y último reenvío
+      if (user.otpExpiresAt && new Date() > user.otpExpiresAt) {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            otpCode: null,
+            otpExpiresAt: null,
+            intentos_reenvio: 0,
+            ultimo_reenvio_at: null
+          }
+        })
+      }
+
+      // Establecer o renovar cookie registro_pendiente
+      const cookieStore = await cookies()
+      cookieStore.set("registro_pendiente", user.correo, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        maxAge: 15 * 60,
+        sameSite: "lax",
+        path: "/",
+      })
       // Devolver al frontend la instruccion de redireccion para evitar atrapar NEXT_REDIRECT
       const redirectSuffix = redirectUrl ? `&redirect=${encodeURIComponent(redirectUrl)}` : ""
       return { redirect: `/verificar-correo?email=${encodeURIComponent(user.correo)}${redirectSuffix}` }
@@ -97,6 +120,14 @@ export async function verificarOTPAction(email: string, otpOriginal: string) {
     }
 
     if (!user.otpExpiresAt || new Date() > user.otpExpiresAt) {
+      // Eliminar el token expirado de la base de datos
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          otpCode: null,
+          otpExpiresAt: null
+        }
+      })
       return { error: "El código ha expirado. Solicita uno nuevo." }
     }
 
@@ -106,9 +137,15 @@ export async function verificarOTPAction(email: string, otpOriginal: string) {
       data: {
         verifiedAt: new Date(),
         otpCode: null,
-        otpExpiresAt: null
+        otpExpiresAt: null,
+        intentos_reenvio: 0,
+        ultimo_reenvio_at: null
       }
     })
+
+    // Eliminar la cookie registro_pendiente
+    const cookieStore = await cookies()
+    cookieStore.delete("registro_pendiente")
 
     // Iniciar Sesión automáticamente
     await createSession(user.id)
@@ -123,11 +160,42 @@ export async function verificarOTPAction(email: string, otpOriginal: string) {
 // -----------------------------------------------------------------------------
 // REENVIAR OTP
 // -----------------------------------------------------------------------------
+function getCooldownDuration(attempts: number): number {
+  switch (attempts) {
+    case 0: return 60 * 1000      // 1 minuto
+    case 1: return 5 * 60 * 1000  // 5 minutos
+    case 2: return 15 * 60 * 1000 // 15 minutos
+    case 3: return 60 * 60 * 1000 // 1 hora
+    default: return -1            // Bloqueado por completo
+  }
+}
+
 export async function reenviarOTPAction(email: string) {
   try {
     const user = await prisma.user.findUnique({ where: { correo: email } })
     if (!user) return { error: "Usuario no encontrado" }
     if (user.verifiedAt) return { error: "Usuario ya está verificado." }
+
+    // Validación de Cooldown Progresiva
+    if (user.ultimo_reenvio_at) {
+      const msSinceLastSend = Date.now() - user.ultimo_reenvio_at.getTime()
+      const attempts = user.intentos_reenvio
+      const cooldownMs = getCooldownDuration(attempts)
+      
+      if (cooldownMs === -1) {
+        return { 
+          error: "Has excedido el número máximo de reenvíos de código de seguridad. Tu solicitud ha sido bloqueada por seguridad." 
+        }
+      }
+      
+      if (msSinceLastSend < cooldownMs) {
+        const secondsLeft = Math.ceil((cooldownMs - msSinceLastSend) / 1000)
+        return { 
+          error: `Debes esperar ${secondsLeft} segundos antes de solicitar otro código.`, 
+          tiempo_restante: secondsLeft 
+        }
+      }
+    }
 
     // Generar código de 6 dígitos
     const newOtp = Math.floor(100000 + Math.random() * 900000).toString()
@@ -138,16 +206,30 @@ export async function reenviarOTPAction(email: string) {
       where: { id: user.id },
       data: {
         otpCode: newOtp,
-        otpExpiresAt: expires
+        otpExpiresAt: expires,
+        ultimo_reenvio_at: new Date(),
+        intentos_reenvio: { increment: 1 }
       }
     })
 
-    // Mandar mail con Resend
+    // Renovar la cookie registro_pendiente para el navegador actual
+    const cookieStore = await cookies()
+    cookieStore.set("registro_pendiente", email, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 15 * 60,
+      sameSite: "lax",
+      path: "/",
+    })
+
+    // Mandar mail con Resend y botón de enlace directo para navegación cruzada
     const resMail = await sendEmail({
       to: email,
       subject: 'Tu nuevo código de verificación - Joby',
       title: 'Verifica tu identidad',
       message: `Detectamos un intento de registro o acceso a tu cuenta. Para continuar de forma segura, por favor ingresa este código de 6 dígitos:\n\n${newOtp}\n\nEste código expira automáticamente en 15 minutos.`,
+      buttonText: "Ir a verificar mi cuenta",
+      buttonUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/verificar-correo?email=${encodeURIComponent(email)}`,
       type: "SUCCESS"
     });
 
@@ -160,6 +242,31 @@ export async function reenviarOTPAction(email: string) {
   } catch (error) {
     console.error("Error reenviando OTP:", error)
     return { error: "Error al reenviar el código" }
+  }
+}
+
+// -----------------------------------------------------------------------------
+// ESTABLECER COOKIE DE REGISTRO PENDIENTE (SEGURO PARA NAVEGACIÓN CRUZADA)
+// -----------------------------------------------------------------------------
+export async function establecerCookieRegistroPendienteAction(email: string) {
+  try {
+    const user = await prisma.user.findUnique({ where: { correo: email } })
+    if (!user || user.verifiedAt) {
+      return { error: "Usuario inválido o ya verificado" }
+    }
+
+    const cookieStore = await cookies()
+    cookieStore.set("registro_pendiente", email, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 15 * 60, // 15 minutos en segundos
+      sameSite: "lax",
+      path: "/",
+    })
+    return { success: true }
+  } catch (error) {
+    console.error("Error setting pending cookie:", error)
+    return { error: "Error interno de servidor" }
   }
 }
 
@@ -208,5 +315,58 @@ export async function reactivarCuentaAction(formData: FormData) {
   } catch (error) {
     console.error("Error al reactivar cuenta:", error)
     return { error: "Error interno al reactivar la cuenta." }
+  }
+}
+
+// -----------------------------------------------------------------------------
+// CANCELAR REGISTRO PENDIENTE (ELIMINAR USUARIO EN LIMBO)
+// -----------------------------------------------------------------------------
+export async function cancelarRegistroPendienteAction(email: string) {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { correo: email },
+      select: { id: true, verifiedAt: true, rol: true }
+    })
+
+    if (!user) {
+      return { success: true }
+    }
+
+    if (user.verifiedAt) {
+      return { error: "No se puede cancelar un registro ya verificado" }
+    }
+
+    // 1. Eliminar el usuario (por onDelete: Cascade, se borra Estudiante/Empresa)
+    await prisma.user.delete({
+      where: { id: user.id }
+    })
+
+    // 2. Borrar la cookie del navegador actual
+    const cookieStore = await cookies()
+    cookieStore.delete("registro_pendiente")
+
+    return { success: true, rol: user.rol }
+  } catch (error) {
+    console.error("Error al cancelar registro:", error)
+    return { error: "Error al cancelar el registro en el servidor" }
+  }
+}
+
+// Acción para preparar la modificación de correo sin eliminar el usuario
+export async function prepararModificacionCorreoAction(email: string) {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { correo: email },
+      select: { rol: true }
+    })
+
+    // Borrar la cookie para que el middleware permita acceder a /registro
+    const cookieStore = await cookies()
+    cookieStore.delete("registro_pendiente")
+
+    return { success: true, rol: user?.rol || "ESTUDIANTE" }
+  } catch (error) {
+    console.error("Error al preparar modificacion de correo:", error)
+    return { error: "Error en el servidor al preparar la modificación" }
   }
 }

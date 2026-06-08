@@ -102,6 +102,8 @@ model User {
   verifiedAt    DateTime?   
   otpCode       String?     
   otpExpiresAt  DateTime?
+  ultimo_reenvio_at DateTime?
+  intentos_reenvio  Int       @default(0)
   
   // --- CAMPOS PARA SUSPENSIÓN Y ELIMINACIÓN ---
   deletedAt           DateTime?
