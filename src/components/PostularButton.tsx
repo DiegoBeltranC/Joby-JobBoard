@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ChevronRight, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ModalPostulacion from "./ModalPostulacion";
@@ -30,6 +30,11 @@ export default function PostularButton({
     const [showModal, setShowModal] = useState(false);
     const [showLoginModal, setShowLoginModal] = useState(false);
     const [showProfileWarningModal, setShowProfileWarningModal] = useState(false);
+    const [redirectUrl, setRedirectUrl] = useState("");
+
+    useEffect(() => {
+        setRedirectUrl(window.location.pathname + window.location.search);
+    }, []);
     
     const handleSuccess = () => {
         // Recargar para ver el estado actualizado (yaPostulado)
@@ -37,7 +42,6 @@ export default function PostularButton({
     };
 
     if (!isLoggedIn) {
-        const redirectUrl = typeof window !== 'undefined' ? window.location.pathname + window.location.search : '';
         return (
             <div className="w-full space-y-4">
                 <button 
@@ -125,3 +129,4 @@ export default function PostularButton({
         </>
     );
 }
+

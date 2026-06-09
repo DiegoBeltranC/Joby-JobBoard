@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs"
 import { Resend } from "resend"
 import { reenviarOTPAction } from "./auth"
 import { toTitleCase } from "@/lib/toTitleCase"
+import { cookies } from "next/headers"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -16,8 +17,21 @@ export async function registrarEmpresa(datos: {
     apellidoPaterno: string;
     apellidoMaterno?: string;
     cargo_contacto: string;
+    correoAnterior?: string;
 }) {
     try {
+        // Si la empresa cambió su correo desde la pantalla de verificación, eliminamos el limbo anterior
+        if (datos.correoAnterior && datos.correoAnterior !== datos.correo) {
+            const oldUser = await prisma.user.findUnique({
+                where: { correo: datos.correoAnterior }
+            })
+            if (oldUser && !oldUser.verifiedAt) {
+                await prisma.user.delete({
+                    where: { id: oldUser.id }
+                })
+            }
+        }
+
         // 1. Verificar si el correo ya existe
         const usuarioExistente = await prisma.user.findUnique({
             where: { correo: datos.correo }
@@ -25,8 +39,50 @@ export async function registrarEmpresa(datos: {
 
         // Edge Case: Limbo (Abandonó el OTP en intento previo)
         if (usuarioExistente && !usuarioExistente.verifiedAt) {
-            // El usuario existe pero no está verificado. Renovar su OTP.
-            await reenviarOTPAction(datos.correo)
+            // Verificar si el código OTP existente aún es válido (no ha expirado)
+            const isOtpValid = usuarioExistente.otpCode && usuarioExistente.otpExpiresAt && new Date() < usuarioExistente.otpExpiresAt
+
+            // Encriptar la contraseña (por si la modificó)
+            const salt = await bcrypt.genSalt(10)
+            const hashedPassword = await bcrypt.hash(datos.password, salt)
+
+            // Actualizar datos de cuenta y perfil empresa por si modificó otros campos
+            await prisma.user.update({
+                where: { id: usuarioExistente.id },
+                data: {
+                    password_hash: hashedPassword,
+                    empresa: {
+                        update: {
+                            nombre_comercial: datos.nombre_comercial,
+                            rfc: datos.rfc || null,
+                            nombre: toTitleCase(datos.nombre),
+                            apellidoPaterno: toTitleCase(datos.apellidoPaterno),
+                            apellidoMaterno: datos.apellidoMaterno ? toTitleCase(datos.apellidoMaterno) : null,
+                            cargo_contacto: toTitleCase(datos.cargo_contacto),
+                        }
+                    }
+                }
+            })
+
+            // Si el OTP sigue siendo válido, no generamos uno nuevo ni enviamos correo para evitar spam.
+            if (isOtpValid) {
+                const cookieStore = await cookies()
+                cookieStore.set("registro_pendiente", datos.correo, {
+                    httpOnly: true,
+                    secure: process.env.NODE_ENV === "production",
+                    maxAge: 15 * 60,
+                    sameSite: "lax",
+                    path: "/",
+                })
+                return { success: true, redirect: `/verificar-correo?email=${encodeURIComponent(datos.correo)}&status=already_sent` }
+            }
+
+            // Si ya expiró, entonces renovamos el OTP (pasando por el validador de cooldown)
+            const resReenviar = await reenviarOTPAction(datos.correo)
+            if (resReenviar.error) {
+                return { success: false, error: resReenviar.error }
+            }
+
             return { success: true, redirect: `/verificar-correo?email=${encodeURIComponent(datos.correo)}` }
         }
 
@@ -37,11 +93,27 @@ export async function registrarEmpresa(datos: {
         // 2. Verificar si el RFC ya está en uso
         if (datos.rfc) {
             const rfcExistente = await prisma.empresa.findUnique({
-                where: { rfc: datos.rfc }
+                where: { rfc: datos.rfc },
+                include: { usuario: true }
             })
 
             if (rfcExistente) {
-                return { success: false, error: "Este RFC ya está registrado por otra empresa." }
+                if (rfcExistente.usuario.verifiedAt) {
+                    return { success: false, error: "Este RFC ya está registrado por otra empresa." }
+                } else {
+                    // RFC en limbo
+                    // Si ya expiró, eliminamos el usuario viejo para que lo puedan volver a registrar con este RFC
+                    if (rfcExistente.usuario.otpExpiresAt && new Date() > rfcExistente.usuario.otpExpiresAt) {
+                        await prisma.user.delete({
+                            where: { id: rfcExistente.usuario.id }
+                        })
+                    } else {
+                        // Si no ha expirado, reenviamos el OTP
+                        const resReenviar = await reenviarOTPAction(rfcExistente.usuario.correo)
+                        if (resReenviar.error) return { success: false, error: resReenviar.error }
+                        return { success: true, redirect: `/verificar-correo?email=${encodeURIComponent(rfcExistente.usuario.correo)}` }
+                    }
+                }
             }
         }
 
@@ -61,6 +133,8 @@ export async function registrarEmpresa(datos: {
                 rol: "EMPRESA",
                 otpCode: initialOtp,
                 otpExpiresAt: otpExpiration,
+                ultimo_reenvio_at: new Date(),
+                intentos_reenvio: 0,
                 empresa: {
                     create: {
                         nombre_comercial: datos.nombre_comercial,
@@ -73,6 +147,16 @@ export async function registrarEmpresa(datos: {
                     }
                 }
             }
+        })
+
+        // Establecer cookie registro_pendiente
+        const cookieStore = await cookies()
+        cookieStore.set("registro_pendiente", datos.correo, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            maxAge: 15 * 60,
+            sameSite: "lax",
+            path: "/",
         })
 
         // 5. Enviar Correo OTP (Diseño adaptado para Empresas)
@@ -113,7 +197,13 @@ export async function registrarEmpresa(datos: {
                         </tr>
                       </table>
                       
-                      <p style="color:#64748b; font-size:14px; margin:30px 0 0 0;">
+                      <div style="margin-top: 30px;">
+                        <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/verificar-correo?email=${encodeURIComponent(datos.correo)}" style="background-color:#4f46e5; color:#ffffff; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 14px; display: inline-block; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                          Ir a verificar mi cuenta
+                        </a>
+                      </div>
+                      
+                      <p style="color:#64748b; font-size:14px; margin:20px 0 0 0;">
                         Este código es válido por <strong>15 minutos</strong>.
                       </p>
                     </td>

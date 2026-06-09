@@ -172,7 +172,7 @@ export default async function EmpresaPublicPage({ params, searchParams }: Params
         host?.startsWith("10.");
 
     const protocol = isLocal ? "http" : "https";
-    const shortUrl = `${protocol}://${host}/e/${hashId}`;
+    const shortUrl = `${protocol}://${host}/e/${hashId}${vacanteHash ? `?vacante=${vacanteHash}` : ""}`;
 
     return (
         <div className="min-h-screen bg-gray-50/50">
@@ -199,49 +199,43 @@ export default async function EmpresaPublicPage({ params, searchParams }: Params
                     <div className="flex flex-col md:flex-row items-center md:items-end gap-8 w-full">
                         <div className="w-48 h-48 bg-white rounded-[40px] p-2 shadow-2xl border-8 border-white/20 shrink-0 transform -rotate-1 hover:rotate-0 transition-transform duration-500 overflow-hidden">
                             {empresa.logo_url ? (
-                                <img
-                                    src={empresa.logo_url}
-                                    alt={empresa.nombre_comercial}
-                                    className="w-full h-full object-cover rounded-[32px]"
-                                />
+                                <img src={empresa.logo_url} alt={empresa.nombre_comercial} className="w-full h-full object-contain rounded-[32px]" />
                             ) : (
-                                <div className="w-full h-full bg-gradient-to-br from-teal-600 to-cyan-700 flex items-center justify-center rounded-[32px]">
-                                    <span className="text-6xl font-black text-white uppercase">{empresa.nombre_comercial.charAt(0)}</span>
+                                <div className="w-full h-full bg-teal-50 rounded-[32px] flex items-center justify-center">
+                                    <Building2 className="w-16 h-16 text-teal-600" />
                                 </div>
                             )}
                         </div>
 
-                        <div className="flex-1 text-center md:text-left">
-                            <div className="flex flex-wrap justify-center md:justify-start gap-3 mb-4">
-                                <span className="px-4 py-1.5 bg-teal-500/20 text-teal-300 backdrop-blur-md rounded-full text-xs font-black uppercase tracking-widest border border-teal-500/30">
+                        <div className="flex-1 text-center md:text-left space-y-4">
+                            <div className="flex flex-wrap items-center justify-center md:justify-start gap-3">
+                                <span className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-teal-500/20 text-teal-300 backdrop-blur-md rounded-full text-xs font-black uppercase tracking-wider border border-teal-500/30">
                                     Empresa Verificada
                                 </span>
-                                <span className="px-4 py-1.5 bg-white/10 text-gray-300 backdrop-blur-md rounded-full text-xs font-black uppercase tracking-widest border border-white/10">
-                                    {empresa.municipio}, {empresa.estado}
-                                </span>
+                                {(empresa.municipio || empresa.estado) && (
+                                    <span className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-white/10 text-white backdrop-blur-md rounded-full text-xs font-bold">
+                                        <MapPin className="w-3.5 h-3.5" />
+                                        {empresa.municipio && `${empresa.municipio}, `}{empresa.estado}
+                                    </span>
+                                )}
                             </div>
-                            <h1 className="text-5xl md:text-7xl font-black text-white tracking-tighter leading-none mb-4">
+
+                            <h1 className="text-4xl md:text-6xl font-black text-white tracking-tight drop-shadow-sm">
                                 {empresa.nombre_comercial}
                             </h1>
-                            <div className="flex flex-wrap justify-center md:justify-start gap-6 text-gray-400">
-                                {empresa.sitio_web && (
-                                    <a href={empresa.sitio_web} target="_blank" className="flex items-center gap-2 hover:text-white transition-colors font-bold">
-                                        <Globe className="w-5 h-5 text-teal-400" />
-                                        {new URL(empresa.sitio_web).hostname}
-                                    </a>
-                                )}
-                                {enlaces.length > 0 && (
-                                    <div className="flex gap-4">
-                                        {enlaces.map(([platform, url]) => (
-                                            <a key={platform} href={url} target="_blank" className="p-2 bg-white/5 hover:bg-white/20 rounded-xl text-gray-300 hover:text-white transition-all">
-                                                {getSocialIcon(platform)}
-                                            </a>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
 
+                            {empresa.sitio_web && (
+                                <a
+                                    href={empresa.sitio_web.startsWith('http') ? empresa.sitio_web : `https://${empresa.sitio_web}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-2 text-teal-300 hover:text-teal-200 transition-colors font-bold text-sm"
+                                >
+                                    <Globe className="w-4 h-4" />
+                                    Visitar sitio web oficial
+                                </a>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -249,84 +243,93 @@ export default async function EmpresaPublicPage({ params, searchParams }: Params
             {/* CONTENIDO PRINCIPAL */}
             <main className="max-w-6xl mx-auto px-6 -mt-10 relative z-20 pb-24">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-
-                    {/* COLUMNA IZQUIERDA (CONTENIDO) */}
-                    <div className="lg:col-span-8 space-y-12">
-
-                        {/* VACANTE DESTACADA */}
+                    {/* COLUMNA IZQUIERDA (Principal) */}
+                    <div className="lg:col-span-8 space-y-8">
+                        {/* Vacante Destacada / Seleccionada */}
                         {highlightedVacante && (
-                            <section className="bg-white rounded-[48px] p-10 shadow-2xl border-4 border-teal-500/20 relative overflow-hidden group">
-                                <div className="absolute top-0 right-0 w-40 h-40 bg-teal-500/5 rounded-full -mr-20 -mt-20 blur-3xl"></div>
-
-                                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
-                                    <div>
-                                        <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-teal-50 text-teal-700 rounded-full text-[10px] font-black uppercase tracking-widest mb-4">
-                                            <CheckCircle2 className="w-4 h-4" />
+                            <div className="bg-white rounded-[40px] p-8 shadow-sm border-2 border-teal-500 relative overflow-hidden group">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-teal-500/5 rounded-full blur-3xl"></div>
+                                <div className="relative z-10">
+                                    <div className="flex items-center justify-between gap-4 mb-4">
+                                        <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-teal-50 text-teal-700 rounded-full text-xs font-bold border border-teal-100">
+                                            <CheckCircle2 className="w-3.5 h-3.5" />
                                             Vacante Seleccionada
-                                        </div>
-                                        <h2 className="text-4xl font-black text-gray-900 tracking-tight">
+                                        </span>
+                                        <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+                                            Presupuesto Bruto
+                                        </span>
+                                    </div>
+
+                                    <div className="flex flex-col md:flex-row md:items-baseline justify-between gap-2 mb-6">
+                                        <h2 className="text-3xl font-black text-gray-900 tracking-tight">
                                             {highlightedVacante.titulo}
                                         </h2>
+                                        {highlightedVacante.sueldo_min || highlightedVacante.sueldo_max ? (
+                                            <span className="text-3xl font-black text-teal-600">
+                                                ${highlightedVacante.sueldo_min?.toLocaleString()}
+                                                {highlightedVacante.sueldo_max && ` - $${highlightedVacante.sueldo_max.toLocaleString()}`}
+                                            </span>
+                                        ) : (
+                                            <span className="text-3xl font-black text-gray-300">---</span>
+                                        )}
                                     </div>
-                                    <div className="text-right">
-                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Presupuesto Bruto</p>
-                                        <p className="text-3xl font-black text-teal-600">
-                                            {highlightedVacante.sueldo_min ? `$${highlightedVacante.sueldo_min.toLocaleString()}` : "---"}
+
+                                    {/* Atributos Clave */}
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
+                                        <div className="bg-gray-50/50 rounded-2xl p-4 border border-gray-100">
+                                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Modalidad</span>
+                                            <span className="text-xs font-bold text-gray-700">{highlightedVacante.modalidad}</span>
+                                        </div>
+                                        <div className="bg-gray-50/50 rounded-2xl p-4 border border-gray-100">
+                                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Horario</span>
+                                            <span className="text-xs font-bold text-gray-700">{highlightedVacante.horario || "No especificado"}</span>
+                                        </div>
+                                        <div className="bg-gray-50/50 rounded-2xl p-4 border border-gray-100">
+                                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Contrato</span>
+                                            <span className="text-xs font-bold text-gray-700">{highlightedVacante.tipo_contrato}</span>
+                                        </div>
+                                        <div className="bg-gray-50/50 rounded-2xl p-4 border border-gray-100">
+                                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Ubicación</span>
+                                            <span className="text-xs font-bold text-gray-700">{highlightedVacante.municipio || "Chetumal"}</span>
+                                        </div>
+                                    </div>
+
+                                    {/* Descripción larga de la vacante */}
+                                    <div className="bg-gray-50/50 rounded-3xl p-6 border border-gray-100 mb-8">
+                                        <p className="text-gray-600 text-sm font-semibold leading-relaxed whitespace-pre-line">
+                                            {highlightedVacante.descripcion}
                                         </p>
                                     </div>
-                                </div>
 
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                                    {[
-                                        { label: "Modalidad", value: highlightedVacante.modalidad },
-                                        { label: "Horario", value: highlightedVacante.horario || "No especificado" },
-                                        { label: "Contrato", value: highlightedVacante.tipo_contrato?.replace('_', ' ') },
-                                        { label: "Ubicación", value: highlightedVacante.municipio },
-                                    ].map((item, i) => (
-                                        <div key={i} className="bg-gray-50 rounded-2xl p-4 border border-gray-100">
-                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-tighter mb-1">{item.label}</p>
-                                            <p className="text-sm font-bold text-gray-800 truncate">{item.value}</p>
-                                        </div>
-                                    ))}
+                                    {/* Botón de Postulación de Estudiante */}
+                                    <PostularButton
+                                        vacanteId={highlightedVacante.id}
+                                        vacanteTitulo={highlightedVacante.titulo}
+                                        empresaNombre={empresa.nombre_comercial}
+                                        tieneCVPerfil={tieneCVPerfil}
+                                        yaPostulado={yaPostulado}
+                                        isLoggedIn={!!session}
+                                        esPerfilCompleto={esPerfilCompleto}
+                                    />
                                 </div>
-
-                                <div className="bg-gray-50 rounded-3xl p-8 mb-8">
-                                    <p className="text-gray-600 leading-relaxed text-lg whitespace-pre-line">
-                                        {highlightedVacante.descripcion}
-                                    </p>
-                                </div>
-
-                                <PostularButton
-                                    vacanteId={highlightedVacante.id}
-                                    vacanteTitulo={highlightedVacante.titulo}
-                                    empresaNombre={empresa.nombre_comercial}
-                                    tieneCVPerfil={tieneCVPerfil}
-                                    yaPostulado={yaPostulado}
-                                    isLoggedIn={!!session}
-                                    esPerfilCompleto={esPerfilCompleto}
-                                />
-                            </section>
+                            </div>
                         )}
 
-                        {/* SOBRE NOSOTROS */}
-                        <section className="bg-white rounded-[48px] p-12 shadow-sm border border-gray-100">
-                            <h2 className="text-2xl font-black text-gray-900 mb-8 flex items-center gap-4">
-                                <span className="w-10 h-10 bg-teal-100 rounded-2xl flex items-center justify-center">
-                                    <Building2 className="w-5 h-5 text-teal-600" />
-                                </span>
+                        {/* Descripción / Sobre Nosotros */}
+                        <div className="bg-white rounded-[40px] p-8 md:p-10 shadow-sm border border-gray-100">
+                            <h2 className="text-2xl font-black text-gray-900 mb-6 flex items-center gap-3">
+                                <Building2 className="w-6 h-6 text-teal-500" />
                                 Descripción de la vacante
                             </h2>
-                            <p className="text-gray-600 text-xl leading-relaxed whitespace-pre-line">
-                                {empresa.descripcion || "Esta empresa aún no ha proporcionado una descripción detallada."}
+                            <p className="text-gray-600 text-sm font-semibold leading-relaxed whitespace-pre-line">
+                                {empresa.descripcion || "Sin descripción disponible."}
                             </p>
-                        </section>
+                        </div>
 
-                        {/* GALERÍA DE INSTALACIONES (INTERACTIVA CON LIGHTBOX) */}
+                        {/* Instalaciones y Equipo */}
                         {empresa.fotos_empresa && empresa.fotos_empresa.length > 0 && (
                             <GallerySection fotos={empresa.fotos_empresa} />
                         )}
-
-
                     </div>
 
                     {/* COLUMNA DERECHA (SIDEBAR) */}
