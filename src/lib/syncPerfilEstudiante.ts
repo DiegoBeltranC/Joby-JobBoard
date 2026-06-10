@@ -1,4 +1,5 @@
 import { revalidatePath } from "next/cache";
+import { cache } from "react";
 import { prisma } from "@/lib/prisma";
 import { calcularProgresoEstudiante } from "@/lib/perfilEstudiante";
 
@@ -40,7 +41,7 @@ export async function marcarPerfilCompletoSiAplica(estudianteId: number): Promis
 }
 
 /** Obtiene estudiante con relaciones necesarias y sincroniza el hito si aplica */
-export async function obtenerEstudianteYSincronizarHito(usuarioId: number) {
+export const obtenerEstudianteYSincronizarHito = cache(async (usuarioId: number) => {
     const usuarioInfo = await prisma.user.findUnique({
         where: { id: usuarioId },
         include: {
@@ -71,4 +72,12 @@ export async function obtenerEstudianteYSincronizarHito(usuarioId: number) {
     }
 
     return { estudiante: { ...estudiante, perfil_completado_at: perfilCompletadoAt } };
-}
+});
+
+/** Obtiene estudiante con su perfil base, cacheado por request */
+export const obtenerEstudianteBasico = cache(async (usuarioId: number) => {
+    return prisma.user.findUnique({
+        where: { id: usuarioId },
+        include: { estudiante: true },
+    });
+});

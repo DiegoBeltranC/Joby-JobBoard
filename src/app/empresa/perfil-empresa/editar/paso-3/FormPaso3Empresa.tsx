@@ -8,7 +8,7 @@ import { Check, ArrowLeft, Globe, Megaphone, ImagePlus, X, Camera } from "lucide
 import { useRouter } from "next/navigation";
 import { guardarPaso3Empresa, agregarFotoEmpresa, eliminarFotoEmpresa } from "@/actions/perfilEmpresa";
 import { cn } from "@/lib/utils";
-import { useState, useRef } from "react";
+import { useState, useRef, useTransition } from "react";
 import AvatarEmpresa from "./AvatarEmpresa";
 import BannerUpload from "./BannerUpload";
 
@@ -50,6 +50,7 @@ export default function FormPaso3Empresa({ valoresIniciales, empresa, fotosActua
     const router = useRouter();
     const [fotos, setFotos] = useState<string[]>(fotosActuales);
     const [subiendoFoto, setSubiendoFoto] = useState(false);
+    const [isPending, startTransition] = useTransition();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const { register, handleSubmit, watch, formState: { errors, isSubmitting } } = useForm<FormValues>({
@@ -59,29 +60,31 @@ export default function FormPaso3Empresa({ valoresIniciales, empresa, fotosActua
 
     const descripcionActual = watch("descripcion") || "";
 
-    const onSubmit = async (data: FormValues) => {
-        const idCarga = toast.loading("Finalizando actualización...");
-        const result = await guardarPaso3Empresa(data);
+    const onSubmit = (data: FormValues) => {
+        startTransition(async () => {
+            const idCarga = toast.loading("Finalizando actualización...");
+            const result = await guardarPaso3Empresa(data);
 
-        if (result?.error) {
-            toast.dismiss(idCarga);
-            toast.error(result.error);
-        } else {
-            toast.dismiss(idCarga);
-            
-            // Verificación de integridad del perfil
-            const perfilIncompleto = !empresa.rfc || !empresa.municipio || !empresa.razon_social;
-            
-            if (perfilIncompleto) {
-                toast.warning("Perfil guardado. Recuerda completar tus datos legales en la pestaña de Edición para poder solicitar la verificación.", {
-                    duration: 6000
-                });
+            if (result?.error) {
+                toast.dismiss(idCarga);
+                toast.error(result.error);
             } else {
-                toast.success("¡Perfil empresarial actualizado!");
-            }
+                toast.dismiss(idCarga);
 
-            router.push("/empresa/perfil-empresa");
-        }
+                // Verificación de integridad del perfil
+                const perfilIncompleto = !empresa.rfc || !empresa.municipio || !empresa.razon_social;
+
+                if (perfilIncompleto) {
+                    toast.warning("Perfil guardado. Recuerda completar tus datos legales en la pestaña de Edición para poder solicitar la verificación.", {
+                        duration: 6000
+                    });
+                } else {
+                    toast.success("¡Perfil empresarial actualizado!");
+                }
+
+                router.push("/empresa/perfil-empresa");
+            }
+        });
     };
 
     // Manejar subida de foto de instalaciones
@@ -329,10 +332,10 @@ export default function FormPaso3Empresa({ valoresIniciales, empresa, fotosActua
 
                 <button
                     type="submit"
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || isPending}
                     className="flex items-center bg-gray-900 text-white text-sm font-bold px-8 py-2.5 rounded-xl hover:bg-black transition-colors shadow-sm disabled:opacity-50"
                 >
-                    {isSubmitting ? "Guardando..." : "Finalizar y Ver Perfil"} <Check className="w-4 h-4 ml-2" />
+                    {isSubmitting || isPending ? "Guardando..." : "Finalizar y Ver Perfil"} <Check className="w-4 h-4 ml-2" />
                 </button>
             </div>
         </form>

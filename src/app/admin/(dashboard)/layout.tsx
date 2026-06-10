@@ -1,9 +1,9 @@
 import DashboardShell from '@/components/DashboardShell';
 import SidebarAdmin from '@/components/SidebarAdmin';
 import { getSession } from '@/lib/session';
-import { prisma } from '@/lib/prisma';
 import { redirect } from 'next/navigation';
 import CompletarPerfilAdminPage from './completar-perfil/page';
+import { obtenerAdminDeSesion } from '@/lib/session-admin';
 
 export default async function AdminLayout({ children }: { children: React.ReactNode; }) {
     const session = await getSession();
@@ -12,12 +12,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         redirect('/admin/login');
     }
 
-    const usuarioInfo = await prisma.user.findUnique({
-        where: { id: session.userId },
-        include: {
-            admin: true
-        }
-    });
+    const usuarioInfo = await obtenerAdminDeSesion(session.userId);
 
     if (!usuarioInfo || usuarioInfo.rol !== "ADMIN" || !usuarioInfo.admin) {
         redirect('/inicio');
