@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef, useTransition } from "react"
 import Link from "next/link"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -8,7 +8,7 @@ import * as z from "zod"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { CheckCircle2, ChevronRight, ArrowLeft, ShieldCheck, Building2, GraduationCap } from "lucide-react"
+import { CheckCircle2, ChevronRight, ArrowLeft, ShieldCheck, Building2, GraduationCap, Loader2 } from "lucide-react"
 import { registrarEstudiante, verificarCorreoDisponibleRegistro } from "@/actions/registro"
 import { registrarEmpresa } from "@/actions/registroEmpresa"
 import { useRouter, useSearchParams } from "next/navigation"
@@ -89,6 +89,8 @@ export default function RegistroPage() {
     )
     const [pasoActual, setPasoActual] = useState(1)
     const router = useRouter()
+    const [isPending, startTransition] = useTransition()
+    const procesandoRef = useRef(false)
 
     const PASOS = tipoRegistro === "estudiante" ? PASOS_ESTUDIANTE : PASOS_EMPRESA
 
@@ -187,17 +189,25 @@ export default function RegistroPage() {
         if (pasoActual > 1) setPasoActual(prev => prev - 1)
     }
 
-    const manejarSubmit = async (e: React.FormEvent) => {
+    const manejarSubmit = (e: React.FormEvent) => {
         e.preventDefault()
-        if (pasoActual < PASOS.length) {
-            await avanzarPaso()
-        } else {
-            if (tipoRegistro === "estudiante") {
-                await formEstudiante.handleSubmit(onSubmitEstudiante)(e)
-            } else {
-                await formEmpresa.handleSubmit(onSubmitEmpresa)(e)
+        if (procesandoRef.current || isPending) return
+        startTransition(async () => {
+            procesandoRef.current = true
+            try {
+                if (pasoActual < PASOS.length) {
+                    await avanzarPaso()
+                } else {
+                    if (tipoRegistro === "estudiante") {
+                        await formEstudiante.handleSubmit(onSubmitEstudiante)(e)
+                    } else {
+                        await formEmpresa.handleSubmit(onSubmitEmpresa)(e)
+                    }
+                }
+            } finally {
+                procesandoRef.current = false
             }
-        }
+        })
     }
 
     // ===== SUBMIT ESTUDIANTE =====
@@ -494,7 +504,7 @@ export default function RegistroPage() {
                                 type="button"
                                 variant="outline"
                                 onClick={retrocederPaso}
-                                disabled={pasoActual === 1}
+                                disabled={pasoActual === 1 || isPending}
                                 className={pasoActual === 1 ? "invisible" : ""}
                             >
                                 <ArrowLeft className="w-4 h-4 mr-2" /> Atrás
@@ -504,16 +514,30 @@ export default function RegistroPage() {
                                 <Button
                                     type="button"
                                     onClick={avanzarPaso}
+                                    disabled={isPending}
                                     className={`font-bold ${isEmpresa ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : ''}`}
                                 >
-                                    Continuar <ChevronRight className="w-4 h-4 ml-2" />
+                                    {isPending ? (
+                                        <>
+                                            <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Validando...
+                                        </>
+                                    ) : (
+                                        <>Continuar <ChevronRight className="w-4 h-4 ml-2" /></>
+                                    )}
                                 </Button>
                             ) : (
                                 <Button
                                     type="submit"
+                                    disabled={isPending}
                                     className={`font-bold px-8 ${isEmpresa ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : 'bg-primary hover:bg-primary/90 text-primary-foreground'}`}
                                 >
-                                    Finalizar Registro
+                                    {isPending ? (
+                                        <>
+                                            <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Creando cuenta...
+                                        </>
+                                    ) : (
+                                        "Finalizar Registro"
+                                    )}
                                 </Button>
                             )}
                         </div>

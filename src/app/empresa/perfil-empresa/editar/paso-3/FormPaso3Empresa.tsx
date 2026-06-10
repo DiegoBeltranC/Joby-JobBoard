@@ -52,6 +52,7 @@ export default function FormPaso3Empresa({ valoresIniciales, empresa, fotosActua
     const [subiendoFoto, setSubiendoFoto] = useState(false);
     const [isPending, startTransition] = useTransition();
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const eliminandoFotoRef = useRef<Set<string>>(new Set());
 
     const { register, handleSubmit, watch, formState: { errors, isSubmitting } } = useForm<FormValues>({
         resolver: zodResolver(paso3EmpresaSchema),
@@ -89,6 +90,7 @@ export default function FormPaso3Empresa({ valoresIniciales, empresa, fotosActua
 
     // Manejar subida de foto de instalaciones
     const handleSubirFoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (subiendoFoto) return;
         if (!e.target.files || e.target.files.length === 0) return;
 
         const file = e.target.files[0];
@@ -130,6 +132,9 @@ export default function FormPaso3Empresa({ valoresIniciales, empresa, fotosActua
 
     // Eliminar foto
     const handleEliminarFoto = async (url: string) => {
+        if (eliminandoFotoRef.current.has(url)) return;
+        eliminandoFotoRef.current.add(url);
+
         const idCarga = toast.loading("Eliminando foto...");
         const result = await eliminarFotoEmpresa(url);
 
@@ -139,6 +144,8 @@ export default function FormPaso3Empresa({ valoresIniciales, empresa, fotosActua
             toast.success("Foto eliminada", { id: idCarga });
             setFotos(prev => prev.filter(f => f !== url));
         }
+
+        eliminandoFotoRef.current.delete(url);
     };
 
     return (

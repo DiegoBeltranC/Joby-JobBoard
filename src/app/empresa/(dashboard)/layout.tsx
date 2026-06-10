@@ -1,5 +1,6 @@
 import DashboardShell from '@/components/DashboardShell';
 import SidebarEmpresa from '@/components/SidebarEmpresa';
+import EmpresaEstatusWatcher from '@/components/empresa/EmpresaEstatusWatcher';
 import { getSession } from '@/lib/session';
 import { redirect } from 'next/navigation';
 import { calcularProgresoEmpresa } from '@/lib/perfilEmpresa';
@@ -44,6 +45,7 @@ export default async function EmpresaLayout({ children }: { children: React.Reac
             brandColorClass="text-indigo-700"
         >
             {children}
+            <EmpresaEstatusWatcher />
         </DashboardShell>
     );
 }
