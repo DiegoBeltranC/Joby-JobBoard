@@ -1,16 +1,13 @@
 import { getSession } from "@/lib/session";
-import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
+import { obtenerEstudianteBasico } from "@/lib/syncPerfilEstudiante";
 import FormPaso1 from "./FormPaso1";
 
 export default async function Paso1Page() {
     const session = await getSession();
     if (!session) redirect("/login");
 
-    const usuario = await prisma.user.findUnique({
-        where: { id: session.userId },
-        include: { estudiante: true }
-    });
+    const usuario = await obtenerEstudianteBasico(session.userId);
 
     if (!usuario?.estudiante) redirect("/inicio");
 

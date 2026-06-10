@@ -1,9 +1,9 @@
 import DashboardShell from '@/components/DashboardShell';
 import SidebarEmpresa from '@/components/SidebarEmpresa';
 import { getSession } from '@/lib/session';
-import { prisma } from '@/lib/prisma';
 import { redirect } from 'next/navigation';
 import { calcularProgresoEmpresa } from '@/lib/perfilEmpresa';
+import { obtenerEmpresaDeSesion } from '@/lib/session-empresa';
 
 export default async function EmpresaLayout({ children }: { children: React.ReactNode; }) {
     const session = await getSession();
@@ -12,12 +12,7 @@ export default async function EmpresaLayout({ children }: { children: React.Reac
         redirect('/login?tipo=empresa');
     }
 
-    const usuarioInfo = await prisma.user.findUnique({
-        where: { id: session.userId },
-        include: {
-            empresa: true
-        }
-    });
+    const usuarioInfo = await obtenerEmpresaDeSesion(session.userId);
 
     if (!usuarioInfo || !usuarioInfo.empresa) {
         redirect('/inicio');
