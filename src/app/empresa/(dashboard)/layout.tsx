@@ -1,4 +1,5 @@
-import DashboardShellEmpresa from '@/components/DashboardShellEmpresa';
+import DashboardShell from '@/components/DashboardShell';
+import SidebarEmpresa from '@/components/SidebarEmpresa';
 import { getSession } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
 import { redirect } from 'next/navigation';
@@ -43,8 +44,11 @@ export default async function EmpresaLayout({ children }: { children: React.Reac
     };
 
     return (
-        <DashboardShellEmpresa perfil={perfilReal}>
+        <DashboardShell
+            sidebar={<SidebarEmpresa perfil={perfilReal} />}
+            brandColorClass="text-indigo-700"
+        >
             {children}
-        </DashboardShellEmpresa>
+        </DashboardShell>
     );
 }

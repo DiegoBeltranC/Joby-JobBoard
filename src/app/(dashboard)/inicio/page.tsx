@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
-import { encodeId } from "@/lib/hash";
+import { encodeId } from "@/lib/utils/hash";
 import { calcularProgresoEstudiante } from "@/lib/perfilEstudiante";
 import { obtenerEstudianteYSincronizarHito } from "@/lib/syncPerfilEstudiante";
 import BienvenidaPerfilCompleto from "./BienvenidaPerfilCompleto";

@@ -1,8 +1,8 @@
-import DashboardShellAdmin from '@/components/DashboardShellAdmin';
+import DashboardShell from '@/components/DashboardShell';
+import SidebarAdmin from '@/components/SidebarAdmin';
 import { getSession } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
 import { redirect } from 'next/navigation';
-import { cookies } from 'next/headers';
 import CompletarPerfilAdminPage from './completar-perfil/page';
 
 export default async function AdminLayout({ children }: { children: React.ReactNode; }) {
@@ -42,8 +42,16 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     };
 
     return (
-        <DashboardShellAdmin admin={adminData}>
+        <DashboardShell
+            sidebar={<SidebarAdmin admin={adminData} />}
+            brandColorClass="text-primary"
+            brandBadgeText="Admin"
+            brandBadgeTextClass="text-primary"
+            brandBadgeBgClass="bg-primary/10"
+            breakpoint="lg"
+            contentMaxWidth={false}
+        >
             {children}
-        </DashboardShellAdmin>
+        </DashboardShell>
     );
 }

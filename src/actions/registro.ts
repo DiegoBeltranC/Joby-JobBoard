@@ -1,13 +1,10 @@
 "use server"
-import { prisma } from "@/lib/prisma" // Asumo que tienes tu cliente aquí
+import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
-import { redirect } from "next/navigation"
-import { cookies } from "next/headers"
 import { reenviarOTPAction } from "./auth"
-import { Resend } from "resend"
 import { sendEmail } from "@/lib/mail"
 import { toTitleCase } from "@/lib/toTitleCase"
-const resend = new Resend(process.env.RESEND_API_KEY)
+import { setRegistroPendienteCookie, generateOTP } from "@/lib/auth-helpers"
 
 export async function registrarEstudiante(datos: any, redirectTarget?: string) {
     try {
@@ -61,14 +58,7 @@ export async function registrarEstudiante(datos: any, redirectTarget?: string) {
             // Si el OTP sigue siendo válido, no generamos uno nuevo ni enviamos correo para evitar spam.
             // Simplemente lo redirigimos indicando que ya tiene un código activo.
             if (isOtpValid) {
-                const cookieStore = await cookies()
-                cookieStore.set("registro_pendiente", datos.correo, {
-                    httpOnly: true,
-                    secure: process.env.NODE_ENV === "production",
-                    maxAge: 15 * 60,
-                    sameSite: "lax",
-                    path: "/",
-                })
+                await setRegistroPendienteCookie(datos.correo)
                 return { success: true, redirect: `/verificar-correo?email=${encodeURIComponent(datos.correo)}${redirectSuffix}&status=already_sent` }
             }
 
@@ -122,8 +112,7 @@ export async function registrarEstudiante(datos: any, redirectTarget?: string) {
         }
 
         // 5. Generar OTP Inicial para el nuevo usuario
-        const initialOtp = Math.floor(100000 + Math.random() * 900000).toString()
-        const otpExpiration = new Date(Date.now() + 15 * 60 * 1000)
+        const { code: initialOtp, expiresAt: otpExpiration } = generateOTP()
 
         // 6. TRANSACCIÓN: Crear Usuario y Perfil Estudiante
         const nuevoUsuario = await prisma.user.create({
@@ -153,14 +142,7 @@ export async function registrarEstudiante(datos: any, redirectTarget?: string) {
         })
 
         // Establecer cookie registro_pendiente
-        const cookieStore = await cookies()
-        cookieStore.set("registro_pendiente", datos.correo, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            maxAge: 15 * 60,
-            sameSite: "lax",
-            path: "/",
-        })
+        await setRegistroPendienteCookie(datos.correo)
 
         // 7. Enviar Correo OTP
         const resMail = await sendEmail({
@@ -212,14 +194,7 @@ export async function verificarCorreoDisponibleRegistro(correo: string) {
                 // Si el error es debido al cooldown (espera), podemos seguir redirigiendo a la pantalla de verificación
                 // ya que su código anterior sigue estando vigente.
                 if (resReenviar.error.includes("espera")) {
-                    const cookieStore = await cookies()
-                    cookieStore.set("registro_pendiente", correoNormalizado, {
-                        httpOnly: true,
-                        secure: process.env.NODE_ENV === "production",
-                        maxAge: 15 * 60,
-                        sameSite: "lax",
-                        path: "/",
-                    })
+                    await setRegistroPendienteCookie(correoNormalizado)
                     return {
                         disponible: false as const,
                         redirect: `/verificar-correo?email=${encodeURIComponent(correoNormalizado)}`,
@@ -228,14 +203,7 @@ export async function verificarCorreoDisponibleRegistro(correo: string) {
                 return { disponible: false as const, error: resReenviar.error }
             }
             // Renovar cookie registro_pendiente
-            const cookieStore = await cookies()
-            cookieStore.set("registro_pendiente", correoNormalizado, {
-                httpOnly: true,
-                secure: process.env.NODE_ENV === "production",
-                maxAge: 15 * 60,
-                sameSite: "lax",
-                path: "/",
-            })
+            await setRegistroPendienteCookie(correoNormalizado)
             return {
                 disponible: false as const,
                 redirect: `/verificar-correo?email=${encodeURIComponent(correoNormalizado)}`,
