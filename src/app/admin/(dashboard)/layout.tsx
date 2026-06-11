@@ -1,5 +1,6 @@
 import DashboardShell from '@/components/DashboardShell';
 import SidebarAdmin from '@/components/SidebarAdmin';
+import AdminEventosWatcher from '@/components/admin/AdminEventosWatcher';
 import { getSession } from '@/lib/session';
 import { redirect } from 'next/navigation';
 import CompletarPerfilAdminPage from './completar-perfil/page';
@@ -47,6 +48,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             contentMaxWidth={false}
         >
             {children}
+            <AdminEventosWatcher />
         </DashboardShell>
     );
 }
