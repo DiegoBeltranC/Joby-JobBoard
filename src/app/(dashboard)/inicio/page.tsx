@@ -7,15 +7,15 @@ import {
     Calendar,
     Search,
     Briefcase,
-    ChevronRight,
     AlertTriangle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
-import { encodeId } from "@/lib/utils/hash";
 import { calcularProgresoEstudiante } from "@/lib/perfilEstudiante";
 import { obtenerEstudianteYSincronizarHito } from "@/lib/syncPerfilEstudiante";
 import BienvenidaPerfilCompleto from "./BienvenidaPerfilCompleto";
+import VacantesWatcher from "@/components/estudiante/VacantesWatcher";
+import PostularButton from "@/components/PostularButton";
 
 // FASE 2: Forzar Datos Frescos (Anti-Stale Cache)
 export const dynamic = 'force-dynamic';
@@ -82,7 +82,14 @@ export default async function InicioPage() {
                     nombre_comercial: true,
                     logo_url: true
                 }
-            }
+            },
+            ...(estudianteId !== null && {
+                postulaciones: {
+                    where: { estudianteId: estudianteId },
+                    select: { id: true },
+                    take: 1,
+                }
+            })
         },
         orderBy: {
             createdAt: "desc"
@@ -214,15 +221,15 @@ export default async function InicioPage() {
                                 </div>
 
                                 <div className="mt-6">
-                                    <Link
-                                        href={`/perfil-publico-empresa/${encodeId(v.empresa.id)}?vacante=${encodeId(v.id)}`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="w-full py-3.5 bg-gray-900 hover:bg-teal-600 text-white font-black rounded-2xl transition-all shadow-lg shadow-gray-200 hover:shadow-teal-200 flex items-center justify-center gap-2 group/btn"
-                                    >
-                                        Postularme ahora
-                                        <ChevronRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
-                                    </Link>
+                                    <PostularButton
+                                        vacanteId={v.id}
+                                        vacanteTitulo={v.titulo}
+                                        empresaNombre={v.empresa.nombre_comercial}
+                                        tieneCVPerfil={true}
+                                        yaPostulado={(v.postulaciones?.length ?? 0) > 0}
+                                        isLoggedIn={true}
+                                        esPerfilCompleto={perfilCompletado}
+                                    />
                                 </div>
                             </div>
                         </div>
@@ -243,6 +250,7 @@ export default async function InicioPage() {
                     </button>
                 </div>
             )}
+            <VacantesWatcher />
         </div>
     );
 }

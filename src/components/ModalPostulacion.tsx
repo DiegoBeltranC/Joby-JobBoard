@@ -56,6 +56,9 @@ export default function ModalPostulacion({
             const result = await postularVacanteAction(formData);
             if (result.success) {
                 toast.success(result.message);
+                if (window.opener && !window.opener.closed) {
+                    window.opener.location.reload();
+                }
                 onSuccess();
                 onClose();
             } else {
