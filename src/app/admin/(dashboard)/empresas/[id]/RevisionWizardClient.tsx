@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef, useTransition } from "react"
 import { CheckCircle2, AlertTriangle, XCircle, MessagesSquare, CheckCircle, ShieldAlert, MailWarning, Ban } from "lucide-react"
 import { aprobarEmpresa, rechazarEmpresa, solicitarCorreccion, suspenderEmpresa, reactivarEmpresa } from "@/actions/adminEmpresas"
 import { toast } from "sonner"
@@ -9,7 +9,9 @@ import { useRouter } from "next/navigation"
 export default function RevisionWizardClient({ empresa, enlaces }: { empresa: any, enlaces: Record<string, string> }) {
     const [tabActivo, setTabActivo] = useState(1);
     const router = useRouter();
-    
+    const [isPending, startTransition] = useTransition();
+    const procesandoRef = useRef(false);
+
     // Estados para modales
     const [modalCorreccion, setModalCorreccion] = useState(false);
     const [modalRechazo, setModalRechazo] = useState(false);
@@ -17,6 +19,8 @@ export default function RevisionWizardClient({ empresa, enlaces }: { empresa: an
     const [modalAprobar, setModalAprobar] = useState(false);
     const [modalReactivar, setModalReactivar] = useState(false);
     const [loading, setLoading] = useState(false);
+
+    const isProcessing = loading || isPending;
 
     // Forms
     const [asunto, setAsunto] = useState("");
@@ -29,85 +33,108 @@ export default function RevisionWizardClient({ empresa, enlaces }: { empresa: an
     ];
 
     // Funciones Actions
-    const handleAprobar = async () => {
-        setLoading(true);
-        const loadId = toast.loading("Aprobando empresa...");
-        const result = await aprobarEmpresa(empresa.id);
-        
-        if (result?.error) toast.error(result.error);
-        else {
-            toast.success("Empresa Aprobada Exitosamente");
-            setModalAprobar(false);
-            router.refresh();
-        }
-        toast.dismiss(loadId);
-        setLoading(false);
+    const handleAprobar = () => {
+        if (procesandoRef.current || isPending) return;
+        procesandoRef.current = true;
+        startTransition(async () => {
+            setLoading(true);
+            const loadId = toast.loading("Aprobando empresa...");
+            const result = await aprobarEmpresa(empresa.id);
+
+            if (result?.error) toast.error(result.error);
+            else {
+                toast.success("Empresa Aprobada Exitosamente");
+                setModalAprobar(false);
+                router.refresh();
+            }
+            toast.dismiss(loadId);
+            setLoading(false);
+            procesandoRef.current = false;
+        });
     };
 
-    const handleCorreccion = async () => {
+    const handleCorreccion = () => {
         if (!asunto || !mensaje) return toast.error("Por favor llena todos los campos del correo");
-        
-        setLoading(true);
-        const loadId = toast.loading("Enviando solicitud de corrección...");
-        const result = await solicitarCorreccion(empresa.id, asunto, mensaje);
-        
-        if (result?.error) toast.error(result.error);
-        else {
-            toast.success("Correo enviado. Estatus cambiado a REQUIERE CAMBIOS.");
-            setModalCorreccion(false);
-            setMensaje(""); setAsunto("");
-            router.refresh();
-        }
-        toast.dismiss(loadId);
-        setLoading(false);
+        if (procesandoRef.current || isPending) return;
+        procesandoRef.current = true;
+        startTransition(async () => {
+            setLoading(true);
+            const loadId = toast.loading("Enviando solicitud de corrección...");
+            const result = await solicitarCorreccion(empresa.id, asunto, mensaje);
+
+            if (result?.error) toast.error(result.error);
+            else {
+                toast.success("Correo enviado. Estatus cambiado a REQUIERE CAMBIOS.");
+                setModalCorreccion(false);
+                setMensaje(""); setAsunto("");
+                router.refresh();
+            }
+            toast.dismiss(loadId);
+            setLoading(false);
+            procesandoRef.current = false;
+        });
     };
 
-    const handleRechazar = async () => {
+    const handleRechazar = () => {
         if (!mensaje) return toast.error("El motivo de rechazo es obligatorio para el expediente.");
-        
-        setLoading(true);
-        const loadId = toast.loading("Rechazando empresa...");
-        const result = await rechazarEmpresa(empresa.id, mensaje);
-        
-        if (result?.error) toast.error(result.error);
-        else {
-            toast.success("Empresa rechazada definitivamente.");
-            setModalRechazo(false);
-            setMensaje("");
-            router.refresh();
-        }
-        toast.dismiss(loadId);
-        setLoading(false);
+        if (procesandoRef.current || isPending) return;
+        procesandoRef.current = true;
+        startTransition(async () => {
+            setLoading(true);
+            const loadId = toast.loading("Rechazando empresa...");
+            const result = await rechazarEmpresa(empresa.id, mensaje);
+
+            if (result?.error) toast.error(result.error);
+            else {
+                toast.success("Empresa rechazada definitivamente.");
+                setModalRechazo(false);
+                setMensaje("");
+                router.refresh();
+            }
+            toast.dismiss(loadId);
+            setLoading(false);
+            procesandoRef.current = false;
+        });
     };
 
-    const handleSuspender = async () => {
+    const handleSuspender = () => {
         if (!mensaje) return toast.error("El motivo de suspensión es obligatorio.");
-        setLoading(true);
-        const loadId = toast.loading("Suspendiendo cuenta...");
-        const result = await suspenderEmpresa(empresa.id, mensaje);
-        if(result?.error) toast.error(result.error);
-        else {
-            toast.success("Empresa Suspendida");
-            setModalSuspension(false);
-            setMensaje("");
-            router.refresh();
-        }
-        toast.dismiss(loadId);
-        setLoading(false);
+        if (procesandoRef.current || isPending) return;
+        procesandoRef.current = true;
+        startTransition(async () => {
+            setLoading(true);
+            const loadId = toast.loading("Suspendiendo cuenta...");
+            const result = await suspenderEmpresa(empresa.id, mensaje);
+            if (result?.error) toast.error(result.error);
+            else {
+                toast.success("Empresa Suspendida");
+                setModalSuspension(false);
+                setMensaje("");
+                router.refresh();
+            }
+            toast.dismiss(loadId);
+            setLoading(false);
+            procesandoRef.current = false;
+        });
     };
 
-    const handleReactivar = async () => {
-        setLoading(true);
-        const loadId = toast.loading("Reactivando proceso...");
-        const result = await reactivarEmpresa(empresa.id);
-        if (result?.error) toast.error(result?.error);
-        else {
-            toast.success("Empresa de nuevo en revisión");
-            setModalReactivar(false);
-            router.refresh();
-        }
-        toast.dismiss(loadId);
-        setLoading(false);
+    const handleReactivar = () => {
+        if (procesandoRef.current || isPending) return;
+        procesandoRef.current = true;
+        startTransition(async () => {
+            setLoading(true);
+            const loadId = toast.loading("Reactivando proceso...");
+            const result = await reactivarEmpresa(empresa.id);
+            if (result?.error) toast.error(result?.error);
+            else {
+                toast.success("Empresa de nuevo en revisión");
+                setModalReactivar(false);
+                router.refresh();
+            }
+            toast.dismiss(loadId);
+            setLoading(false);
+            procesandoRef.current = false;
+        });
     };
 
     return (
@@ -235,9 +262,9 @@ export default function RevisionWizardClient({ empresa, enlaces }: { empresa: an
                     
                     <div className="flex gap-3">
                         {(empresa.estatus_verificacion === "RECHAZADA" || empresa.estatus_verificacion === "SUSPENDIDA") && (
-                            <button 
+                            <button
                                 onClick={() => setModalReactivar(true)} disabled={loading}
-                                className="px-6 py-3 bg-gray-900 hover:bg-gray-800 text-white font-bold rounded-xl transition text-sm flex items-center gap-2"
+                                className="px-6 py-3 bg-gray-900 hover:bg-gray-800 text-white font-bold rounded-xl transition text-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 Activar de Nuevo
                             </button>
@@ -245,54 +272,54 @@ export default function RevisionWizardClient({ empresa, enlaces }: { empresa: an
 
                         {empresa.estatus_verificacion === "APROBADA" && (
                             <>
-                                <button 
+                                <button
                                     onClick={() => {
-                                        setAsunto(""); setMensaje(""); 
+                                        setAsunto(""); setMensaje("");
                                         setModalCorreccion(true);
-                                    }}
-                                    className="px-6 py-3 bg-orange-50 hover:bg-orange-100 text-orange-600 font-bold rounded-xl transition text-sm flex items-center gap-2 border border-orange-100"
+                                    }} disabled={loading}
+                                    className="px-6 py-3 bg-orange-50 hover:bg-orange-100 text-orange-600 font-bold rounded-xl transition text-sm flex items-center gap-2 border border-orange-100 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     <AlertTriangle className="w-4 h-4" />
                                     Requiere Cambios
                                 </button>
-                                <button 
-                                    onClick={() => { setMensaje(""); setModalSuspension(true); }}
-                                    className="px-6 py-3 bg-red-500/10 hover:bg-red-500/20 text-red-600 font-bold rounded-xl transition text-sm flex items-center gap-2 border border-red-500/20"
+                                <button
+                                    onClick={() => { setMensaje(""); setModalSuspension(true); }} disabled={loading}
+                                    className="px-6 py-3 bg-red-500/10 hover:bg-red-500/20 text-red-600 font-bold rounded-xl transition text-sm flex items-center gap-2 border border-red-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     <Ban className="w-4 h-4" /> Suspender
                                 </button>
                             </>
                         )}
 
-                        {empresa.estatus_verificacion !== "RECHAZADA" && 
-                         empresa.estatus_verificacion !== "SUSPENDIDA" && 
+                        {empresa.estatus_verificacion !== "RECHAZADA" &&
+                         empresa.estatus_verificacion !== "SUSPENDIDA" &&
                          empresa.estatus_verificacion !== "APROBADA" && (
                             <>
-                                <button 
+                                <button
                                     onClick={() => {
-                                        setAsunto(""); setMensaje(""); 
+                                        setAsunto(""); setMensaje("");
                                         setModalCorreccion(true);
-                                    }}
-                                    className="px-6 py-3 bg-orange-50 hover:bg-orange-100 text-orange-600 font-bold rounded-xl transition text-sm flex items-center gap-2 border border-orange-100"
+                                    }} disabled={loading}
+                                    className="px-6 py-3 bg-orange-50 hover:bg-orange-100 text-orange-600 font-bold rounded-xl transition text-sm flex items-center gap-2 border border-orange-100 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     <AlertTriangle className="w-4 h-4" />
                                     Prevenir / Regresar
                                 </button>
 
-                                <button 
+                                <button
                                     onClick={() => {
                                         setMensaje("");
                                         setModalRechazo(true);
-                                    }}
-                                    className="px-6 py-3 bg-red-50 hover:bg-red-100 text-red-600 font-bold rounded-xl transition text-sm flex items-center gap-2 border border-red-100"
+                                    }} disabled={loading}
+                                    className="px-6 py-3 bg-red-50 hover:bg-red-100 text-red-600 font-bold rounded-xl transition text-sm flex items-center gap-2 border border-red-100 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     <XCircle className="w-4 h-4" />
                                     Rechazar
                                 </button>
-                                
-                                <button 
-                                    onClick={() => setModalAprobar(true)}
-                                    className="px-8 py-3 bg-primary hover:bg-primary/90 text-white font-black rounded-xl transition text-sm flex items-center gap-2 shadow-sm"
+
+                                <button
+                                    onClick={() => setModalAprobar(true)} disabled={loading}
+                                    className="px-8 py-3 bg-primary hover:bg-primary/90 text-white font-black rounded-xl transition text-sm flex items-center gap-2 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     <CheckCircle className="w-5 h-5" />
                                     Aprobar
@@ -380,11 +407,11 @@ export default function RevisionWizardClient({ empresa, enlaces }: { empresa: an
                         </div>
 
                         <div className="flex gap-3">
-                            <button onClick={() => setModalCorreccion(false)} className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold transition disabled:opacity-50" disabled={loading}>
+                            <button onClick={() => setModalCorreccion(false)} className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold transition disabled:opacity-50" disabled={isProcessing}>
                                 Cancelar
                             </button>
-                            <button onClick={handleCorreccion} className="flex-1 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold transition shadow-sm shadow-orange-200 disabled:opacity-50" disabled={loading}>
-                                {loading ? "Enviando..." : "Enviar Correo y Avisar"}
+                            <button onClick={handleCorreccion} className="flex-1 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold transition shadow-sm shadow-orange-200 disabled:opacity-50" disabled={isProcessing}>
+                                {isProcessing ? "Enviando..." : "Enviar Correo y Avisar"}
                             </button>
                         </div>
                     </div>
@@ -413,11 +440,11 @@ export default function RevisionWizardClient({ empresa, enlaces }: { empresa: an
                         </div>
 
                         <div className="flex gap-3 relative z-10">
-                            <button onClick={() => setModalRechazo(false)} className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold transition disabled:opacity-50" disabled={loading}>
+                            <button onClick={() => setModalRechazo(false)} className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold transition disabled:opacity-50" disabled={isProcessing}>
                                 Cancelar
                             </button>
-                            <button onClick={handleRechazar} className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold transition shadow-sm shadow-red-200 disabled:opacity-50" disabled={loading}>
-                                {loading ? "Procesando..." : "Confirmar Rechazo"}
+                            <button onClick={handleRechazar} className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold transition shadow-sm shadow-red-200 disabled:opacity-50" disabled={isProcessing}>
+                                {isProcessing ? "Procesando..." : "Confirmar Rechazo"}
                             </button>
                         </div>
                     </div>
@@ -446,11 +473,11 @@ export default function RevisionWizardClient({ empresa, enlaces }: { empresa: an
                         </div>
 
                         <div className="flex gap-3 relative z-10">
-                            <button onClick={() => setModalSuspension(false)} className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold transition disabled:opacity-50" disabled={loading}>
+                            <button onClick={() => setModalSuspension(false)} className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold transition disabled:opacity-50" disabled={isProcessing}>
                                 Cancelar
                             </button>
-                            <button onClick={handleSuspender} className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold transition shadow-sm shadow-red-200 disabled:opacity-50" disabled={loading}>
-                                {loading ? "Suspendiendo..." : "Confirmar Suspensión"}
+                            <button onClick={handleSuspender} className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold transition shadow-sm shadow-red-200 disabled:opacity-50" disabled={isProcessing}>
+                                {isProcessing ? "Suspendiendo..." : "Confirmar Suspensión"}
                             </button>
                         </div>
                     </div>
@@ -470,11 +497,11 @@ export default function RevisionWizardClient({ empresa, enlaces }: { empresa: an
                         </p>
                         
                         <div className="flex gap-3 relative z-10">
-                            <button onClick={() => setModalAprobar(false)} className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold transition disabled:opacity-50" disabled={loading}>
+                            <button onClick={() => setModalAprobar(false)} className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold transition disabled:opacity-50" disabled={isProcessing}>
                                 Cancelar
                             </button>
-                            <button onClick={handleAprobar} className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold transition shadow-sm shadow-emerald-200 disabled:opacity-50" disabled={loading}>
-                                {loading ? "Procesando..." : "Confirmar Aprobación"}
+                            <button onClick={handleAprobar} className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold transition shadow-sm shadow-emerald-200 disabled:opacity-50" disabled={isProcessing}>
+                                {isProcessing ? "Procesando..." : "Confirmar Aprobación"}
                             </button>
                         </div>
                     </div>
@@ -495,11 +522,11 @@ export default function RevisionWizardClient({ empresa, enlaces }: { empresa: an
                         </p>
                         
                         <div className="flex gap-3 relative z-10">
-                            <button onClick={() => setModalReactivar(false)} className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold transition disabled:opacity-50" disabled={loading}>
+                            <button onClick={() => setModalReactivar(false)} className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold transition disabled:opacity-50" disabled={isProcessing}>
                                 Cancelar
                             </button>
-                            <button onClick={handleReactivar} className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition shadow-sm shadow-blue-200 disabled:opacity-50" disabled={loading}>
-                                {loading ? "Procesando..." : "Confirmar Reactivación"}
+                            <button onClick={handleReactivar} className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition shadow-sm shadow-blue-200 disabled:opacity-50" disabled={isProcessing}>
+                                {isProcessing ? "Procesando..." : "Confirmar Reactivación"}
                             </button>
                         </div>
                     </div>
