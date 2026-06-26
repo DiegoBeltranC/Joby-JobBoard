@@ -2,7 +2,7 @@ import React from 'react';
 import { Document, Page, Text, View, StyleSheet, Font, Image, Svg, Path } from '@react-pdf/renderer';
 
 // Base Styles mapping
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   page: { flexDirection: 'row', backgroundColor: '#FFFFFF', fontFamily: 'Helvetica' },
   pageMinimalista: { flexDirection: 'column', backgroundColor: '#FFFFFF', fontFamily: 'Helvetica', padding: 40, width: '100%', height: '100%' },
   pageEjecutivo: { flexDirection: 'column', backgroundColor: '#FFFFFF', fontFamily: 'Times-Roman', padding: 35, width: '100%', height: '100%' },
@@ -64,7 +64,93 @@ interface CVData {
     educacion_extra: any[];
 }
 
-export const PlantillaCV = ({ data, accentColor = '#0F766E', showPhoto = true, templateInfo }: { data: CVData, accentColor?: string, showPhoto?: boolean, templateInfo?: { base: string, variante: string, sections?: any[] } }) => {
+export const PlantillaCV = ({ data, accentColor = '#0F766E', showPhoto = true, templateInfo, styling }: { 
+  data: CVData, 
+  accentColor?: string, 
+  showPhoto?: boolean, 
+  templateInfo?: { base: string, variante: string, sections?: any[] },
+  styling?: { fontSize?: string, lineSpacing?: string, fontFamily?: string }
+}) => {
+  // Local compiled styles that merge base static styles with user custom styles
+  const getFontFamily = (baseFont: string) => {
+      const family = styling?.fontFamily;
+      if (!family) return baseFont;
+      const isSerif = family === 'Times-Roman';
+      const isMono = family === 'Courier';
+      const isSans = family === 'Helvetica';
+
+      if (isSerif) {
+          if (baseFont.toLowerCase().includes('bold')) return 'Times-Bold';
+          if (baseFont.toLowerCase().includes('italic') || baseFont.toLowerCase().includes('oblique')) return 'Times-Italic';
+          return 'Times-Roman';
+      }
+      if (isMono) {
+          if (baseFont.toLowerCase().includes('bold')) return 'Courier-Bold';
+          if (baseFont.toLowerCase().includes('italic') || baseFont.toLowerCase().includes('oblique')) return 'Courier-Oblique';
+          return 'Courier';
+      }
+      if (isSans) {
+          if (baseFont.toLowerCase().includes('bold')) return 'Helvetica-Bold';
+          if (baseFont.toLowerCase().includes('italic') || baseFont.toLowerCase().includes('oblique')) return 'Helvetica-Oblique';
+          return 'Helvetica';
+      }
+      return family;
+  };
+
+  const fOption = styling?.fontSize || 'md';
+  const sizes = {
+      text: fOption === 'sm' ? 9.5 : fOption === 'lg' ? 12.5 : 11,
+      subText: fOption === 'sm' ? 8.5 : fOption === 'lg' ? 11.5 : 10,
+      itemTitle: fOption === 'sm' ? 10.5 : fOption === 'lg' ? 13.5 : 12,
+      sectionTitleLeft: fOption === 'sm' ? 12.5 : fOption === 'lg' ? 15.5 : 14,
+      sectionTitleRight: fOption === 'sm' ? 14 : fOption === 'lg' ? 18 : 16,
+      name: fOption === 'sm' ? 20 : fOption === 'lg' ? 28 : 24,
+      nameEjecutivo: fOption === 'sm' ? 22 : fOption === 'lg' ? 30 : 26,
+  };
+
+  const lOption = styling?.lineSpacing || 'normal';
+  const lSpacing = lOption === 'compact' ? 1.2 : lOption === 'spacious' ? 1.7 : 1.45;
+
+  const styles = {
+      page: { ...baseStyles.page, fontFamily: getFontFamily('Helvetica') },
+      pageMinimalista: { ...baseStyles.pageMinimalista, fontFamily: getFontFamily('Helvetica') },
+      pageEjecutivo: { ...baseStyles.pageEjecutivo, fontFamily: getFontFamily('Times-Roman') },
+      
+      leftColumn: baseStyles.leftColumn,
+      rightColumn: baseStyles.rightColumn,
+      profileImage: baseStyles.profileImage,
+      profileImageMin: baseStyles.profileImageMin,
+      profileImageEjecutivo: baseStyles.profileImageEjecutivo,
+      
+      name: { ...baseStyles.name, fontSize: sizes.name, fontFamily: getFontFamily('Helvetica-Bold') },
+      nameEjecutivo: { ...baseStyles.nameEjecutivo, fontSize: sizes.nameEjecutivo, fontFamily: getFontFamily('Times-Bold') },
+      
+      title: { ...baseStyles.title, fontSize: sizes.itemTitle, fontFamily: getFontFamily('Helvetica') },
+      titleEjecutivo: { ...baseStyles.titleEjecutivo, fontSize: sizes.itemTitle, fontFamily: getFontFamily('Times-Italic') },
+      
+      sectionTitleLeft: { ...baseStyles.sectionTitleLeft, fontSize: sizes.sectionTitleLeft, fontFamily: getFontFamily('Helvetica-Bold') },
+      sectionTitleRight: { ...baseStyles.sectionTitleRight, fontSize: sizes.sectionTitleRight, fontFamily: getFontFamily('Helvetica-Bold') },
+      sectionTitleEjecutivo: { ...baseStyles.sectionTitleEjecutivo, fontSize: sizes.sectionTitleLeft, fontFamily: getFontFamily('Times-Bold') },
+      
+      textLeft: { ...baseStyles.textLeft, fontSize: sizes.text, lineHeight: lSpacing, fontFamily: getFontFamily('Helvetica') },
+      textRight: { ...baseStyles.textRight, fontSize: sizes.text, lineHeight: lSpacing, fontFamily: getFontFamily('Helvetica') },
+      textEjecutivo: { ...baseStyles.textEjecutivo, fontSize: sizes.text, lineHeight: lSpacing, fontFamily: getFontFamily('Times-Roman') },
+      
+      itemTitle: { ...baseStyles.itemTitle, fontSize: sizes.itemTitle, fontFamily: getFontFamily('Helvetica-Bold') },
+      itemTitleEjecutivo: { ...baseStyles.itemTitleEjecutivo, fontSize: sizes.itemTitle, fontFamily: getFontFamily('Times-Bold') },
+      
+      itemSubtitle: { ...baseStyles.itemSubtitle, fontSize: sizes.subText, fontFamily: getFontFamily('Helvetica') },
+      itemSubtitleEjecutivo: { ...baseStyles.itemSubtitleEjecutivo, fontSize: sizes.subText, fontFamily: getFontFamily('Times-Italic') },
+      
+      pill: baseStyles.pill,
+      pillMin: baseStyles.pillMin,
+      experienceBlock: baseStyles.experienceBlock,
+      bulletPointContainer: baseStyles.bulletPointContainer,
+      bulletPointBullet: { ...baseStyles.bulletPointBullet, fontSize: sizes.subText, fontFamily: getFontFamily('Helvetica') },
+      bulletPointText: { ...baseStyles.bulletPointText, fontSize: sizes.subText, lineHeight: lSpacing, fontFamily: getFontFamily('Helvetica') },
+      headerEjecutivo: baseStyles.headerEjecutivo
+  };
+
   const { nombre, apellidoPaterno, apellidoMaterno, correo, municipio, estado, carrera, habilidades, idiomas, bio, foto_perfil_url, experiencias, proyectos, educacion_extra } = data;
   const baseLayout = templateInfo?.base || 'moderno';
   const variante = templateInfo?.variante || 'classic';
@@ -387,7 +473,7 @@ export const PlantillaCV = ({ data, accentColor = '#0F766E', showPhoto = true, t
           <Page size="A4" style={[styles.pageMinimalista, { paddingTop: 40, paddingBottom: 40, paddingHorizontal: 40, backgroundColor: '#FAFAFA' }]}>
             
             {/* Header Hero */}
-            <View style={{ alignItems: 'center', backgroundColor: '#FFFFFF', padding: 25, borderRadius: 12, marginBottom: 20, borderTopWidth: 4, borderTopColor: accentColor, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 3 }}>
+            <View style={{ alignItems: 'center', backgroundColor: '#FFFFFF', padding: 25, borderRadius: 12, marginBottom: 20, borderTopWidth: 4, borderTopColor: accentColor }}>
                {showPhoto && foto_perfil_url && (
                   <Image src={foto_perfil_url} style={{ width: 110, height: 110, borderRadius: 55, alignSelf: 'center', marginBottom: 15, objectFit: 'cover' }} />
                )}

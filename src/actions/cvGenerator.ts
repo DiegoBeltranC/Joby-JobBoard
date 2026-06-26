@@ -12,6 +12,34 @@ import React from 'react';
 
 const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads", "cvs");
 
+function isPerfilVacio(estudiante: any) {
+    const hasBio = !!estudiante.bio?.trim();
+    const hasHabilidades = estudiante.habilidades && estudiante.habilidades.length > 0;
+    const hasIdiomas = estudiante.idiomas && estudiante.idiomas.length > 0;
+    const hasExperiencias = estudiante.experiencias && estudiante.experiencias.length > 0;
+    const hasProyectos = estudiante.proyectos && estudiante.proyectos.length > 0;
+    const hasEducacion = estudiante.educacion_extra && estudiante.educacion_extra.length > 0;
+
+    return !hasBio && !hasHabilidades && !hasIdiomas && !hasExperiencias && !hasProyectos && !hasEducacion;
+}
+
+function isDraftPerfilVacio(estudiante: any, updatedData?: any) {
+    const bio = updatedData?.bio !== undefined ? updatedData.bio : estudiante.bio;
+    const hasBio = !!bio?.trim();
+    
+    const hasHabilidades = estudiante.habilidades && estudiante.habilidades.length > 0;
+    const hasIdiomas = estudiante.idiomas && estudiante.idiomas.length > 0;
+    
+    const experiencias = updatedData?.experiencias !== undefined ? updatedData.experiencias : estudiante.experiencias;
+    const hasExperiencias = experiencias && experiencias.length > 0;
+    
+    const hasProyectos = estudiante.proyectos && estudiante.proyectos.length > 0;
+    const hasEducacion = estudiante.educacion_extra && estudiante.educacion_extra.length > 0;
+
+    return !hasBio && !hasHabilidades && !hasIdiomas && !hasExperiencias && !hasProyectos && !hasEducacion;
+}
+
+
 export async function generarCVAction() {
     try {
         const session = await getSession();
@@ -37,6 +65,10 @@ export async function generarCVAction() {
         }
 
         const estudiante = usuarioInfo.estudiante;
+
+        if (isPerfilVacio(estudiante)) {
+            return { error: "No puedes generar un currículum vacío. Por favor, añade información a tu perfil primero (como biografía, habilidades o experiencia laboral)." };
+        }
 
         // Limpiar archivo viejo si existe
         if (estudiante.cv_url) {
@@ -68,8 +100,58 @@ export async function generarCVAction() {
             educacion_extra: estudiante.educacion_extra
         };
 
+        // Buscar borrador previo para conservar estilos y ordenamiento
+        const draft = await prisma.magicCVDraft.findUnique({
+            where: { estudianteId: estudiante.id }
+        });
+
+        let accentColor = '#0F766E';
+        let showPhoto = true;
+        let templateInfo = undefined;
+        let styling = undefined;
+
+        if (draft) {
+            accentColor = draft.colorAcento;
+            const draftState = (draft.draftState as any) || {};
+            showPhoto = draftState.showPhoto ?? true;
+            
+            const tId = draft.templateId || '1';
+            const PLANTILLAS_CONFIG = [
+              { id: '1', base: 'moderno', variante: 'classic' },
+              { id: '2', base: 'moderno', variante: 'left' },
+              { id: '3', base: 'moderno', variante: 'compact' },
+              { id: '4', base: 'minimalista', variante: 'classic' },
+              { id: '5', base: 'minimalista', variante: 'modern' },
+              { id: '6', base: 'ejecutivo', variante: 'classic' },
+              { id: '7', base: 'ejecutivo', variante: 'modern' },
+              { id: '8', base: 'creativo', variante: 'classic' },
+              { id: '9', base: 'creativo', variante: 'split' },
+              { id: '10', base: 'minimalista_centrado', variante: 'classic' },
+              { id: '11', base: 'creativo', variante: 'cards' },
+              { id: '12', base: 'minimalista_centrado', variante: 'clean' },
+              { id: '13', base: 'tradicional', variante: 'serif' }
+            ];
+            const currentT = PLANTILLAS_CONFIG.find(t => t.id === tId) || PLANTILLAS_CONFIG[0];
+            templateInfo = {
+                base: currentT.base,
+                variante: currentT.variante,
+                sections: draftState.sections
+            };
+            styling = {
+                fontSize: draftState.fontSize,
+                lineSpacing: draftState.lineSpacing,
+                fontFamily: draftState.fontFamily
+            };
+        }
+
         // Renderizar PDF a buffer
-        const buffer = await renderToBuffer(React.createElement(PlantillaCV, { data: dataParaPDF }));
+        const buffer = await renderToBuffer(React.createElement(PlantillaCV, { 
+            data: dataParaPDF,
+            accentColor,
+            showPhoto,
+            templateInfo,
+            styling
+        }));
 
         const timestamp = Date.now();
         const fileName = `cv-magic-${estudiante.matricula}-${timestamp}.pdf`;
@@ -188,6 +270,11 @@ export async function saveMagicCVAction(formData: FormData) {
 
         const estudiante = await prisma.estudiante.findUnique({
             where: { usuarioId: session.userId },
+            include: {
+                experiencias: true,
+                proyectos: true,
+                educacion_extra: true,
+            }
         });
 
         if (!estudiante) return { error: "Estudiante no encontrado" };
@@ -196,8 +283,16 @@ export async function saveMagicCVAction(formData: FormData) {
         if (!pdfBlob) return { error: "No se generó el archivo PDF" };
 
         const updatedDataStr = formData.get("updatedData") as string | null;
+        let updatedData = null;
         if (updatedDataStr) {
-            const updatedData = JSON.parse(updatedDataStr);
+            updatedData = JSON.parse(updatedDataStr);
+        }
+
+        if (isDraftPerfilVacio(estudiante, updatedData)) {
+            return { error: "No puedes generar un currículum vacío. Por favor, añade información a tu perfil primero (como biografía, habilidades o experiencia laboral)." };
+        }
+
+        if (updatedData) {
             
             // 1. Update Bio on Estudiante
             await prisma.estudiante.update({

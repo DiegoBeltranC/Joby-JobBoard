@@ -42,6 +42,17 @@ const PLANTILLAS_CONFIG = [
   { id: '13', nombre: 'Tradicional Acad.', desc: 'Serif puro sin foto', base: 'tradicional', variante: 'serif' }
 ];
 
+function checkPerfilVacio(est: any) {
+  const hasBio = !!est.bio?.trim();
+  const hasHabilidades = est.habilidades && est.habilidades.length > 0;
+  const hasIdiomas = est.idiomas && est.idiomas.length > 0;
+  const hasExperiencias = est.experiencias && est.experiencias.length > 0;
+  const hasProyectos = est.proyectos && est.proyectos.length > 0;
+  const hasEducacion = est.educacion_extra && est.educacion_extra.length > 0;
+
+  return !hasBio && !hasHabilidades && !hasIdiomas && !hasExperiencias && !hasProyectos && !hasEducacion;
+}
+
 export default function MagicCVBuilder({ onClose }: MagicCVBuilderProps) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -57,6 +68,11 @@ export default function MagicCVBuilder({ onClose }: MagicCVBuilderProps) {
     { id: 'proyectos', label: 'Proyectos', visible: true },
     { id: 'educacion_extra', label: 'Formación Académica', visible: true }
   ]);
+
+  const [fontSize, setFontSize] = useState<'sm' | 'md' | 'lg'>('md');
+  const [lineSpacing, setLineSpacing] = useState<'compact' | 'normal' | 'spacious'>('normal');
+  const [fontFamily, setFontFamily] = useState<'Helvetica' | 'Times-Roman' | 'Courier'>('Helvetica');
+  const [isProfileEmpty, setIsProfileEmpty] = useState(false);
   
   const [activeTab, setActiveTab] = useState<'edit' | 'preview'>('edit');
   const router = useRouter();
@@ -65,11 +81,19 @@ export default function MagicCVBuilder({ onClose }: MagicCVBuilderProps) {
     async function loadData() {
       const res = await getEstudianteCVDataAction();
       if (res?.success) {
+        if (checkPerfilVacio(res.data)) {
+          setIsProfileEmpty(true);
+          setLoading(false);
+          return;
+        }
         setData(res.data);
         if (res.data.draftConfig) {
             setAccentColor(res.data.draftConfig.colorAcento || COLORS[0].hex);
             setSelectedTemplate(res.data.draftConfig.templateId || '1');
             setShowPhoto(res.data.draftConfig.showPhoto ?? true);
+            setFontSize(res.data.draftConfig.fontSize || 'md');
+            setLineSpacing(res.data.draftConfig.lineSpacing || 'normal');
+            setFontFamily(res.data.draftConfig.fontFamily || 'Helvetica');
             if (res.data.draftConfig.sections) {
                 setSections(res.data.draftConfig.sections);
             }
@@ -83,12 +107,84 @@ export default function MagicCVBuilder({ onClose }: MagicCVBuilderProps) {
     loadData();
   }, [onClose]);
 
+  const moveSection = (index: number, direction: 'up' | 'down') => {
+      const newIndex = direction === 'up' ? index - 1 : index + 1;
+      if (newIndex < 0 || newIndex >= sections.length) return;
+      
+      const newSections = [...sections];
+      const temp = newSections[index];
+      newSections[index] = newSections[newIndex];
+      newSections[newIndex] = temp;
+      setSections(newSections);
+  };
+
   if (loading) {
     return (
       <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center">
         <div className="bg-white p-8 rounded-2xl flex flex-col items-center gap-4">
           <Loader2 className="w-10 h-10 animate-spin text-teal-600" />
           <p className="font-medium text-gray-700">Preparando tu Magic Builder...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isProfileEmpty) {
+    return (
+      <div className="fixed inset-0 z-50 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-gray-100 animate-in zoom-in-95 duration-200">
+          <div className="flex flex-col items-center text-center">
+            <div className="w-16 h-16 rounded-full bg-rose-50 text-rose-500 flex items-center justify-center mb-4">
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" stroke="#E11D48" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">¡Tu perfil está muy vacío!</h3>
+            <p className="text-sm text-gray-500 mb-6">
+              Para poder generar tu currículum, necesitas tener al menos uno de los siguientes apartados completos en tu perfil de Joby:
+            </p>
+            <div className="w-full text-left space-y-2 bg-gray-50 p-4 rounded-xl mb-6 text-sm text-gray-700 font-medium">
+              <div className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-teal-500"></span>
+                <span>Biografía / Acerca de mí</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-teal-500"></span>
+                <span>Habilidades clave</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-teal-500"></span>
+                <span>Experiencia laboral</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-teal-500"></span>
+                <span>Proyectos destacados</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-teal-500"></span>
+                <span>Formación académica adicional</span>
+              </div>
+            </div>
+            <div className="flex gap-3 w-full">
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex-1 py-3 px-4 border border-gray-200 hover:bg-gray-50 text-gray-700 font-bold rounded-xl transition-colors text-sm"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  router.push("/perfil/editar/paso-1");
+                }}
+                className="flex-1 py-3 px-4 bg-teal-700 hover:bg-teal-800 text-white font-bold rounded-xl transition-colors text-sm shadow-md"
+              >
+                Editar Perfil
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -101,7 +197,13 @@ export default function MagicCVBuilder({ onClose }: MagicCVBuilderProps) {
     const idToast = toast.loading("Sincronizando Joby y renderizando PDF...");
 
     try {
-      const doc = <PlantillaCV data={data} accentColor={accentColor} showPhoto={showPhoto} templateInfo={{ base: currentTemplateObj.base, variante: currentTemplateObj.variante, sections }} />;
+      const doc = <PlantillaCV 
+        data={data} 
+        accentColor={accentColor} 
+        showPhoto={showPhoto} 
+        templateInfo={{ base: currentTemplateObj.base, variante: currentTemplateObj.variante, sections }} 
+        styling={{ fontSize, lineSpacing, fontFamily }}
+      />;
       const blob = await pdf(doc).toBlob();
 
       const formData = new FormData();
@@ -116,7 +218,10 @@ export default function MagicCVBuilder({ onClose }: MagicCVBuilderProps) {
               templateId: selectedTemplate,
               accentColor,
               showPhoto,
-              sections
+              sections,
+              fontSize,
+              lineSpacing,
+              fontFamily
           }
       }));
 
@@ -277,6 +382,45 @@ export default function MagicCVBuilder({ onClose }: MagicCVBuilderProps) {
                             </label>
                         </div>
                     </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div className="bg-white p-3 rounded-xl border border-gray-200 shadow-sm">
+                            <label className="text-xs font-bold text-gray-700 block mb-2">Tipografía</label>
+                            <select 
+                                value={fontFamily} 
+                                onChange={(e) => setFontFamily(e.target.value as any)}
+                                className="w-full text-xs p-2 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:ring-1 focus:ring-teal-500 font-medium text-gray-700"
+                            >
+                                <option value="Helvetica">Sans-serif (Helvetica)</option>
+                                <option value="Times-Roman">Serif (Times)</option>
+                                <option value="Courier">Monospace (Courier)</option>
+                            </select>
+                        </div>
+                        <div className="bg-white p-3 rounded-xl border border-gray-200 shadow-sm">
+                            <label className="text-xs font-bold text-gray-700 block mb-2">Tamaño de Fuente</label>
+                            <select 
+                                value={fontSize} 
+                                onChange={(e) => setFontSize(e.target.value as any)}
+                                className="w-full text-xs p-2 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:ring-1 focus:ring-teal-500 font-medium text-gray-700"
+                            >
+                                <option value="sm">Pequeño</option>
+                                <option value="md">Mediano</option>
+                                <option value="lg">Grande</option>
+                            </select>
+                        </div>
+                        <div className="bg-white p-3 rounded-xl border border-gray-200 shadow-sm">
+                            <label className="text-xs font-bold text-gray-700 block mb-2">Espaciado de Líneas</label>
+                            <select 
+                                value={lineSpacing} 
+                                onChange={(e) => setLineSpacing(e.target.value as any)}
+                                className="w-full text-xs p-2 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:ring-1 focus:ring-teal-500 font-medium text-gray-700"
+                            >
+                                <option value="compact">Compacto</option>
+                                <option value="normal">Normal</option>
+                                <option value="spacious">Espacioso</option>
+                            </select>
+                        </div>
+                    </div>
                 </section>
 
                 <hr className="border-gray-200" />
@@ -298,11 +442,34 @@ export default function MagicCVBuilder({ onClose }: MagicCVBuilderProps) {
                                 onDrop={(e) => handleDrop(e, index)}
                                 className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg shadow-sm cursor-move hover:bg-gray-50 hover:border-teal-300 transition-colors"
                              >
-                                <div className="flex items-center gap-3">
-                                    <div className="text-gray-400">
+                                <div className="flex items-center gap-2 flex-1 min-w-0">
+                                    <div className="text-gray-400 shrink-0">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="12" r="1"/><circle cx="9" cy="5" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="19" r="1"/></svg>
                                     </div>
-                                    <span className={`text-sm font-semibold ${sec.visible ? 'text-gray-700' : 'text-gray-400 line-through'}`}>{sec.label}</span>
+                                    
+                                    {/* Botones de Control de Movimiento Arriba/Abajo */}
+                                    <div className="flex flex-col gap-0.5 shrink-0">
+                                        <button 
+                                            type="button"
+                                            onClick={() => moveSection(index, 'up')}
+                                            disabled={index === 0}
+                                            className="p-0.5 text-gray-400 hover:text-teal-600 disabled:opacity-30 disabled:hover:text-gray-400 cursor-pointer"
+                                            title="Subir sección"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m18 15-6-6-6 6"/></svg>
+                                        </button>
+                                        <button 
+                                            type="button"
+                                            onClick={() => moveSection(index, 'down')}
+                                            disabled={index === sections.length - 1}
+                                            className="p-0.5 text-gray-400 hover:text-teal-600 disabled:opacity-30 disabled:hover:text-gray-400 cursor-pointer"
+                                            title="Bajar sección"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                                        </button>
+                                    </div>
+
+                                    <span className={`text-sm font-semibold truncate ${sec.visible ? 'text-gray-700' : 'text-gray-400 line-through'}`}>{sec.label}</span>
                                 </div>
                                 <button 
                                     onClick={() => toggleSection(sec.id)}
@@ -417,7 +584,13 @@ export default function MagicCVBuilder({ onClose }: MagicCVBuilderProps) {
           {/* Panel Derecho: Preview Dinámico */}
           <div className={`flex-1 bg-gray-200 relative ${activeTab !== 'preview' && 'hidden xl:block'}`}>
              <PDFViewer width="100%" height="100%" className="border-none bg-gray-50">
-                 <PlantillaCV data={data} accentColor={accentColor} showPhoto={showPhoto} templateInfo={{ base: currentTemplateObj.base, variante: currentTemplateObj.variante, sections }} />
+                 <PlantillaCV 
+                     data={data} 
+                     accentColor={accentColor} 
+                     showPhoto={showPhoto} 
+                     templateInfo={{ base: currentTemplateObj.base, variante: currentTemplateObj.variante, sections }} 
+                     styling={{ fontSize, lineSpacing, fontFamily }}
+                 />
              </PDFViewer>
           </div>
 
