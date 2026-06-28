@@ -27,14 +27,20 @@ function isDraftPerfilVacio(estudiante: any, updatedData?: any) {
     const bio = updatedData?.bio !== undefined ? updatedData.bio : estudiante.bio;
     const hasBio = !!bio?.trim();
     
-    const hasHabilidades = estudiante.habilidades && estudiante.habilidades.length > 0;
-    const hasIdiomas = estudiante.idiomas && estudiante.idiomas.length > 0;
+    const habilidades = updatedData?.habilidades !== undefined ? updatedData.habilidades : estudiante.habilidades;
+    const hasHabilidades = habilidades && habilidades.length > 0;
+
+    const idiomas = updatedData?.idiomas !== undefined ? updatedData.idiomas : estudiante.idiomas;
+    const hasIdiomas = idiomas && idiomas.length > 0;
     
     const experiencias = updatedData?.experiencias !== undefined ? updatedData.experiencias : estudiante.experiencias;
     const hasExperiencias = experiencias && experiencias.length > 0;
     
-    const hasProyectos = estudiante.proyectos && estudiante.proyectos.length > 0;
-    const hasEducacion = estudiante.educacion_extra && estudiante.educacion_extra.length > 0;
+    const proyectos = updatedData?.proyectos !== undefined ? updatedData.proyectos : estudiante.proyectos;
+    const hasProyectos = proyectos && proyectos.length > 0;
+
+    const educacion = updatedData?.educacion_extra !== undefined ? updatedData.educacion_extra : estudiante.educacion_extra;
+    const hasEducacion = educacion && educacion.length > 0;
 
     return !hasBio && !hasHabilidades && !hasIdiomas && !hasExperiencias && !hasProyectos && !hasEducacion;
 }
@@ -151,7 +157,7 @@ export async function generarCVAction() {
             showPhoto,
             templateInfo,
             styling
-        }));
+        }) as any);
 
         const timestamp = Date.now();
         const fileName = `cv-magic-${estudiante.matricula}-${timestamp}.pdf`;
@@ -294,11 +300,13 @@ export async function saveMagicCVAction(formData: FormData) {
 
         if (updatedData) {
             
-            // 1. Update Bio on Estudiante
+            // 1. Update Bio, Habilidades e Idiomas on Estudiante
             await prisma.estudiante.update({
                 where: { id: estudiante.id },
                 data: {
                     bio: updatedData.bio,
+                    habilidades: updatedData.habilidades || [],
+                    idiomas: updatedData.idiomas || []
                 }
             });
 
@@ -322,26 +330,67 @@ export async function saveMagicCVAction(formData: FormData) {
                 }
             }
 
-            // 3. Upsert Draft Config (Persistencia)
+            // Safe Update for Proyectos
+            if (updatedData.proyectos && Array.isArray(updatedData.proyectos)) {
+                for (const proj of updatedData.proyectos) {
+                    if (proj.id) {
+                        try {
+                            await prisma.proyecto.update({
+                                where: { id: parseInt(proj.id, 10) || proj.id },
+                                data: {
+                                    nombre: proj.nombre,
+                                    puntos_clave: proj.puntos_clave
+                                }
+                            });
+                        } catch (e) {
+                            console.error("No se pudo actualizar el proj:", proj.id, e);
+                        }
+                    }
+                }
+            }
+
+            // Safe Update for Educacion Extra
+            if (updatedData.educacion_extra && Array.isArray(updatedData.educacion_extra)) {
+                for (const edu of updatedData.educacion_extra) {
+                    if (edu.id) {
+                        try {
+                            await prisma.educacionExtra.update({
+                                where: { id: parseInt(edu.id, 10) || edu.id },
+                                data: {
+                                    titulo: edu.titulo,
+                                    institucion: edu.institucion,
+                                    año: edu.año ? parseInt(edu.año, 10) || null : null
+                                }
+                            });
+                        } catch (e) {
+                            console.error("No se pudo actualizar la edu:", edu.id, e);
+                        }
+                    }
+                }
+            }
+
+            // 3. Upsert Draft Config (Persistencia Completa)
             if (updatedData.draftConfig) {
+                const draftPayload = {
+                    showPhoto: updatedData.draftConfig.showPhoto,
+                    sections: updatedData.draftConfig.sections,
+                    fontSize: updatedData.draftConfig.fontSize,
+                    lineSpacing: updatedData.draftConfig.lineSpacing,
+                    fontFamily: updatedData.draftConfig.fontFamily,
+                    singlePage: updatedData.draftConfig.singlePage
+                };
                 await prisma.magicCVDraft.upsert({
                     where: { estudianteId: estudiante.id },
                     update: {
                         templateId: updatedData.draftConfig.templateId,
                         colorAcento: updatedData.draftConfig.accentColor,
-                        draftState: {
-                            showPhoto: updatedData.draftConfig.showPhoto,
-                            sections: updatedData.draftConfig.sections
-                        }
+                        draftState: draftPayload
                     },
                     create: {
                         estudianteId: estudiante.id,
                         templateId: updatedData.draftConfig.templateId,
                         colorAcento: updatedData.draftConfig.accentColor,
-                        draftState: {
-                            showPhoto: updatedData.draftConfig.showPhoto,
-                            sections: updatedData.draftConfig.sections
-                        }
+                        draftState: draftPayload
                     }
                 });
             }

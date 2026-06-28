@@ -12,6 +12,8 @@ const MagicCVBuilder = dynamic(() => import('./MagicCVBuilder'), {
     ssr: false 
 });
 
+import ImportarCVModal from "./ImportarCVModal";
+
 export default function GestionCV({ cvUrl }: { cvUrl?: string | null }) {
     const [isPending, startTransition] = useTransition();
     const router = useRouter();
@@ -20,6 +22,7 @@ export default function GestionCV({ cvUrl }: { cvUrl?: string | null }) {
     const [isGenerating, setIsGenerating] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
     const [showBuilder, setShowBuilder] = useState(false);
+    const [showImportModal, setShowImportModal] = useState(false);
 
     const processFile = async (file: File) => {
         if (file.type !== "application/pdf") {
@@ -113,6 +116,7 @@ export default function GestionCV({ cvUrl }: { cvUrl?: string | null }) {
             />
 
             {showBuilder && <MagicCVBuilder onClose={() => setShowBuilder(false)} />}
+            {showImportModal && <ImportarCVModal onClose={() => setShowImportModal(false)} />}
 
             {cvUrl ? (
                 // Vista Cuando Ya Existe Archivo
@@ -156,10 +160,9 @@ export default function GestionCV({ cvUrl }: { cvUrl?: string | null }) {
                         </button>
                       </div>
                     </div>
-                    
-                    {/* Boton Regenerar si ya tiene CV */}
-                    {cvUrl.includes("magic") && (
-                        <div className="flex justify-start">
+                    {/* Botones de edición / actualización */}
+                    <div className="flex flex-wrap gap-3">
+                        {cvUrl.includes("magic") && (
                             <button
                                 type="button"
                                 onClick={handleGenerate}
@@ -169,17 +172,37 @@ export default function GestionCV({ cvUrl }: { cvUrl?: string | null }) {
                                 <Sparkles className="w-3.5 h-3.5" />
                                 ✨ Editar Magic Resume
                             </button>
-                        </div>
-                    )}
+                        )}
+                        <button
+                            type="button"
+                            onClick={() => setShowImportModal(true)}
+                            disabled={isLocked}
+                            className="text-xs flex items-center gap-1.5 text-emerald-700 hover:text-emerald-800 font-bold disabled:opacity-50"
+                        >
+                            <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                            ✨ Importar datos desde mi CV
+                        </button>
+                    </div>
                 </div>
             ) : (
                 <div className="space-y-3">
+                    {/* Boton Importar con IA */}
+                    <button
+                        type="button"
+                        onClick={() => setShowImportModal(true)}
+                        disabled={isLocked}
+                        className="w-full flex items-center justify-center gap-2 p-4 rounded-xl border border-teal-200 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white font-bold transition-all shadow-sm group disabled:opacity-75 cursor-pointer"
+                    >
+                        <Sparkles className="w-5 h-5 text-teal-200 group-hover:scale-110 transition-transform" />
+                        <span>✨ Importar datos desde mi CV</span>
+                    </button>
+
                     {/* Boton Magic Generador */}
                     <button
                         type="button"
                         onClick={handleGenerate}
                         disabled={isLocked}
-                        className="w-full flex items-center justify-center gap-2 p-4 rounded-xl border border-teal-200 bg-gradient-to-r from-teal-50 to-emerald-50 hover:from-teal-100 hover:to-emerald-100 text-teal-800 font-bold transition-all shadow-sm group disabled:opacity-75"
+                        className="w-full flex items-center justify-center gap-2 p-4 rounded-xl border border-teal-200 bg-gradient-to-r from-teal-50 to-emerald-50 hover:from-teal-100 hover:to-emerald-100 text-teal-800 font-bold transition-all shadow-sm group disabled:opacity-75 cursor-pointer"
                     >
                         <Sparkles className="w-5 h-5 text-teal-600 group-hover:scale-110 transition-transform" />
                         <span>✨ Generar CV con mis datos de Joby</span>

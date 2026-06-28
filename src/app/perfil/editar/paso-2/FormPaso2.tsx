@@ -16,7 +16,7 @@ import catalogos from "@/lib/data/idiomas.json";
 
 // 2. ESQUEMA ZOD ACTUALIZADO
 const paso2Schema = z.object({
-    habilidades: z.array(z.string()).min(1, "Ingresa al menos una habilidad").max(15, "Máximo 15 habilidades"),
+    habilidades: z.array(z.string()).min(1, "Ingresa al menos una habilidad"),
     idiomas: z.array(z.string()).optional(),
 });
 
@@ -56,7 +56,6 @@ export default function FormPaso2({ valoresIniciales }: { valoresIniciales: { ha
             .slice(0, 5); // Máximo 5 sugerencias
 
     const agregarDesdeSugerencia = (habilidad: string) => {
-        if (habilidades.length >= 15) return toast.error("Máximo 15 habilidades permitidas.");
         const capitalizada = habilidad.charAt(0).toUpperCase() + habilidad.slice(1).toLowerCase();
         setValue("habilidades", [...habilidades, capitalizada], { shouldValidate: true });
         setInputHabilidad("");
@@ -70,7 +69,6 @@ export default function FormPaso2({ valoresIniciales }: { valoresIniciales: { ha
         const limpia = inputHabilidad.trim();
         if (!limpia) return;
         
-        if (habilidades.length >= 15) return toast.error("Máximo 15 habilidades permitidas.");
         if (habilidades.some(h => h.toLowerCase() === limpia.toLowerCase())) return toast.error("Ya agregaste esta habilidad.");
 
         // Sanitización visual
@@ -102,7 +100,10 @@ export default function FormPaso2({ valoresIniciales }: { valoresIniciales: { ha
     // --- ENVÍO A LA BASE DE DATOS ---
     const onSubmit = async (data: FormValues) => {
         const idCarga = toast.loading("Guardando herramientas...");
-        const result = await guardarPaso2(data);
+        const result = await guardarPaso2({
+            habilidades: data.habilidades,
+            idiomas: data.idiomas || []
+        });
 
         if (result?.error) {
             toast.error(result.error, { id: idCarga });
@@ -130,7 +131,6 @@ export default function FormPaso2({ valoresIniciales }: { valoresIniciales: { ha
                         onKeyDown={agregarHabilidad}
                         className={cn("w-full rounded-xl border border-gray-300 p-3 pr-24 text-sm focus:ring-2 focus:ring-teal-500 outline-none", errors.habilidades && "border-red-500")}
                         placeholder="Escribe para buscar o añadir..."
-                        disabled={habilidades.length >= 15}
                         autoComplete="off"
                     />
                     
@@ -159,7 +159,7 @@ export default function FormPaso2({ valoresIniciales }: { valoresIniciales: { ha
 
                     {/* Contador de Habilidades */}
                     <div className="absolute right-2 top-2 text-xs font-medium text-gray-400 bg-gray-100 px-2 py-1 rounded-md">
-                        {habilidades.length} / 15
+                        {habilidades.length} agregadas
                     </div>
                 </div>
                 {errors.habilidades && <p className="text-xs text-red-500">{errors.habilidades.message}</p>}

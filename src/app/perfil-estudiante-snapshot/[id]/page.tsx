@@ -47,9 +47,9 @@ export default async function PerfilSnapshotPage({ params }: { params: Promise<{
     if (!postulacion) notFound();
 
     // Seguridad: Solo admin, la empresa dueña o el estudiante dueño pueden ver esto
-    const isAdmin = session.rol === "ADMIN";
-    const isEmpresaDueña = session.rol === "EMPRESA" && postulacion.vacante.empresa.usuarioId === session.userId;
-    const isEstudianteDueño = session.rol === "ESTUDIANTE" && postulacion.estudiante.usuarioId === session.userId;
+    const isAdmin = (session as any).rol === "ADMIN";
+    const isEmpresaDueña = (session as any).rol === "EMPRESA" && postulacion.vacante.empresa.usuarioId === session.userId;
+    const isEstudianteDueño = (session as any).rol === "ESTUDIANTE" && postulacion.estudiante.usuarioId === session.userId;
 
     if (!isAdmin && !isEmpresaDueña && !isEstudianteDueño) {
         notFound();

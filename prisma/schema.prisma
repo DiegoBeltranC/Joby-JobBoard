@@ -115,6 +115,9 @@ model User {
   estudiante    Estudiante? 
   empresa       Empresa?    
   admin         Admin?
+
+  subscription  Subscription?
+  aiUsageLogs   AIUsageLog[]
 }
 
 model Estudiante {
@@ -378,4 +381,53 @@ model PasswordResetToken {
   expiresAt DateTime
   createdAt DateTime @default(now())
 }
+
+// -----------------------------------------------------------------------------
+// CONTROL DE SUSCRIPCIONES Y CONSUMO DE IA (SAAS)
+// -----------------------------------------------------------------------------
+
+enum SubscriptionPlan {
+  FREE
+  PREMIUM
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  UNPAID
+  INACTIVE
+}
+
+model Subscription {
+  id                     Int                @id @default(autoincrement())
+  usuarioId              Int                @unique
+  stripeCustomerId       String?            @unique
+  stripeSubscriptionId   String?            @unique
+  plan                   SubscriptionPlan   @default(FREE)
+  status                 SubscriptionStatus @default(INACTIVE)
+  
+  currentPeriodStart     DateTime           @default(now())
+  currentPeriodEnd       DateTime           @default(now())
+  
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+
+  usuario                User               @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+}
+
+model AIUsageLog {
+  id            Int      @id @default(autoincrement())
+  usuarioId     Int
+  action        String   // Ej. "CV_PDF_PARSE", "CV_REWRITE"
+  modelUsed     String   // Ej. "gemini-2.5-flash"
+  tokensInput   Int      @default(0)
+  tokensOutput  Int      @default(0)
+  createdAt     DateTime @default(now())
+
+  usuario       User     @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([usuarioId, createdAt])
+}
+
 
