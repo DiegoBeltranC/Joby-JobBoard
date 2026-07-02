@@ -1,12 +1,9 @@
-import { GoogleGenAI } from '@google/genai';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getSession } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
-
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 const assistantResponseSchema = {
   type: "object",
@@ -42,6 +39,40 @@ const assistantResponseSchema = {
   },
   required: ["mensaje"]
 };
+
+function cleanJsonResponse(text: string): string {
+  let cleaned = text.trim();
+  if (cleaned.includes("<think>")) {
+    const thinkEndIndex = cleaned.indexOf("</think>");
+    if (thinkEndIndex !== -1) {
+      cleaned = cleaned.substring(thinkEndIndex + 8).trim();
+    }
+  }
+  if (cleaned.startsWith("```json")) {
+    cleaned = cleaned.substring(7);
+  } else if (cleaned.startsWith("```")) {
+    cleaned = cleaned.substring(3);
+  }
+  if (cleaned.endsWith("```")) {
+    cleaned = cleaned.substring(0, cleaned.length - 3);
+  }
+  cleaned = cleaned.trim();
+
+  if (!cleaned.startsWith("{") && !cleaned.startsWith("[")) {
+    const firstBrace = cleaned.indexOf("{");
+    const lastBrace = cleaned.lastIndexOf("}");
+    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+      cleaned = cleaned.substring(firstBrace, lastBrace + 1);
+    } else {
+      const firstBracket = cleaned.indexOf("[");
+      const lastBracket = cleaned.lastIndexOf("]");
+      if (firstBracket !== -1 && lastBracket !== -1 && lastBracket > firstBracket) {
+        cleaned = cleaned.substring(firstBracket, lastBracket + 1);
+      }
+    }
+  }
+  return cleaned.trim();
+}
 
 export async function POST(request: Request) {
   try {
@@ -82,36 +113,68 @@ REGLAS DE PROPUESTA DE CAMBIOS:
 - Si el usuario te pide optimizar, corregir ortografía o mejorar la redacción de su bio, alguna habilidad o un logro/punto clave de su experiencia o proyecto actual, debes devolver la propuesta en el objeto JSON "propuestaCambio".
 - Para "propuestaCambio", asegúrate de usar siempre índices base cero (0-based) reales que concuerden con la posición del elemento en el array entregado en <PERFIL_ESTUDIANTE>. No inventes índices inexistentes ni devuelvas índices fuera del rango.`;
 
-    // Mapeamos los mensajes recientes al formato de contenido de Gemini
-    const contents = recentMessages.map((msg: any) => ({
-      role: msg.role === 'user' ? 'user' : 'model',
-      parts: [{ text: msg.text || msg.content || '' }]
+    // Mapeamos los mensajes recientes al formato de chat de OpenAI/MiniMax
+    const messagesList = recentMessages.map((msg: any) => ({
+      role: msg.role === 'user' ? 'user' : 'assistant',
+      content: msg.text || msg.content || ''
     }));
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: contents,
-      config: {
-        systemInstruction: systemInstruction,
-        responseMimeType: "application/json",
-        responseSchema: assistantResponseSchema,
-        temperature: 0.2 // Muy baja temperatura para evitar alucinaciones y desvíos
-      }
+    // Insertamos la instrucción del sistema al inicio con el formato JSON requerido
+    const systemPrompt = `${systemInstruction}
+
+Devuelve la respuesta estructurada EXACTAMENTE bajo el siguiente esquema JSON. No incluyas explicaciones adicionales fuera del JSON.
+
+ESQUEMA JSON:
+${JSON.stringify(assistantResponseSchema, null, 2)}`;
+
+    const messagesPayload = [
+      { role: "system", content: systemPrompt },
+      ...messagesList
+    ];
+
+    const apiKey = process.env.MINIMAX_API_KEY || process.env.GEMINI_API_KEY;
+    const res = await fetch("https://api.minimax.io/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: "MiniMax-M3",
+        messages: messagesPayload,
+        temperature: 0.2, // Muy baja temperatura para evitar alucinaciones y desvíos
+        max_tokens: 1000
+      })
     });
 
-    const textResponse = response.text;
-    if (!textResponse) {
-      throw new Error("No se obtuvo respuesta del Asistente de IA");
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error(`MiniMax API error: ${res.status} - ${errorText}`);
     }
 
-    const assistantResult = JSON.parse(textResponse);
+    const resJson = await res.json();
+    let textResponse = resJson.choices?.[0]?.message?.content;
+    if (!textResponse) {
+      throw new Error("No se obtuvo respuesta del Asistente de IA (MiniMax)");
+    }
+
+    textResponse = cleanJsonResponse(textResponse);
+    let assistantResult: any;
+    try {
+      assistantResult = JSON.parse(textResponse);
+    } catch (parseErr) {
+      console.warn("La IA no devolvió JSON válido. Envolviendo en formato de respuesta estándar:", textResponse);
+      assistantResult = {
+        mensaje: textResponse
+      };
+    }
 
     // Registrar uso
     await prisma.aIUsageLog.create({
       data: {
         usuarioId: userId,
         action: "CV_ASSISTANT",
-        modelUsed: "gemini-2.5-flash"
+        modelUsed: "MiniMax-M3"
       }
     });
 

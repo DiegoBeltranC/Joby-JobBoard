@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { useScrollLock } from "@/hooks/useScrollLock";
 
 interface Experiencia {
   empresa: string;
@@ -17,11 +18,18 @@ interface Experiencia {
   esActual?: boolean;
 }
 
+interface Educacion {
+  titulo: string;
+  institucion: string;
+  año: number | null;
+}
+
 interface CVData {
   resumen: string;
   habilidades: string[];
   idiomas: string[];
   experiencias: Experiencia[];
+  educacion: Educacion[];
 }
 
 interface ImportarCVModalProps {
@@ -31,6 +39,7 @@ interface ImportarCVModalProps {
 type Step = "UPLOAD" | "PROCESSING" | "PREVIEW" | "SUCCESS";
 
 export default function ImportarCVModal({ onClose }: ImportarCVModalProps) {
+  useScrollLock();
   const [step, setStep] = useState<Step>("UPLOAD");
   const [isDragging, setIsDragging] = useState(false);
   const [progressMsg, setProgressMsg] = useState("Iniciando análisis...");
@@ -38,7 +47,8 @@ export default function ImportarCVModal({ onClose }: ImportarCVModalProps) {
     resumen: "",
     habilidades: [],
     idiomas: [],
-    experiencias: []
+    experiencias: [],
+    educacion: []
   });
   const [newHabilidad, setNewHabilidad] = useState("");
   const [newIdioma, setNewIdioma] = useState("");
@@ -124,6 +134,11 @@ export default function ImportarCVModal({ onClose }: ImportarCVModalProps) {
           fechaInicio: exp.fechaInicio || "",
           fechaFin: exp.fechaFin || "",
           esActual: !exp.fechaFin
+        })),
+        educacion: (Array.isArray(rawData.educacion) ? rawData.educacion : []).map(edu => ({
+          titulo: edu.titulo || "",
+          institucion: edu.institucion || "",
+          año: edu.año ? Number(edu.año) : null
         }))
       };
 
@@ -275,6 +290,34 @@ export default function ImportarCVModal({ onClose }: ImportarCVModalProps) {
       return { ...prev, experiencias: exps };
     });
   };
+  
+  // Educación edición
+  const updateEducacionField = (index: number, field: keyof Educacion, value: any) => {
+    setCvData(prev => {
+      const edus = [...(prev.educacion || [])];
+      edus[index] = { ...edus[index], [field]: value };
+      return { ...prev, educacion: edus };
+    });
+  };
+
+  const addEducacionManual = () => {
+    const nuevaEdu: Educacion = {
+      titulo: "Nueva Carrera o Certificación",
+      institucion: "Nueva Institución",
+      año: new Date().getFullYear()
+    };
+    setCvData(prev => ({
+      ...prev,
+      educacion: [...(prev.educacion || []), nuevaEdu]
+    }));
+  };
+
+  const removeEducacion = (index: number) => {
+    setCvData(prev => ({
+      ...prev,
+      educacion: (prev.educacion || []).filter((_, idx) => idx !== index)
+    }));
+  };
 
   // Enviar a guardar en Base de Datos
   const handleSave = async () => {
@@ -287,6 +330,12 @@ export default function ImportarCVModal({ onClose }: ImportarCVModalProps) {
     const expsIncompletas = cvData.experiencias.some(exp => !exp.empresa.trim() || !exp.puesto.trim() || !exp.fechaInicio);
     if (expsIncompletas) {
       toast.error("Por favor completa los campos obligatorios de todas las experiencias (Empresa, Puesto y Fecha de Inicio).");
+      return;
+    }
+
+    const edusIncompletas = (cvData.educacion || []).some(edu => !edu.titulo.trim() || !edu.institucion.trim());
+    if (edusIncompletas) {
+      toast.error("Por favor completa los campos obligatorios de todas las educaciones (Título e Institución).");
       return;
     }
 
@@ -305,6 +354,11 @@ export default function ImportarCVModal({ onClose }: ImportarCVModalProps) {
             logros: exp.logros,
             fechaInicio: exp.fechaInicio,
             fechaFin: exp.esActual ? null : exp.fechaFin
+          })),
+          educacion: (cvData.educacion || []).map(edu => ({
+            titulo: edu.titulo,
+            institucion: edu.institucion,
+            año: edu.año ? Number(edu.año) : null
           }))
         })
       });
@@ -654,6 +708,79 @@ export default function ImportarCVModal({ onClose }: ImportarCVModalProps) {
                 ) : (
                   <div className="bg-white p-8 border border-dashed border-gray-300 rounded-2xl text-center text-gray-500 text-sm">
                     No se detectaron experiencias laborales en el currículum. Agrega experiencias manualmente con el botón superior.
+                  </div>
+                )}
+              </div>
+
+              {/* SECCIÓN: EDUCACIÓN */}
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <label className="text-sm font-bold text-gray-800">Educación y Certificaciones Extraídas</label>
+                  <button 
+                    type="button"
+                    onClick={addEducacionManual}
+                    className="text-xs flex items-center gap-1.5 text-teal-700 hover:text-teal-800 font-bold bg-teal-50 hover:bg-teal-100 border border-teal-200 px-3 py-1.5 rounded-lg transition-colors"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Agregar Educación
+                  </button>
+                </div>
+
+                {cvData.educacion && cvData.educacion.length > 0 ? (
+                  cvData.educacion.map((edu, idx) => (
+                    <div key={idx} className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm relative group space-y-4">
+                      {/* Botón Eliminar Educación */}
+                      <button 
+                        type="button"
+                        onClick={() => removeEducacion(idx)}
+                        className="absolute top-4 right-4 p-2 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
+                        title="Eliminar Educación"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+
+                      <div className="flex items-center gap-2 text-teal-700 font-semibold mb-2">
+                        <svg className="w-4 h-4 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222" /></svg>
+                        <span className="text-xs uppercase tracking-wider">Educación #{idx + 1}</span>
+                      </div>
+
+                      {/* Inputs */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="md:col-span-2 space-y-1">
+                          <label className="text-[11px] font-bold text-gray-500 uppercase">Título / Carrera / Curso / Certificación <span className="text-rose-500">*</span></label>
+                          <input 
+                            type="text" 
+                            value={edu.titulo}
+                            onChange={(e) => updateEducacionField(idx, "titulo", e.target.value)}
+                            placeholder="Ej. TSU en Desarrollo de Software"
+                            className="w-full border border-gray-200 focus:border-teal-500 rounded-xl px-3 py-2 text-sm outline-none transition-all text-gray-700"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[11px] font-bold text-gray-500 uppercase">Año de obtención/finalización</label>
+                          <input 
+                            type="number" 
+                            value={edu.año || ""}
+                            onChange={(e) => updateEducacionField(idx, "año", e.target.value ? parseInt(e.target.value, 10) : null)}
+                            placeholder="Ej. 2025"
+                            className="w-full border border-gray-200 focus:border-teal-500 rounded-xl px-3 py-2 text-sm outline-none transition-all text-gray-700"
+                          />
+                        </div>
+                        <div className="md:col-span-3 space-y-1">
+                          <label className="text-[11px] font-bold text-gray-500 uppercase">Institución <span className="text-rose-500">*</span></label>
+                          <input 
+                            type="text" 
+                            value={edu.institucion}
+                            onChange={(e) => updateEducacionField(idx, "institucion", e.target.value)}
+                            placeholder="Ej. Universidad Tecnológica de Chetumal"
+                            className="w-full border border-gray-200 focus:border-teal-500 rounded-xl px-3 py-2 text-sm outline-none transition-all text-gray-700"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="bg-white p-8 border border-dashed border-gray-300 rounded-2xl text-center text-gray-500 text-sm">
+                    No se detectó formación adicional en el currículum. Agrega cursos o certificados manualmente con el botón superior.
                   </div>
                 )}
               </div>

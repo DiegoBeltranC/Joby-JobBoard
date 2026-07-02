@@ -1,176 +1,112 @@
-import { getSession } from "@/lib/session";
+import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { notFound, redirect } from "next/navigation";
+import { decryptId } from "@/lib/utils/encryption";
 import { 
     FileText, 
-    ShieldCheck, 
-    Clock, 
-    Download,
-    Cpu,
-    Globe,
-    ArrowLeft,
-    Briefcase,
-    Calendar,
-    Mail,
-    UserCircle,
-    MapPin,
-    GraduationCap,
-    ExternalLink
+    Mail, 
+    MapPin, 
+    Calendar, 
+    Briefcase, 
+    Cpu, 
+    Globe, 
+    Download, 
+    UserCircle, 
+    GraduationCap, 
+    ExternalLink, 
+    Lock 
 } from "lucide-react";
-import Link from "next/link";
-import { cn } from "@/lib/utils";
-import { encodeId, decodeId } from "@/lib/utils/hash";
 
-interface CandidatoSnapshot {
-    bio: string;
-    habilidades: string[];
-    idiomas: string[];
+interface PublicProfileProps {
+    params: Promise<{ id: string }>;
 }
 
-export default async function PerfilSnapshotPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function PublicProfilePage({ params }: PublicProfileProps) {
     const { id } = await params;
-    const postulacionId = decodeId(id);
+    
+    // 1. Intentamos desencriptar el ID (AES-256-CBC)
+    const estudianteId = decryptId(decodeURIComponent(id));
+    
+    if (!estudianteId) {
+        notFound();
+    }
 
-    if (!postulacionId) notFound();
-
-    const session = await getSession();
-    if (!session) redirect("/login");
-
-    const usuarioInfo = await prisma.user.findUnique({
-        where: { id: session.userId }
-    });
-
-    if (!usuarioInfo) redirect("/login");
-
-    const postulacion = await prisma.postulacion.findUnique({
-        where: { id: postulacionId },
+    // 2. Buscamos al estudiante con todas sus relaciones profesionales
+    const estudiante = await prisma.estudiante.findUnique({
+        where: { id: estudianteId },
         include: {
-            estudiante: {
-                include: {
-                    universidad: true,
-                    carrera: true,
-                    experiencias: {
-                        orderBy: { fechaInicio: 'desc' }
-                    },
-                    proyectos: {
-                        orderBy: { fechaInicio: 'desc' }
-                    },
-                    educacion_extra: {
-                        orderBy: { año: 'desc' }
-                    }
-                }
+            universidad: true,
+            carrera: true,
+            experiencias: {
+                orderBy: { fechaInicio: 'desc' }
             },
-            vacante: {
-                include: {
-                    empresa: true
-                }
+            proyectos: {
+                orderBy: { fechaInicio: 'desc' }
+            },
+            educacion_extra: {
+                orderBy: { año: 'desc' }
             }
         }
     });
 
-    if (!postulacion || !postulacion.estudiante) notFound();
+    // 3. Si no existe o no tiene habilitado el perfil público, mostramos pantalla de perfil privado
+    if (!estudiante || !estudiante.perfil_publico) {
+        return (
+            <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 font-sans">
+                <div className="bg-white max-w-2xl w-full rounded-[40px] p-8 md:p-16 text-center shadow-xl shadow-slate-200/50 border border-slate-100 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-slate-100/50 rounded-full blur-3xl -mr-32 -mt-32 pointer-events-none"></div>
+                    
+                    <div className="relative z-10 flex flex-col items-center">
+                        <div className="w-64 h-64 relative mb-8 drop-shadow-xl">
+                            <img
+                                src="/tlacuache-404.png"
+                                alt="Tlacuache confundido"
+                                className="w-full h-full object-contain"
+                            />
+                        </div>
+                        
+                        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-slate-500 font-black text-[10px] uppercase tracking-widest mb-6">
+                            <Lock className="w-3.5 h-3.5 text-slate-400" />
+                            <span>Perfil Privado</span>
+                        </div>
 
-    // Seguridad: Solo admin o la empresa dueña pueden ver esto
-    const isAdmin = usuarioInfo.rol === "ADMIN";
-    const isEmpresaDueña = usuarioInfo.rol === "EMPRESA" && postulacion.vacante.empresa.usuarioId === session.userId;
-
-    if (!isAdmin && !isEmpresaDueña) {
-        notFound();
+                        <h1 className="text-4xl md:text-5xl font-black text-slate-900 mb-4 tracking-tight leading-tight">
+                            Acceso Restringido
+                        </h1>
+                        
+                        <p className="text-slate-500 font-medium text-lg max-w-md leading-relaxed">
+                            Este perfil se encuentra configurado como privado por el estudiante o el enlace de compartición es incorrecto.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        );
     }
 
-    const snapshot = (postulacion.perfil_snapshot as unknown as CandidatoSnapshot) || { bio: "", habilidades: [], idiomas: [] };
-    const estudiante = postulacion.estudiante;
-
-    const backUrl = isAdmin 
-        ? "/admin/vacantes" 
-        : isEmpresaDueña 
-            ? `/empresa/candidatos/${encodeId(postulacion.vacanteId)}` 
-            : "/mis-postulaciones";
-
-    // Mostramos las secciones si existen y tienen elementos
-    const showExperiencias = estudiante.experiencias.length > 0;
-    const showProyectos = estudiante.proyectos.length > 0;
-    const showHabilidades = (snapshot.habilidades && snapshot.habilidades.length > 0) || (estudiante.habilidades && estudiante.habilidades.length > 0);
-    const showIdiomas = (snapshot.idiomas && snapshot.idiomas.length > 0) || (estudiante.idiomas && estudiante.idiomas.length > 0);
-    const showEducacion = estudiante.educacion_extra.length > 0;
-
-    const habilidadesAMostrar = snapshot.habilidades && snapshot.habilidades.length > 0 ? snapshot.habilidades : estudiante.habilidades;
-    const idiomasAMostrar = snapshot.idiomas && snapshot.idiomas.length > 0 ? snapshot.idiomas : estudiante.idiomas;
-    const bioAMostrar = snapshot.bio !== undefined ? snapshot.bio : estudiante.bio;
+    // Filtros de secciones con base en la configuración del estudiante y datos reales
+    const showExperiencias = estudiante.compartir_experiencia && estudiante.experiencias.length > 0;
+    const showProyectos = estudiante.compartir_proyectos && estudiante.proyectos.length > 0;
+    const showHabilidades = estudiante.compartir_habilidades && estudiante.habilidades.length > 0;
+    const showIdiomas = estudiante.compartir_idiomas && estudiante.idiomas.length > 0;
+    const showEducacion = estudiante.compartir_educacion && estudiante.educacion_extra.length > 0;
 
     return (
         <div className="min-h-screen bg-slate-50/50 flex flex-col font-sans text-slate-900 pb-20">
-            {/* Header / Nav similar al de QR pero adaptado a la empresa */}
+            {/* Header del Perfil Público */}
             <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm shadow-slate-100">
-                <div className="max-w-4xl mx-auto px-4 md:px-6 py-4 flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                        <Link 
-                            href={backUrl} 
-                            className="p-2.5 hover:bg-slate-100 rounded-xl transition-all text-slate-400 hover:text-slate-600 border border-slate-100 hover:border-slate-200 flex items-center justify-center shadow-sm"
-                            title="Volver"
-                        >
-                            <ArrowLeft className="w-4 h-4" />
-                        </Link>
-                        <div>
-                            <h1 className="text-sm md:text-base font-black tracking-tight leading-none text-slate-800">Expediente de Postulación</h1>
-                            <p className="text-[9px] md:text-[10px] text-slate-450 font-black uppercase tracking-widest mt-1.5 flex items-center gap-1.5">
-                                <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-                                Historial de Candidato
-                            </p>
-                        </div>
+                <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                        <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center text-white font-black italic text-sm shadow-md shadow-primary/20">UT</div>
+                        <span className="font-black text-base tracking-tight text-slate-800">Joby</span>
                     </div>
-                    <div className="flex items-center gap-2.5 shrink-0">
-                        <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white font-black italic text-xs shadow-sm">UT</div>
-                        <span className="font-black text-sm tracking-tight text-slate-800 hidden sm:inline">Joby</span>
-                    </div>
+                    <span className="text-[10px] bg-slate-100 border border-slate-200 text-slate-500 px-3 py-1 rounded-full font-black uppercase tracking-widest">
+                        Currículum Digital verificado
+                    </span>
                 </div>
             </header>
 
             <main className="max-w-4xl mx-auto px-4 md:px-6 pt-8 w-full space-y-6">
                 
-                {/* Registro de la Postulación / Histórica Info */}
-                <div className="bg-slate-100/60 rounded-[24px] p-6 border border-slate-200/70 flex items-start gap-4 shadow-sm">
-                    <div className="p-2.5 bg-slate-200/70 rounded-xl shrink-0">
-                        <Clock className="w-5 h-5 text-slate-600" />
-                    </div>
-                    <div>
-                        <h5 className="text-xs font-black text-slate-800 uppercase tracking-wider mb-1">Información Histórica de la Postulación</h5>
-                        <p className="text-[11px] font-semibold text-slate-500 leading-relaxed">
-                            Los datos de contacto, habilidades, idiomas y biografía presentados corresponden al momento exacto en el que el candidato se postuló. Los cambios posteriores a la postulación en estos campos no afectarán este expediente para garantizar la transparencia del proceso.
-                        </p>
-                    </div>
-                </div>
-
-                {/* Detalles de la postulación (Vacante, estatus y fecha de envío) */}
-                <div className="bg-white rounded-[24px] p-6 border border-slate-200/80 shadow-sm grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="space-y-1">
-                        <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Vacante Asociada</p>
-                        <p className="text-sm font-black text-slate-800 leading-snug">{postulacion.vacante.titulo}</p>
-                        <p className="text-[11px] font-bold text-primary uppercase">{postulacion.vacante.empresa.nombre_comercial}</p>
-                    </div>
-                    <div className="space-y-1">
-                        <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Estatus de Postulación</p>
-                        <div className="pt-0.5">
-                            <span className={cn(
-                                "px-3 py-1 rounded-full font-black uppercase tracking-widest border text-[10px]",
-                                postulacion.estatus === "ENVIADA" ? "bg-blue-50 text-blue-600 border-blue-100" :
-                                postulacion.estatus === "ACEPTADA" ? "bg-emerald-50 text-emerald-600 border-emerald-100" :
-                                "bg-slate-50 text-slate-400 border-slate-200"
-                            )}>
-                                {postulacion.estatus}
-                            </span>
-                        </div>
-                    </div>
-                    <div className="space-y-1">
-                        <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Fecha de Envío</p>
-                        <p className="text-sm font-black text-slate-850 pt-0.5 flex items-center gap-1.5">
-                            <Calendar className="w-4 h-4 text-slate-450" />
-                            {new Date(postulacion.createdAt).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' })}
-                        </p>
-                    </div>
-                </div>
-
-                {/* Tarjeta Principal de Identidad (igual a la del QR) */}
+                {/* Tarjeta Principal de Identidad */}
                 <div className="bg-white rounded-[24px] p-8 border border-slate-200/80 shadow-sm relative overflow-hidden flex flex-col md:flex-row gap-8 items-center md:items-start">
                     <div className="w-32 h-32 bg-gradient-to-br from-slate-100 to-slate-50 border border-slate-200/60 rounded-[36px] flex items-center justify-center relative shadow-md overflow-hidden shrink-0">
                         {estudiante.foto_perfil_url ? (
@@ -224,13 +160,13 @@ export default async function PerfilSnapshotPage({ params }: { params: Promise<{
                 </div>
 
                 {/* Biografía / Acerca de */}
-                {bioAMostrar && (
+                {estudiante.bio && (
                     <div className="bg-white rounded-[24px] p-8 border border-slate-200/80 shadow-sm space-y-4">
                         <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
                             <UserCircle className="w-4 h-4 text-primary" />
-                            Acerca de Mí (Carta de Presentación)
+                            Acerca de Mí
                         </h3>
-                        <p className="text-slate-650 leading-relaxed text-sm whitespace-pre-wrap italic">"{bioAMostrar}"</p>
+                        <p className="text-slate-600 leading-relaxed text-sm whitespace-pre-wrap">{estudiante.bio}</p>
                     </div>
                 )}
 
@@ -245,7 +181,7 @@ export default async function PerfilSnapshotPage({ params }: { params: Promise<{
                                     Habilidades Técnicas
                                 </h3>
                                 <div className="flex flex-wrap gap-2">
-                                    {habilidadesAMostrar.map((h, i) => (
+                                    {estudiante.habilidades.map((h, i) => (
                                         <span key={i} className="px-3 py-1.5 bg-slate-50 border border-slate-200/60 rounded-xl text-xs font-bold text-slate-600 shadow-sm uppercase tracking-tight">
                                             {h}
                                         </span>
@@ -262,7 +198,7 @@ export default async function PerfilSnapshotPage({ params }: { params: Promise<{
                                     Idiomas
                                 </h3>
                                 <div className="space-y-2.5">
-                                    {idiomasAMostrar.map((l, i) => (
+                                    {estudiante.idiomas.map((l, i) => (
                                         <div key={i} className="flex items-center justify-between px-4 py-2.5 bg-slate-50 border border-slate-200/60 rounded-xl shadow-sm">
                                             <span className="text-xs font-bold text-slate-700 uppercase tracking-tight">{l}</span>
                                             <Globe className="w-3.5 h-3.5 text-slate-400" />
@@ -296,7 +232,7 @@ export default async function PerfilSnapshotPage({ params }: { params: Promise<{
                                     {exp.logros && exp.logros.length > 0 && (
                                         <ul className="list-disc pl-4 space-y-1 mt-2">
                                             {exp.logros.map((logro, idx) => (
-                                                <li key={idx} className="text-xs text-slate-600 leading-relaxed">{logro}</li>
+                                                <li key={idx} className="text-xs text-slate-650 leading-relaxed">{logro}</li>
                                             ))}
                                         </ul>
                                     )}
@@ -339,7 +275,7 @@ export default async function PerfilSnapshotPage({ params }: { params: Promise<{
                                     {proy.puntos_clave && proy.puntos_clave.length > 0 && (
                                         <ul className="list-disc pl-4 space-y-1">
                                             {proy.puntos_clave.map((pt, idx) => (
-                                                <li key={idx} className="text-xs text-slate-600 leading-relaxed">{pt}</li>
+                                                <li key={idx} className="text-xs text-slate-650 leading-relaxed">{pt}</li>
                                             ))}
                                         </ul>
                                     )}
@@ -372,54 +308,30 @@ export default async function PerfilSnapshotPage({ params }: { params: Promise<{
                     </div>
                 )}
 
-                {/* Currículum Adjunto (Vista Previa Integrada) */}
-                <div className="space-y-4">
-                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 ml-2">
-                        <ShieldCheck className="w-4 h-4 text-primary" />
-                        Currículum Adjunto
-                    </h3>
-                    {postulacion.cv_url_snapshot ? (
-                        <div className="bg-white rounded-[24px] border border-slate-200 shadow-sm overflow-hidden">
-                            <div className="p-4 bg-slate-50 border-b border-slate-200/60 flex flex-col sm:flex-row items-center justify-between gap-4">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2.5 bg-slate-200/60 rounded-xl">
-                                        <FileText className="w-5 h-5 text-slate-500" />
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-black text-slate-800 leading-none">CV_{estudiante.nombre}_{estudiante.apellidoPaterno}.pdf</p>
-                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Archivo de Postulación (Inmutable)</p>
-                                    </div>
-                                </div>
-                                <a 
-                                    href={postulacion.cv_url_snapshot} 
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 font-black text-xs"
-                                >
-                                    <Download className="w-4 h-4" />
-                                    DESCARGAR PDF
-                                </a>
+                {/* Enlace de Descarga de CV en PDF si está cargado */}
+                {estudiante.cv_url && (
+                    <div className="bg-slate-900 rounded-[24px] p-6 text-white flex flex-col sm:flex-row items-center justify-between gap-6 shadow-xl">
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 bg-white/10 rounded-xl">
+                                <FileText className="w-6 h-6 text-primary" />
                             </div>
-                            <div className="w-full bg-slate-100 flex items-center justify-center">
-                                <iframe 
-                                    src={`${postulacion.cv_url_snapshot}#toolbar=0&navpanes=0`}
-                                    className="w-full h-[800px] border-0"
-                                    title="Vista previa del CV"
-                                />
+                            <div className="text-center sm:text-left">
+                                <h4 className="font-black text-base">Currículum PDF Adicional</h4>
+                                <p className="text-white/50 text-[10px] font-bold uppercase tracking-widest mt-1">Cargado por el estudiante</p>
                             </div>
                         </div>
-                    ) : (
-                        <div className="bg-slate-100 rounded-[24px] p-12 text-slate-500 border border-dashed border-slate-200/80 flex flex-col items-center justify-center text-center shadow-inner">
-                            <div className="w-16 h-16 bg-slate-200/50 rounded-2xl flex items-center justify-center mb-4">
-                                <FileText className="w-8 h-8 text-slate-400" />
-                            </div>
-                            <h4 className="font-black text-slate-700 text-base mb-1">Sin Currículum en PDF</h4>
-                            <p className="text-xs font-bold text-slate-400 max-w-xs leading-normal">
-                                El estudiante no adjuntó un archivo PDF de currículum en el momento de realizar la postulación.
-                            </p>
-                        </div>
-                    )}
-                </div>
+                        <a 
+                            href={estudiante.cv_url} 
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-6 py-3 bg-primary hover:bg-emerald-700 text-white rounded-xl font-black text-xs uppercase tracking-wide transition-all shadow-md shadow-primary/20 hover:shadow-lg flex items-center gap-2"
+                        >
+                            <Download className="w-4 h-4" />
+                            Descargar Archivo CV
+                        </a>
+                    </div>
+                )}
+
             </main>
         </div>
     );

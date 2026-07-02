@@ -69,8 +69,26 @@ export const PlantillaCV = ({ data, accentColor = '#0F766E', showPhoto = true, t
   accentColor?: string, 
   showPhoto?: boolean, 
   templateInfo?: { base: string, variante: string, sections?: any[] },
-  styling?: { fontSize?: string, lineSpacing?: string, fontFamily?: string, singlePage?: boolean, showCarrera?: boolean }
+  styling?: { 
+    fontSize?: string, 
+    lineSpacing?: string, 
+    fontFamily?: string, 
+    singlePage?: boolean, 
+    showCarrera?: boolean,
+    hiddenExperiences?: number[],
+    hiddenProjects?: number[],
+    hiddenEducations?: number[]
+  }
 }) => {
+  // Filtrar elementos ocultos
+  const hiddenExperiences = styling?.hiddenExperiences || [];
+  const hiddenProjects = styling?.hiddenProjects || [];
+  const hiddenEducations = styling?.hiddenEducations || [];
+
+  const experienciasFiltradas = (data.experiencias || []).filter((exp: any) => !hiddenExperiences.includes(exp.id));
+  const proyectosFiltrados = (data.proyectos || []).filter((proj: any) => !hiddenProjects.includes(proj.id));
+  const educacionFiltrada = (data.educacion_extra || []).filter((edu: any) => !hiddenEducations.includes(edu.id));
+
   // Local compiled styles that merge base static styles with user custom styles
   const getFontFamily = (baseFont: string) => {
       const family = styling?.fontFamily;
@@ -101,18 +119,18 @@ export const PlantillaCV = ({ data, accentColor = '#0F766E', showPhoto = true, t
   const isSinglePage = styling?.singlePage ?? false;
 
   // Calcular densidad de contenido para ajustar dinámicamente el tamaño si singlePage es true
-  const totalExperiencias = data.experiencias?.length || 0;
-  const totalProyectos = data.proyectos?.length || 0;
-  const totalEducacion = data.educacion_extra?.length || 0;
+  const totalExperiencias = experienciasFiltradas.length;
+  const totalProyectos = proyectosFiltrados.length;
+  const totalEducacion = educacionFiltrada.length;
   const totalHabilidades = data.habilidades?.length || 0;
   const totalIdiomas = data.idiomas?.length || 0;
   const lengthBio = data.bio?.length || 0;
   
   let totalLogros = 0;
-  data.experiencias?.forEach(exp => {
+  experienciasFiltradas.forEach(exp => {
       totalLogros += (exp.logros?.length || 0);
   });
-  data.proyectos?.forEach(proj => {
+  proyectosFiltrados.forEach(proj => {
       totalLogros += (proj.puntos_clave?.length || 0);
   });
 
@@ -145,17 +163,17 @@ export const PlantillaCV = ({ data, accentColor = '#0F766E', showPhoto = true, t
   };
 
   const lOption = styling?.lineSpacing || 'normal';
-  const lSpacing = isSinglePage ? Math.max(1.05, 1.25 * factorEscala) : (lOption === 'compact' ? 1.2 : lOption === 'spacious' ? 1.7 : 1.45);
+  const lSpacing = isSinglePage ? Math.max(0.95, 1.05 * factorEscala) : (lOption === 'compact' ? 1.05 : lOption === 'spacious' ? 1.45 : 1.20);
 
-  const marginBlock = isSinglePage ? Math.max(2, Math.round(15 * factorEscala)) : 15;
-  const marginBullet = isSinglePage ? Math.max(1, Math.round(5 * factorEscala)) : 5;
-  const paddingPageMin = isSinglePage ? Math.max(12, Math.round(40 * factorEscala)) : 40;
-  const paddingPageEj = isSinglePage ? Math.max(12, Math.round(35 * factorEscala)) : 35;
-  const paddingColLeft = isSinglePage ? Math.max(10, Math.round(25 * factorEscala)) : 25;
-  const paddingColRight = isSinglePage ? Math.max(12, Math.round(30 * factorEscala)) : 30;
-  const profileImageSize = isSinglePage ? Math.max(45, Math.round(100 * factorEscala)) : 100;
-  const profileImageMinSize = isSinglePage ? Math.max(40, Math.round(80 * factorEscala)) : 80;
-  const profileImageEjSize = isSinglePage ? Math.max(45, Math.round(90 * factorEscala)) : 90;
+  const marginBlock = isSinglePage ? Math.max(1.5, Math.round(5 * factorEscala)) : (lOption === 'compact' ? 5 : 10);
+  const marginBullet = isSinglePage ? Math.max(0.8, Math.round(2 * factorEscala)) : (lOption === 'compact' ? 2 : 3);
+  const paddingPageMin = isSinglePage ? Math.max(10, Math.round(20 * factorEscala)) : (lOption === 'compact' ? 20 : 30);
+  const paddingPageEj = isSinglePage ? Math.max(10, Math.round(20 * factorEscala)) : (lOption === 'compact' ? 20 : 30);
+  const paddingColLeft = isSinglePage ? Math.max(8, Math.round(14 * factorEscala)) : (lOption === 'compact' ? 15 : 20);
+  const paddingColRight = isSinglePage ? Math.max(10, Math.round(18 * factorEscala)) : (lOption === 'compact' ? 18 : 25);
+  const profileImageSize = isSinglePage ? Math.max(45, Math.round(90 * factorEscala)) : 90;
+  const profileImageMinSize = isSinglePage ? Math.max(40, Math.round(75 * factorEscala)) : 75;
+  const profileImageEjSize = isSinglePage ? Math.max(45, Math.round(80 * factorEscala)) : 80;
 
   const styles = {
       page: { ...baseStyles.page, fontFamily: getFontFamily('Helvetica') },
@@ -209,22 +227,22 @@ export const PlantillaCV = ({ data, accentColor = '#0F766E', showPhoto = true, t
           ...baseStyles.sectionTitleLeft, 
           fontSize: sizes.sectionTitleLeft, 
           fontFamily: getFontFamily('Helvetica-Bold'),
-          marginTop: isSinglePage ? Math.max(5, Math.round(20 * factorEscala)) : 20,
-          marginBottom: isSinglePage ? Math.max(2, Math.round(10 * factorEscala)) : 10
+          marginTop: isSinglePage ? Math.max(4, Math.round(14 * factorEscala)) : 14,
+          marginBottom: isSinglePage ? Math.max(2, Math.round(8 * factorEscala)) : 8
       },
       sectionTitleRight: { 
           ...baseStyles.sectionTitleRight, 
           fontSize: sizes.sectionTitleRight, 
           fontFamily: getFontFamily('Helvetica-Bold'),
-          marginTop: isSinglePage ? Math.max(5, Math.round(15 * factorEscala)) : 15,
-          marginBottom: isSinglePage ? Math.max(2, Math.round(10 * factorEscala)) : 10
+          marginTop: isSinglePage ? Math.max(4, Math.round(12 * factorEscala)) : 12,
+          marginBottom: isSinglePage ? Math.max(2, Math.round(8 * factorEscala)) : 8
       },
       sectionTitleEjecutivo: { 
           ...baseStyles.sectionTitleEjecutivo, 
           fontSize: sizes.sectionTitleLeft, 
           fontFamily: getFontFamily('Times-Bold'),
-          marginTop: isSinglePage ? Math.max(4, Math.round(15 * factorEscala)) : 15,
-          marginBottom: isSinglePage ? Math.max(2, Math.round(8 * factorEscala)) : 8
+          marginTop: isSinglePage ? Math.max(4, Math.round(12 * factorEscala)) : 12,
+          marginBottom: isSinglePage ? Math.max(2, Math.round(6 * factorEscala)) : 6
       },
       
       textLeft: { ...baseStyles.textLeft, fontSize: sizes.text, lineHeight: lSpacing, fontFamily: getFontFamily('Helvetica') },
@@ -234,8 +252,8 @@ export const PlantillaCV = ({ data, accentColor = '#0F766E', showPhoto = true, t
       itemTitle: { ...baseStyles.itemTitle, fontSize: sizes.itemTitle, fontFamily: getFontFamily('Helvetica-Bold') },
       itemTitleEjecutivo: { ...baseStyles.itemTitleEjecutivo, fontSize: sizes.itemTitle, fontFamily: getFontFamily('Times-Bold') },
       
-      itemSubtitle: { ...baseStyles.itemSubtitle, fontSize: sizes.subText, fontFamily: getFontFamily('Helvetica'), marginBottom: isSinglePage ? Math.max(1, Math.round(5 * factorEscala)) : 5 },
-      itemSubtitleEjecutivo: { ...baseStyles.itemSubtitleEjecutivo, fontSize: sizes.subText, fontFamily: getFontFamily('Times-Italic'), marginBottom: isSinglePage ? Math.max(1, Math.round(5 * factorEscala)) : 5 },
+      itemSubtitle: { ...baseStyles.itemSubtitle, fontSize: sizes.subText, fontFamily: getFontFamily('Helvetica'), marginBottom: isSinglePage ? Math.max(1, Math.round(3 * factorEscala)) : 3 },
+      itemSubtitleEjecutivo: { ...baseStyles.itemSubtitleEjecutivo, fontSize: sizes.subText, fontFamily: getFontFamily('Times-Italic'), marginBottom: isSinglePage ? Math.max(1, Math.round(3 * factorEscala)) : 3 },
       
       pill: baseStyles.pill,
       pillMin: {
@@ -262,7 +280,10 @@ export const PlantillaCV = ({ data, accentColor = '#0F766E', showPhoto = true, t
       }
   };
 
-  const { nombre, apellidoPaterno, apellidoMaterno, correo, municipio, estado, carrera, habilidades, idiomas, bio, foto_perfil_url, experiencias, proyectos, educacion_extra } = data;
+  const { nombre, apellidoPaterno, apellidoMaterno, correo, municipio, estado, carrera, habilidades, idiomas, bio, foto_perfil_url } = data;
+  const experiencias = experienciasFiltradas;
+  const proyectos = proyectosFiltrados;
+  const educacion_extra = educacionFiltrada;
   const baseLayout = templateInfo?.base || 'moderno';
   const variante = templateInfo?.variante || 'classic';
   
@@ -294,7 +315,7 @@ export const PlantillaCV = ({ data, accentColor = '#0F766E', showPhoto = true, t
           case 'bio':
               if(!bio) return null;
               return (
-                  <View key="bio" style={{ marginBottom: isCompact ? 10 : 15 }}>
+                  <View key="bio" style={{ marginBottom: isCompact ? Math.max(4, marginBlock) : 15 }}>
                     <Text style={[styles.sectionTitleRight, { color: accentColor, textAlign: isCentered ? 'center' : 'left' }]}>Perfil Profesional</Text>
                     <Text style={[styles.textRight, { textAlign: isCentered ? 'center' : 'justify' }]}>{bio}</Text>
                   </View>
@@ -305,7 +326,7 @@ export const PlantillaCV = ({ data, accentColor = '#0F766E', showPhoto = true, t
                   <View key="experiencias">
                     <Text style={[styles.sectionTitleRight, { color: accentColor, textAlign: isCentered ? 'center' : 'left' }]}>Experiencia Profesional</Text>
                     {experiencias.map((exp: any, i: number) => (
-                      <View key={i} style={[styles.experienceBlock, isCompact ? { marginBottom: 10 } : {}]} wrap={false}>
+                      <View key={i} style={styles.experienceBlock} wrap={false}>
                         <Text style={styles.itemTitle}>{exp.puesto} - {exp.empresa}</Text>
                         <Text style={styles.itemSubtitle}>
                           {formatDate(exp.fechaInicio)} - {exp.fechaFin ? formatDate(exp.fechaFin) : 'Actualidad'}
@@ -326,7 +347,7 @@ export const PlantillaCV = ({ data, accentColor = '#0F766E', showPhoto = true, t
                   <View key="proyectos">
                     <Text style={[styles.sectionTitleRight, { color: accentColor, textAlign: isCentered ? 'center' : 'left' }]}>Proyectos Destacados</Text>
                     {proyectos.map((proj: any, i: number) => (
-                      <View key={i} style={[styles.experienceBlock, isCompact ? { marginBottom: 10 } : {}]} wrap={false}>
+                      <View key={i} style={styles.experienceBlock} wrap={false}>
                         <Text style={styles.itemTitle}>{proj.nombre}</Text>
                         <Text style={styles.itemSubtitle}>
                           {formatDate(proj.fechaInicio)} - {proj.fechaFin ? formatDate(proj.fechaFin) : 'Actualidad'}
@@ -345,11 +366,16 @@ export const PlantillaCV = ({ data, accentColor = '#0F766E', showPhoto = true, t
               if(!educacion_extra || educacion_extra.length === 0) return null;
               return (
                   <View key="educacion">
-                    <Text style={[styles.sectionTitleRight, { color: accentColor, textAlign: isCentered ? 'center' : 'left' }]}>Formación Adicional</Text>
+                    <Text style={[styles.sectionTitleRight, { color: accentColor, textAlign: isCentered ? 'center' : 'left' }]}>Formación Académica</Text>
                     {educacion_extra.map((edu: any, i: number) => (
-                      <View key={i} style={[styles.experienceBlock, isCompact ? { marginBottom: 5 } : {}]} wrap={false}>
-                        <Text style={styles.itemTitle}>{edu.titulo}</Text>
-                        <Text style={styles.itemSubtitle}>{edu.institucion} {edu.año ? `(${edu.año})` : ''}</Text>
+                      <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: isCompact ? 3 : 5 }} wrap={false}>
+                        <Text style={[styles.textRight, { flex: 1, marginRight: 10 }]}>
+                          <Text style={styles.itemTitle}>{edu.titulo}</Text>
+                          <Text style={{ fontSize: sizes.subText }}> — {edu.institucion}</Text>
+                        </Text>
+                        <Text style={[styles.textRight, { fontSize: sizes.subText, textAlign: 'right', flexShrink: 0 }]}>
+                          {edu.año ? `${edu.año}` : ''}
+                        </Text>
                       </View>
                     ))}
                   </View>
@@ -594,12 +620,17 @@ export const PlantillaCV = ({ data, accentColor = '#0F766E', showPhoto = true, t
                             return educacion_extra && educacion_extra.length > 0 && (
                                 <View key="edu" style={{ marginBottom: marginBetween }}>
                                     <View style={{ alignItems: 'center', marginBottom: marginSectionTitle }}>
-                                        <Text style={[styles.sectionTitleRight, { borderBottomWidth: 1, borderBottomColor: accentColor, paddingBottom: 4, marginBottom: 0, color: '#111827' }]}>EDUCACIÓN</Text>
+                                        <Text style={[styles.sectionTitleRight, { borderBottomWidth: 1, borderBottomColor: accentColor, paddingBottom: 4, marginBottom: 0, color: '#111827' }]}>FORMACIÓN ACADÉMICA</Text>
                                     </View>
                                     {educacion_extra.map((edu: any, i: number) => (
-                                        <View key={i} style={{ marginBottom: isSinglePage ? 4 : 12, alignItems: 'center' }} wrap={false}>
-                                            <Text style={[styles.itemTitle, { fontSize: sizes.subText }]}>{edu.titulo}</Text>
-                                            <Text style={[styles.textRight, { marginTop: 2 }]}>{edu.institucion} {edu.año ? `(${edu.año})` : ''}</Text>
+                                        <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: isSinglePage ? 3 : 6 }} wrap={false}>
+                                            <Text style={[styles.textRight, { flex: 1, marginRight: 10, textAlign: 'left' }]}>
+                                                <Text style={[styles.itemTitle, { fontSize: sizes.subText }]}>{edu.titulo}</Text>
+                                                <Text style={{ fontSize: sizes.subText }}> — {edu.institucion}</Text>
+                                            </Text>
+                                            <Text style={[styles.textRight, { fontSize: sizes.subText, textAlign: 'right', flexShrink: 0 }]}>
+                                                {edu.año ? `${edu.año}` : ''}
+                                            </Text>
                                         </View>
                                     ))}
                                 </View>
@@ -814,7 +845,7 @@ export const PlantillaCV = ({ data, accentColor = '#0F766E', showPhoto = true, t
                         case 'educacion_extra':
                             return educacion_extra && educacion_extra.length > 0 && (
                                 <View key="edu" style={{ marginBottom: marginBetween }}>
-                                    <Text style={[styles.sectionTitleEjecutivo, { borderBottomWidth: 1, borderBottomColor: '#000', color: '#000', textAlign: 'center' }]}>EDUCACIÓN SECUNDARIA</Text>
+                                    <Text style={[styles.sectionTitleEjecutivo, { borderBottomWidth: 1, borderBottomColor: '#000', color: '#000', textAlign: 'center' }]}>FORMACIÓN ACADÉMICA</Text>
                                     {educacion_extra.map((edu: any, i: number) => (
                                         <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'nowrap', marginBottom: 4 }} wrap={false}>
                                             <Text style={[styles.itemTitleEjecutivo, { color: '#000', fontSize: sizes.itemTitle }]}>{edu.titulo}, <Text style={{ fontFamily: 'Times-Italic', fontWeight: 'normal' }}>{edu.institucion}</Text></Text>
@@ -940,9 +971,14 @@ export const PlantillaCV = ({ data, accentColor = '#0F766E', showPhoto = true, t
                             <View key="edu" style={{ marginBottom: marginSection }}>
                                 <Text style={[styles.sectionTitleEjecutivo, { borderBottomColor: isClean ? 'transparent' : '#E5E7EB', color: accentColor, paddingBottom: isSinglePage ? 3 : 5, marginBottom: isSinglePage ? 4 : 8 }]}>FORMACIÓN ACADÉMICA</Text>
                                 {educacion_extra.map((edu: any, i: number) => (
-                                    <View key={i} style={{ marginBottom: isSinglePage ? Math.max(2, Math.round(8 * factorEscala)) : 8 }} wrap={false}>
-                                        <Text style={styles.itemTitleEjecutivo}>{edu.titulo}</Text>
-                                        <Text style={[styles.textEjecutivo, { marginTop: 2 }]}>{edu.institucion} {edu.año ? `(${edu.año})` : ''}</Text>
+                                    <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: isSinglePage ? 3 : 5 }} wrap={false}>
+                                        <Text style={[styles.textEjecutivo, { flex: 1, marginRight: 10 }]}>
+                                            <Text style={styles.itemTitleEjecutivo}>{edu.titulo}</Text>
+                                            <Text style={{ color: '#4B5563', fontSize: sizes.subText }}> — {edu.institucion}</Text>
+                                        </Text>
+                                        <Text style={[styles.textEjecutivo, { fontSize: sizes.subText, color: '#4B5563', textAlign: 'right', flexShrink: 0 }]}>
+                                            {edu.año ? `${edu.año}` : ''}
+                                        </Text>
                                     </View>
                                 ))}
                             </View>

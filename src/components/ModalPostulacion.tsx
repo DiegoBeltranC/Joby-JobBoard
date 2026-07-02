@@ -14,6 +14,7 @@ import {
 import { cn } from "@/lib/utils";
 import { postularVacanteAction } from "@/actions/postulaciones";
 import { toast } from "sonner";
+import { useScrollLock } from "@/hooks/useScrollLock";
 
 interface ModalPostulacionProps {
     vacanteId: number;
@@ -34,6 +35,7 @@ export default function ModalPostulacion({
     onClose,
     onSuccess 
 }: ModalPostulacionProps) {
+    useScrollLock();
     const [isPending, startTransition] = useTransition();
     const [opcionCV, setOpcionCV] = useState<"perfil" | "nuevo">(tieneCVPerfil ? "perfil" : "nuevo");
     const [archivoNuevo, setArchivoNuevo] = useState<File | null>(null);

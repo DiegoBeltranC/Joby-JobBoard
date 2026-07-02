@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import dynamic from 'next/dynamic';
-import { Loader2, X, Save, Eye, Edit2, Sparkles, Send, RotateCcw } from "lucide-react";
+import { Loader2, X, Save, Eye, EyeOff, Edit2, Sparkles, Send, RotateCcw } from "lucide-react";
 import { getEstudianteCVDataAction, saveMagicCVAction } from "@/actions/cvGenerator";
 import { PlantillaCV } from "@/lib/pdf/PlantillaCV";
 import { toast } from "sonner";
@@ -57,7 +57,7 @@ export default function MagicCVBuilder({ onClose }: MagicCVBuilderProps) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [optimizing, setOptimizing] = useState(false);
+
   
   const [accentColor, setAccentColor] = useState(COLORS[0].hex);
   const [showPhoto, setShowPhoto] = useState(true);
@@ -77,6 +77,9 @@ export default function MagicCVBuilder({ onClose }: MagicCVBuilderProps) {
   const [isProfileEmpty, setIsProfileEmpty] = useState(false);
   const [debouncedData, setDebouncedData] = useState<any>(null);
   const [showCarrera, setShowCarrera] = useState(true);
+  const [hiddenExperiences, setHiddenExperiences] = useState<number[]>([]);
+  const [hiddenProjects, setHiddenProjects] = useState<number[]>([]);
+  const [hiddenEducations, setHiddenEducations] = useState<number[]>([]);
 
   // Estados del Asistente de IA
   const [showAssistant, setShowAssistant] = useState(false);
@@ -130,6 +133,9 @@ export default function MagicCVBuilder({ onClose }: MagicCVBuilderProps) {
                 setSections(res.data.draftConfig.sections);
             }
             setShowCarrera(res.data.draftConfig.showCarrera ?? true);
+            setHiddenExperiences(res.data.draftConfig.hiddenExperiences || []);
+            setHiddenProjects(res.data.draftConfig.hiddenProjects || []);
+            setHiddenEducations(res.data.draftConfig.hiddenEducations || []);
         }
       } else {
         toast.error("Error al cargar datos del estudiante");
@@ -152,10 +158,19 @@ export default function MagicCVBuilder({ onClose }: MagicCVBuilderProps) {
         accentColor={accentColor} 
         showPhoto={showPhoto} 
         templateInfo={{ base: currentTemplateObj.base, variante: currentTemplateObj.variante, sections }} 
-        styling={{ fontSize, lineSpacing, fontFamily, singlePage, showCarrera }}
+        styling={{ 
+          fontSize, 
+          lineSpacing, 
+          fontFamily, 
+          singlePage, 
+          showCarrera,
+          hiddenExperiences,
+          hiddenProjects,
+          hiddenEducations
+        }}
       />
     );
-  }, [debouncedData, accentColor, showPhoto, currentTemplateObj, sections, fontSize, lineSpacing, fontFamily, singlePage, showCarrera]);
+  }, [debouncedData, accentColor, showPhoto, currentTemplateObj, sections, fontSize, lineSpacing, fontFamily, singlePage, showCarrera, hiddenExperiences, hiddenProjects, hiddenEducations]);
 
   const previewPanel = useMemo(() => {
     if (!debouncedData || !documentoCV) {
@@ -302,7 +317,16 @@ export default function MagicCVBuilder({ onClose }: MagicCVBuilderProps) {
         accentColor={accentColor} 
         showPhoto={showPhoto} 
         templateInfo={{ base: currentTemplateObj.base, variante: currentTemplateObj.variante, sections }} 
-        styling={{ fontSize, lineSpacing, fontFamily, singlePage, showCarrera }}
+        styling={{ 
+          fontSize, 
+          lineSpacing, 
+          fontFamily, 
+          singlePage, 
+          showCarrera,
+          hiddenExperiences,
+          hiddenProjects,
+          hiddenEducations
+        }}
       />;
       const blob = await pdf(doc).toBlob();
 
@@ -327,7 +351,10 @@ export default function MagicCVBuilder({ onClose }: MagicCVBuilderProps) {
               lineSpacing,
               fontFamily,
               singlePage,
-              showCarrera
+              showCarrera,
+              hiddenExperiences,
+              hiddenProjects,
+              hiddenEducations
           }
       }));
 
@@ -345,60 +372,7 @@ export default function MagicCVBuilder({ onClose }: MagicCVBuilderProps) {
     }
   };
 
-  const handleOptimizeWithIA = async () => {
-    setOptimizing(true);
-    const idToast = toast.loading("Optimizando redacción del CV con IA (Gemini)...");
-    try {
-      const response = await fetch("/api/cv-optimize", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          resumen: data.bio || "",
-          habilidades: data.habilidades || [],
-          idiomas: data.idiomas || [],
-          experienciasLogros: (data.experiencias || []).map((exp: any) => exp.logros || []),
-          proyectosPuntosClave: (data.proyectos || []).map((proj: any) => proj.puntos_clave || [])
-        })
-      });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        if (response.status === 402) {
-          toast.error("Límite mensual alcanzado. ¡Suscríbete a Premium para tener uso ilimitado!", { id: idToast });
-        } else {
-          toast.error(errorData.message || "Error al optimizar tu CV", { id: idToast });
-        }
-        return;
-      }
-
-      const resData = await response.json();
-      if (resData.success && resData.data) {
-        setData((prev: any) => ({
-          ...prev,
-          bio: resData.data.resumen || prev.bio,
-          habilidades: resData.data.habilidades || prev.habilidades,
-          idiomas: resData.data.idiomas || prev.idiomas,
-          experiencias: (prev.experiencias || []).map((exp: any, i: number) => {
-            const optLogros = resData.data.experienciasLogros?.[i];
-            return optLogros ? { ...exp, logros: optLogros } : exp;
-          }),
-          proyectos: (prev.proyectos || []).map((proj: any, i: number) => {
-            const optPuntos = resData.data.proyectosPuntosClave?.[i];
-            return optPuntos ? { ...proj, puntos_clave: optPuntos } : proj;
-          })
-        }));
-        toast.success("¡CV optimizado profesionalmente con éxito!", { id: idToast });
-      } else {
-        toast.error("No se pudo aplicar la optimización", { id: idToast });
-      }
-    } catch (error) {
-      toast.error("Ocurrió un error en la comunicación con la IA", { id: idToast });
-    } finally {
-      setOptimizing(false);
-    }
-  };
 
   const handleSendChatMessage = async () => {
     if (!userInput.trim() || sendingChat) return;
@@ -578,6 +552,48 @@ export default function MagicCVBuilder({ onClose }: MagicCVBuilderProps) {
         newExps[expIndex] = { ...newExps[expIndex], logros: newLogros };
         return { ...prev, experiencias: newExps };
     });
+  };
+
+  const handleProyectoChange = (index: number, field: string, value: string) => {
+    setData((prev: any) => {
+        const newProjs = [...prev.proyectos];
+        newProjs[index] = { ...newProjs[index], [field]: value };
+        return { ...prev, proyectos: newProjs };
+    });
+  };
+
+  const handleProyectoPuntoChange = (projIndex: number, puntoIndex: number, value: string) => {
+    setData((prev: any) => {
+        const newProjs = [...prev.proyectos];
+        const newPuntos = [...newProjs[projIndex].puntos_clave];
+        newPuntos[puntoIndex] = value;
+        newProjs[projIndex] = { ...newProjs[projIndex], puntos_clave: newPuntos };
+        return { ...prev, proyectos: newProjs };
+    });
+  };
+
+  const handleEducacionChange = (index: number, field: string, value: any) => {
+    setData((prev: any) => {
+        const newEdus = [...prev.educacion_extra];
+        newEdus[index] = { ...newEdus[index], [field]: value };
+        return { ...prev, educacion_extra: newEdus };
+    });
+  };
+
+  const toggleItemVisibility = (section: 'experiencias' | 'proyectos' | 'educacion', id: number) => {
+    if (section === 'experiencias') {
+      setHiddenExperiences(prev => 
+        prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+      );
+    } else if (section === 'proyectos') {
+      setHiddenProjects(prev => 
+        prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+      );
+    } else if (section === 'educacion') {
+      setHiddenEducations(prev => 
+        prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+      );
+    }
   };
 
   const handleDragStart = (e: React.DragEvent, index: number) => {
@@ -884,7 +900,18 @@ export default function MagicCVBuilder({ onClose }: MagicCVBuilderProps) {
                     ) : (
                         <div className="space-y-4">
                             {data.experiencias?.map((exp: any, i: number) => (
-                                <div key={exp.id} className="bg-white border text-left border-gray-200 p-4 rounded-xl relative hover:border-teal-300 transition-colors">
+                                <div key={exp.id} className={`bg-white border text-left border-gray-200 p-4 rounded-xl relative hover:border-teal-300 transition-colors ${hiddenExperiences.includes(exp.id) ? 'opacity-60 bg-gray-50 border-dashed' : ''}`}>
+                                    <div className="flex justify-between items-center mb-2">
+                                        <span className="text-[10px] font-bold text-gray-400"># {i + 1} {hiddenExperiences.includes(exp.id) && <span className="ml-2 text-red-500 font-bold uppercase text-[9px]">(Oculto en PDF)</span>}</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => toggleItemVisibility('experiencias', exp.id)}
+                                            className={`p-1 rounded transition-colors ${hiddenExperiences.includes(exp.id) ? 'bg-red-50 text-red-500 hover:bg-red-100' : 'bg-teal-50 text-teal-600 hover:bg-teal-100'}`}
+                                            title={hiddenExperiences.includes(exp.id) ? "Mostrar en el PDF" : "Ocultar en el PDF"}
+                                        >
+                                            {hiddenExperiences.includes(exp.id) ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                        </button>
+                                    </div>
                                     <div className="mb-3 grid grid-cols-2 gap-3">
                                         <div>
                                             <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">Puesto</label>
@@ -923,22 +950,124 @@ export default function MagicCVBuilder({ onClose }: MagicCVBuilderProps) {
                         </div>
                     )}
                 </section>
+
+                {/* 5. Proyectos */}
+                <section>
+                    <div className="flex items-center justify-between mb-4 mt-6">
+                        <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider">Proyectos Destacados</h3>
+                        <span className="text-[10px] text-gray-500">(Sobreescritura interactiva)</span>
+                    </div>
+
+                    {!data.proyectos || data.proyectos.length === 0 ? (
+                        <p className="text-xs text-gray-500 italic p-4 bg-gray-100 rounded-lg text-center">No hay proyectos para este alumno. Añádelas desde el perfil general.</p>
+                    ) : (
+                        <div className="space-y-4">
+                            {data.proyectos?.map((proj: any, i: number) => (
+                                <div key={proj.id} className={`bg-white border text-left border-gray-200 p-4 rounded-xl relative hover:border-teal-300 transition-colors ${hiddenProjects.includes(proj.id) ? 'opacity-60 bg-gray-50 border-dashed' : ''}`}>
+                                    <div className="flex justify-between items-center mb-2">
+                                        <span className="text-[10px] font-bold text-gray-400"># {i + 1} {hiddenProjects.includes(proj.id) && <span className="ml-2 text-red-500 font-bold uppercase text-[9px]">(Oculto en PDF)</span>}</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => toggleItemVisibility('proyectos', proj.id)}
+                                            className={`p-1 rounded transition-colors ${hiddenProjects.includes(proj.id) ? 'bg-red-50 text-red-500 hover:bg-red-100' : 'bg-teal-50 text-teal-600 hover:bg-teal-100'}`}
+                                            title={hiddenProjects.includes(proj.id) ? "Mostrar en el PDF" : "Ocultar en el PDF"}
+                                        >
+                                            {hiddenProjects.includes(proj.id) ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                        </button>
+                                    </div>
+                                    <div className="mb-3">
+                                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">Nombre del Proyecto</label>
+                                        <input 
+                                            value={proj.nombre}
+                                            onChange={(e) => handleProyectoChange(i, 'nombre', e.target.value)}
+                                            className="w-full text-sm border-b border-gray-200 py-1 focus:outline-none focus:border-teal-500 bg-transparent font-medium text-gray-800"
+                                        />
+                                    </div>
+                                    
+                                    <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wide mt-2 block">Puntos Clave / Logros</label>
+                                    <div className="space-y-2 mt-1">
+                                        {(proj.puntos_clave || []).map((punto: string, idx: number) => (
+                                            <div key={idx} className="flex gap-2 items-start">
+                                                <span className="text-gray-400 mt-1">•</span>
+                                                <textarea 
+                                                    value={punto}
+                                                    onChange={(e) => handleProyectoPuntoChange(i, idx, e.target.value)}
+                                                    rows={2}
+                                                    className="flex-1 text-[11px] p-2 bg-gray-50 border border-gray-100 rounded-lg focus:outline-none focus:bg-white focus:border-teal-300 resize-none leading-relaxed text-gray-600"
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </section>
+
+                {/* 6. Formación Académica */}
+                <section>
+                    <div className="flex items-center justify-between mb-4 mt-6">
+                        <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider">Formación Académica</h3>
+                        <span className="text-[10px] text-gray-500">(Sobreescritura interactiva)</span>
+                    </div>
+
+                    {!data.educacion_extra || data.educacion_extra.length === 0 ? (
+                        <p className="text-xs text-gray-500 italic p-4 bg-gray-100 rounded-lg text-center">No hay educación extra para este alumno. Añádelas desde el perfil general.</p>
+                    ) : (
+                        <div className="space-y-4">
+                            {data.educacion_extra?.map((edu: any, i: number) => (
+                                <div key={edu.id} className={`bg-white border text-left border-gray-200 p-4 rounded-xl relative hover:border-teal-300 transition-colors ${hiddenEducations.includes(edu.id) ? 'opacity-60 bg-gray-50 border-dashed' : ''}`}>
+                                    <div className="flex justify-between items-center mb-2">
+                                        <span className="text-[10px] font-bold text-gray-400"># {i + 1} {hiddenEducations.includes(edu.id) && <span className="ml-2 text-red-500 font-bold uppercase text-[9px]">(Oculto en PDF)</span>}</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => toggleItemVisibility('educacion', edu.id)}
+                                            className={`p-1 rounded transition-colors ${hiddenEducations.includes(edu.id) ? 'bg-red-50 text-red-500 hover:bg-red-100' : 'bg-teal-50 text-teal-600 hover:bg-teal-100'}`}
+                                            title={hiddenEducations.includes(edu.id) ? "Mostrar en el PDF" : "Ocultar en el PDF"}
+                                        >
+                                            {hiddenEducations.includes(edu.id) ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                        </button>
+                                    </div>
+                                    <div className="mb-3 grid grid-cols-3 gap-3">
+                                        <div className="col-span-2">
+                                            <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">Título / Certificación</label>
+                                            <input 
+                                                value={edu.titulo}
+                                                onChange={(e) => handleEducacionChange(i, 'titulo', e.target.value)}
+                                                className="w-full text-sm border-b border-gray-200 py-1 focus:outline-none focus:border-teal-500 bg-transparent font-medium text-gray-800"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">Año</label>
+                                            <input 
+                                                type="number"
+                                                value={edu.año || ''}
+                                                onChange={(e) => handleEducacionChange(i, 'año', e.target.value)}
+                                                className="w-full text-sm border-b border-gray-200 py-1 focus:outline-none focus:border-teal-500 bg-transparent font-medium text-gray-800"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">Institución</label>
+                                        <input 
+                                            value={edu.institucion}
+                                            onChange={(e) => handleEducacionChange(i, 'institucion', e.target.value)}
+                                            className="w-full text-sm border-b border-gray-200 py-1 focus:outline-none focus:border-teal-500 bg-transparent text-gray-700"
+                                        />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </section>
                 <div className="pb-8"></div>
             </div>
             
             {/* Action Bar */}
             <div className="p-5 bg-white border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-10 shrink-0 flex flex-col gap-3">
-                <button
-                  type="button"
-                  onClick={handleOptimizeWithIA}
-                  disabled={optimizing || saving}
-                  className="w-full py-3 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2 group disabled:opacity-75 cursor-pointer text-sm"
-                >
-                  {optimizing ? <Loader2 className="w-5 h-5 animate-spin" /> : <span>✨ Redactar Profesional</span>}
-                </button>
                 <button 
                   onClick={handleSave} 
-                  disabled={saving || optimizing}
+                  disabled={saving}
                   className="w-full py-4 bg-teal-700 hover:bg-teal-800 text-white font-bold rounded-xl shadow-lg hover:shadow-teal-900/20 transition-all flex items-center justify-center gap-2 group disabled:opacity-75 text-sm"
                 >
                   {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5 group-hover:scale-110 transition-transform" />}

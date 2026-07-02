@@ -151,6 +151,12 @@ model Estudiante {
   enlaces           Json?    // { "linkedin": "...", "github": "..." }
   cv_url            String?
   perfil_completado_at DateTime? // Hito: llegó al 100% al menos una vez (no se revierte)
+  perfil_publico        Boolean   @default(false)
+  compartir_experiencia Boolean   @default(true)
+  compartir_proyectos   Boolean   @default(true)
+  compartir_habilidades Boolean   @default(true)
+  compartir_idiomas     Boolean   @default(true)
+  compartir_educacion   Boolean   @default(true)
   
   // Reglas de negocio de configuración
   cambio_carrera_usado Boolean   @default(false)

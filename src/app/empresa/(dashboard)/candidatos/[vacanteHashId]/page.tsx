@@ -1,6 +1,6 @@
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
-import { decodeId } from "@/lib/utils/hash";
+import { decodeId, encodeId } from "@/lib/utils/hash";
 import { notFound, redirect } from "next/navigation";
 import { 
     Users, 
@@ -147,7 +147,7 @@ export default async function CandidatosVacantePage({ params }: { params: Promis
                                         <td className="px-8 py-8 text-right">
                                             <div className="flex items-center justify-end gap-3">
                                                 <Link 
-                                                    href={`/perfil-estudiante-snapshot/${post.id}`}
+                                                    href={`/perfil-estudiante-snapshot/${encodeId(post.id)}`}
                                                     className="p-3 bg-white hover:bg-teal-50 text-gray-400 hover:text-teal-600 rounded-xl border border-gray-100 hover:border-teal-100 shadow-sm transition-all"
                                                     title="Ver Perfil Snapshot"
                                                 >

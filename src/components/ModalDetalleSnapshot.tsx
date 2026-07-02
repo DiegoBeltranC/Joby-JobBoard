@@ -12,6 +12,7 @@ import {
     ExternalLink
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useScrollLock } from "@/hooks/useScrollLock";
 
 interface ModalDetalleSnapshotProps {
     postulacion: {
@@ -30,6 +31,7 @@ interface ModalDetalleSnapshotProps {
 }
 
 export default function ModalDetalleSnapshot({ postulacion, onClose }: ModalDetalleSnapshotProps) {
+    useScrollLock();
     const snapshot = postulacion.perfil_snapshot || {};
     
     return (

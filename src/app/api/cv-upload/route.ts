@@ -1,9 +1,9 @@
-import { GoogleGenAI } from '@google/genai';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getSession } from '@/lib/session';
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 const cvSchema = {
   type: "object",
@@ -46,10 +46,86 @@ const cvSchema = {
         },
         required: ["empresa", "puesto", "fechaInicio"]
       }
+    },
+    educacion: {
+      type: "array",
+      description: "Lista de títulos académicos, carreras, cursos relevantes, certificaciones o estudios adicionales del candidato.",
+      items: {
+        type: "object",
+        properties: {
+          titulo: { type: "string", description: "Nombre de la carrera, grado, curso o certificación (ej: TSU en Desarrollo de Software, Certificación Scrum Master)" },
+          institucion: { type: "string", description: "Universidad, instituto, escuela o emisor del certificado (ej: UT Chetumal, Platzi)" },
+          año: { type: "integer", description: "Año de obtención o finalización. Si no se menciona o no está claro, omitir o dejar vacío." }
+        },
+        required: ["titulo", "institucion"]
+      }
     }
   },
-  required: ["resumen", "habilidades", "idiomas", "experiencias"]
+  required: ["resumen", "habilidades", "idiomas", "experiencias", "educacion"]
 };
+
+function cleanJsonResponse(text: string): string {
+  let cleaned = text.trim();
+  if (cleaned.includes("<think>")) {
+    const thinkEndIndex = cleaned.indexOf("</think>");
+    if (thinkEndIndex !== -1) {
+      cleaned = cleaned.substring(thinkEndIndex + 8).trim();
+    }
+  }
+  if (cleaned.startsWith("```json")) {
+    cleaned = cleaned.substring(7);
+  } else if (cleaned.startsWith("```")) {
+    cleaned = cleaned.substring(3);
+  }
+  if (cleaned.endsWith("```")) {
+    cleaned = cleaned.substring(0, cleaned.length - 3);
+  }
+  cleaned = cleaned.trim();
+
+  if (!cleaned.startsWith("{") && !cleaned.startsWith("[")) {
+    const firstBrace = cleaned.indexOf("{");
+    const lastBrace = cleaned.lastIndexOf("}");
+    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+      cleaned = cleaned.substring(firstBrace, lastBrace + 1);
+    } else {
+      const firstBracket = cleaned.indexOf("[");
+      const lastBracket = cleaned.lastIndexOf("]");
+      if (firstBracket !== -1 && lastBracket !== -1 && lastBracket > firstBracket) {
+        cleaned = cleaned.substring(firstBracket, lastBracket + 1);
+      }
+    }
+  }
+  return cleaned.trim();
+}
+
+async function callMiniMax(messages: any[], temperature = 0.0, model = "MiniMax-M3", maxTokens = 4096) {
+  const apiKey = process.env.MINIMAX_API_KEY || process.env.GEMINI_API_KEY;
+  const res = await fetch("https://api.minimax.io/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${apiKey}`
+    },
+    body: JSON.stringify({
+      model,
+      messages,
+      temperature,
+      max_tokens: maxTokens
+    })
+  });
+
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(`MiniMax API error: ${res.status} - ${errorText}`);
+  }
+
+  const resJson = await res.json();
+  const textResponse = resJson.choices?.[0]?.message?.content;
+  if (!textResponse) {
+    throw new Error("No se obtuvo respuesta de la IA (MiniMax)");
+  }
+  return cleanJsonResponse(textResponse);
+}
 
 export async function POST(request: Request) {
   try {
@@ -61,39 +137,7 @@ export async function POST(request: Request) {
 
     const userId = Number(session.userId);
 
-    // 2. Lógica de Bloqueo (Paywall / Gating) - Desactivado temporalmente por petición del usuario
-    /*
-    const subscription = await prisma.subscription.findUnique({
-      where: { usuarioId: userId },
-    });
-
-    const isPremium = subscription && subscription.plan === "PREMIUM" && subscription.status === "ACTIVE";
-
-    if (!isPremium) {
-      // Contar usos de IA en el mes actual para usuarios FREE
-      const primerDiaMes = new Date();
-      primerDiaMes.setDate(1);
-      primerDiaMes.setHours(0, 0, 0, 0);
-
-      const countLogs = await prisma.aIUsageLog.count({
-        where: {
-          usuarioId: userId,
-          createdAt: { gte: primerDiaMes },
-        },
-      });
-
-      const LIMITE_FREE = 3;
-
-      if (countLogs >= LIMITE_FREE) {
-        return NextResponse.json({
-          error: 'PAYWALL_LIMIT',
-          message: 'Has alcanzado el límite de 3 análisis de CV con IA gratuitos este mes. ¡Suscríbete a Premium para tener uso ilimitado!',
-        }, { status: 402 }); // 402: Payment Required
-      }
-    }
-    */
-
-    // 3. Recibir el archivo del FormData
+    // 2. Recibir el archivo del FormData
     const formData = await request.formData();
     const file = formData.get('file') as File;
     
@@ -110,10 +154,47 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'El archivo excede el tamaño máximo permitido de 3MB' }, { status: 400 });
     }
 
-    // 4. Convertir el archivo a Base64
+    // 3. Convertir el archivo a Buffer/Base64
     const arrayBuffer = await file.arrayBuffer();
     const base64Data = Buffer.from(arrayBuffer).toString('base64');
     const mimeType = file.type;
+
+    // 4. Extraer texto o preparar mensaje de contenido según el tipo
+    let documentText = "";
+    const isPdf = mimeType === 'application/pdf';
+
+    if (isPdf) {
+      try {
+        // Polyfill para evitar errores de DOMMatrix en entornos Next.js Node
+        if (typeof global !== 'undefined') {
+          if (!(global as any).DOMMatrix) {
+            (global as any).DOMMatrix = class DOMMatrix {};
+          }
+          if (!(global as any).ImageData) {
+            (global as any).ImageData = class ImageData {};
+          }
+          if (!(global as any).Path2D) {
+            (global as any).Path2D = class Path2D {};
+          }
+          if (!(global as any).pdfjsWorker) {
+            // @ts-ignore
+            (global as any).pdfjsWorker = await import('pdfjs-dist/legacy/build/pdf.worker.mjs');
+          }
+        }
+        // @ts-ignore
+        const { PDFParse } = require('pdf-parse');
+        const buffer = Buffer.from(arrayBuffer);
+        const parser = new PDFParse({ data: buffer });
+        const pdfData = await parser.getText();
+        documentText = pdfData.text || "";
+        await parser.destroy();
+      } catch (pdfErr) {
+        console.error("Error al extraer texto del PDF:", pdfErr);
+        return NextResponse.json({ error: 'No se pudo leer el archivo PDF. Asegúrate de que no esté protegido o dañado.' }, { status: 400 });
+      }
+    }
+
+    const modelToUse = "MiniMax-M3";
 
     // 4.5. Validación inicial del documento para evitar procesar archivos que no son CV
     const validationSchema = {
@@ -128,22 +209,28 @@ export async function POST(request: Request) {
     };
 
     const valPrompt = `Analiza el documento adjunto y determina si corresponde a un Currículum Vitae (CV), Resumen Profesional, Hoja de Vida o perfil de trayectoria laboral de una persona.
-Responde únicamente con el esquema JSON indicado, indicando true en esCV si es un currículum, o false si es cualquier otro tipo de documento (tarea escolar, factura, receta, libro, imagen no relacionada, etc.).`;
+    Responde únicamente con el esquema JSON indicado, indicando true en esCV si es un currículum, o false si es cualquier otro tipo de documento (tarea escolar, factura, receta, libro, imagen no relacionada, etc.).`;
 
-    const valResponse = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: [
-        { inlineData: { data: base64Data, mimeType: mimeType } },
-        { text: valPrompt }
-      ],
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: validationSchema,
-        temperature: 0.0
-      }
-    });
+    let valMessages: any[] = [];
+    if (isPdf) {
+      valMessages = [
+        { role: "system", content: `Eres un asistente de IA experto que responde únicamente con JSON válido.\n\nEsquema requerido:\n${JSON.stringify(validationSchema, null, 2)}` },
+        { role: "user", content: `${valPrompt}\n\nContenido del documento:\n${documentText}` }
+      ];
+    } else {
+      valMessages = [
+        { role: "system", content: `Eres un asistente de IA experto que responde únicamente con JSON válido.\n\nEsquema requerido:\n${JSON.stringify(validationSchema, null, 2)}` },
+        { 
+          role: "user", 
+          content: [
+            { type: "text", text: valPrompt },
+            { type: "image_url", image_url: { url: `data:${mimeType};base64,${base64Data}` } }
+          ]
+        }
+      ];
+    }
 
-    const valText = valResponse.text;
+    const valText = await callMiniMax(valMessages, 0.0, modelToUse, 100);
     if (valText) {
       const valResult = JSON.parse(valText);
       if (valResult.esCV === false) {
@@ -162,25 +249,27 @@ No agregues claves ni campos nuevos que no estén definidos en el esquema.
 Ajusta las fechas al formato más limpio posible (Ej. 'Enero 2020 - Diciembre 2022' o '2020-2022').
 Ignora cualquier diseño visual, céntrate puramente en extraer el texto y mapearlo al esquema.`;
 
-    // 5. Llamada Multimodal a Gemini
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: [
-        { inlineData: { data: base64Data, mimeType: mimeType } }, 
-        { text: prompt }
-      ],
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: cvSchema,
-        temperature: 0.0
-      }
-    });
-
-    const textResponse = response.text;
-    if (!textResponse) {
-      throw new Error("No se obtuvo respuesta de la IA");
+    let extractMessages: any[] = [];
+    if (isPdf) {
+      extractMessages = [
+        { role: "system", content: `Eres un asistente de IA experto que responde únicamente con JSON válido.\n\nEsquema requerido:\n${JSON.stringify(cvSchema, null, 2)}` },
+        { role: "user", content: `${prompt}\n\nContenido del documento:\n${documentText}` }
+      ];
+    } else {
+      extractMessages = [
+        { role: "system", content: `Eres un asistente de IA experto que responde únicamente con JSON válido.\n\nEsquema requerido:\n${JSON.stringify(cvSchema, null, 2)}` },
+        { 
+          role: "user", 
+          content: [
+            { type: "text", text: prompt },
+            { type: "image_url", image_url: { url: `data:${mimeType};base64,${base64Data}` } }
+          ]
+        }
+      ];
     }
 
+    // 5. Llamada Multimodal o de Texto a MiniMax
+    const textResponse = await callMiniMax(extractMessages, 0.0, modelToUse, 4096);
     const cvData = JSON.parse(textResponse);
 
     // Devolvemos los datos para vista previa del frontend sin guardarlos en la BD

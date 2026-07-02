@@ -377,7 +377,11 @@ export async function saveMagicCVAction(formData: FormData) {
                     fontSize: updatedData.draftConfig.fontSize,
                     lineSpacing: updatedData.draftConfig.lineSpacing,
                     fontFamily: updatedData.draftConfig.fontFamily,
-                    singlePage: updatedData.draftConfig.singlePage
+                    singlePage: updatedData.draftConfig.singlePage,
+                    showCarrera: updatedData.draftConfig.showCarrera,
+                    hiddenExperiences: updatedData.draftConfig.hiddenExperiences || [],
+                    hiddenProjects: updatedData.draftConfig.hiddenProjects || [],
+                    hiddenEducations: updatedData.draftConfig.hiddenEducations || []
                 };
                 await prisma.magicCVDraft.upsert({
                     where: { estudianteId: estudiante.id },

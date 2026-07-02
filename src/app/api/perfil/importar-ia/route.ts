@@ -16,7 +16,12 @@ const ImportarPerfilSchema = z.object({
   resumen: z.string().default(""),
   habilidades: z.array(z.string()).default([]),
   idiomas: z.array(z.string()).default([]),
-  experiencias: z.array(ExperienciaSchema).default([])
+  experiencias: z.array(ExperienciaSchema).default([]),
+  educacion: z.array(z.object({
+    titulo: z.string().min(1, "El título/curso es obligatorio"),
+    institucion: z.string().min(1, "La institución es obligatoria"),
+    año: z.number().nullable().optional()
+  })).default([])
 });
 
 // Función helper para parsear fechas de forma segura
@@ -82,7 +87,7 @@ export async function POST(request: Request) {
       }, { status: 400 });
     }
 
-    const { resumen, habilidades, idiomas, experiencias } = result.data;
+    const { resumen, habilidades, idiomas, experiencias, educacion } = result.data;
 
     // 4. Obtener el registro de Estudiante del usuario
     const estudiante = await prisma.estudiante.findUnique({
@@ -124,12 +129,29 @@ export async function POST(request: Request) {
         });
       }
 
+      // B2. Eliminar educación previa del estudiante
+      await tx.educacionExtra.deleteMany({
+        where: { estudianteId: estudiante.id }
+      });
+
+      // C2. Crear la nueva educación
+      if (educacion.length > 0) {
+        await tx.educacionExtra.createMany({
+          data: educacion.map((edu) => ({
+            estudianteId: estudiante.id,
+            titulo: edu.titulo,
+            institucion: edu.institucion,
+            año: edu.año || null
+          }))
+        });
+      }
+
       // D. Registrar el log de uso de la IA (Solo si todo lo anterior tiene éxito)
       await tx.aIUsageLog.create({
         data: {
           usuarioId: userId,
           action: 'CV_PDF_PARSE',
-          modelUsed: 'gemini-2.5-flash'
+          modelUsed: 'MiniMax-M3'
         }
       });
     });
