@@ -10,6 +10,9 @@ interface MailOptions {
     buttonText?: string
     buttonUrl?: string
     type?: "SUCCESS" | "WARNING" | "DANGER" | "INFO"
+    subtitle?: string
+    otpCode?: string
+    extraFooterNote?: string
 }
 
 export async function sendEmail({
@@ -19,7 +22,10 @@ export async function sendEmail({
     message,
     buttonText,
     buttonUrl,
-    type = "INFO"
+    type = "INFO",
+    subtitle,
+    otpCode,
+    extraFooterNote
 }: MailOptions) {
     const colors = {
         SUCCESS: { bg: "#0d9488", text: "#ccfbf1", accent: "#0f766e" }, // Teal
@@ -29,6 +35,7 @@ export async function sendEmail({
     }
 
     const color = colors[type] || colors.INFO
+    const headerSubtitle = subtitle || "Bolsa de Trabajo UT Chetumal"
 
     try {
         const { data, error } = await resend.emails.send({
@@ -48,7 +55,7 @@ export async function sendEmail({
                   <tr>
                     <td align="center" style="background-color:${color.bg}; padding:30px 0;">
                       <h1 style="color:#ffffff; margin:0; font-size:28px; font-weight:bold; letter-spacing:1px; font-style:italic;">Joby</h1>
-                      <p style="color:${color.text}; margin:5px 0 0 0; font-size:14px; font-weight:500;">Bolsa de Trabajo UT Chetumal</p>
+                      <p style="color:${color.text}; margin:5px 0 0 0; font-size:14px; font-weight:500;">${headerSubtitle}</p>
                     </td>
                   </tr>
                   <!-- Body -->
@@ -58,7 +65,18 @@ export async function sendEmail({
                       <p style="color:#4b5563; font-size:16px; line-height:1.6; margin:0 0 30px; white-space: pre-line;">
                         ${message}
                       </p>
-                      
+
+                      ${otpCode ? `
+                        <!-- OTP Box -->
+                        <table border="0" cellspacing="0" cellpadding="0" style="margin:0 auto; background-color:#f8fafc; border:2px dashed ${color.bg}; border-radius:12px;">
+                          <tr>
+                            <td align="center" style="padding: 20px 40px;">
+                              <span style="font-size:38px; font-weight:900; color:${color.accent}; letter-spacing:10px;">${otpCode}</span>
+                            </td>
+                          </tr>
+                        </table>
+                      ` : ""}
+
                       ${buttonUrl && buttonText ? `
                         <div style="margin-top: 30px;">
                             <a href="${buttonUrl}" style="background-color:${color.bg}; color:#ffffff; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 14px; display: inline-block; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
@@ -66,13 +84,19 @@ export async function sendEmail({
                             </a>
                         </div>
                       ` : ""}
+
+                      ${otpCode ? `
+                        <p style="color:#64748b; font-size:14px; margin:20px 0 0 0;">
+                          Este código es válido por <strong>15 minutos</strong>.
+                        </p>
+                      ` : ""}
                     </td>
                   </tr>
                   <!-- Footer -->
                   <tr>
                     <td style="background-color:#f8fafc; padding:20px 30px; text-align:center; border-top:1px solid #e2e8f0;">
                       <p style="color:#94a3b8; font-size:12px; margin:0; line-height:1.5;">
-                        Este es un correo transaccional generado automáticamente por Joby UTCH.<br/><br/>
+                        ${extraFooterNote ? `${extraFooterNote}<br/><br/>` : "Este es un correo transaccional generado automáticamente por Joby UTCH.<br/><br/>"}
                         &copy; ${new Date().getFullYear()} Joby. Plataforma Oficial UT Chetumal.
                       </p>
                     </td>
@@ -97,3 +121,4 @@ export async function sendEmail({
         return { success: false, error: err.message }
     }
 }
+

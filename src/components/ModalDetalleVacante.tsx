@@ -11,7 +11,6 @@ import {
     Calendar
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useScrollLock } from "@/hooks/useScrollLock";
 
 interface ModalDetalleVacanteProps {
     vacante: any;
@@ -19,7 +18,6 @@ interface ModalDetalleVacanteProps {
 }
 
 export default function ModalDetalleVacante({ vacante, onClose }: ModalDetalleVacanteProps) {
-    useScrollLock();
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-300">
             <div className="bg-white rounded-[40px] w-full max-w-2xl max-h-[90vh] overflow-hidden shadow-2xl animate-in zoom-in-95 slide-in-from-bottom-4 duration-300 border border-slate-200 flex flex-col relative z-[110]">

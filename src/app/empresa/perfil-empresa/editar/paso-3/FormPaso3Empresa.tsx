@@ -8,7 +8,7 @@ import { Check, ArrowLeft, Globe, Megaphone, ImagePlus, X, Camera } from "lucide
 import { useRouter } from "next/navigation";
 import { guardarPaso3Empresa, agregarFotoEmpresa, eliminarFotoEmpresa } from "@/actions/perfilEmpresa";
 import { cn } from "@/lib/utils";
-import { useState, useRef } from "react";
+import { useState, useRef, useTransition } from "react";
 import AvatarEmpresa from "./AvatarEmpresa";
 import BannerUpload from "./BannerUpload";
 
@@ -50,7 +50,9 @@ export default function FormPaso3Empresa({ valoresIniciales, empresa, fotosActua
     const router = useRouter();
     const [fotos, setFotos] = useState<string[]>(fotosActuales);
     const [subiendoFoto, setSubiendoFoto] = useState(false);
+    const [isPending, startTransition] = useTransition();
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const eliminandoFotoRef = useRef<Set<string>>(new Set());
 
     const { register, handleSubmit, watch, formState: { errors, isSubmitting } } = useForm<FormValues>({
         resolver: zodResolver(paso3EmpresaSchema),
@@ -59,33 +61,36 @@ export default function FormPaso3Empresa({ valoresIniciales, empresa, fotosActua
 
     const descripcionActual = watch("descripcion") || "";
 
-    const onSubmit = async (data: FormValues) => {
-        const idCarga = toast.loading("Finalizando actualización...");
-        const result = await guardarPaso3Empresa(data);
+    const onSubmit = (data: FormValues) => {
+        startTransition(async () => {
+            const idCarga = toast.loading("Finalizando actualización...");
+            const result = await guardarPaso3Empresa(data);
 
-        if (result?.error) {
-            toast.dismiss(idCarga);
-            toast.error(result.error);
-        } else {
-            toast.dismiss(idCarga);
-            
-            // Verificación de integridad del perfil
-            const perfilIncompleto = !empresa.rfc || !empresa.municipio || !empresa.razon_social;
-            
-            if (perfilIncompleto) {
-                toast.warning("Perfil guardado. Recuerda completar tus datos legales en la pestaña de Edición para poder solicitar la verificación.", {
-                    duration: 6000
-                });
+            if (result?.error) {
+                toast.dismiss(idCarga);
+                toast.error(result.error);
             } else {
-                toast.success("¡Perfil empresarial actualizado!");
-            }
+                toast.dismiss(idCarga);
 
-            router.push("/empresa/perfil-empresa");
-        }
+                // Verificación de integridad del perfil
+                const perfilIncompleto = !empresa.rfc || !empresa.municipio || !empresa.razon_social;
+
+                if (perfilIncompleto) {
+                    toast.warning("Perfil guardado. Recuerda completar tus datos legales en la pestaña de Edición para poder solicitar la verificación.", {
+                        duration: 6000
+                    });
+                } else {
+                    toast.success("¡Perfil empresarial actualizado!");
+                }
+
+                router.push("/empresa/perfil-empresa");
+            }
+        });
     };
 
     // Manejar subida de foto de instalaciones
     const handleSubirFoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (subiendoFoto) return;
         if (!e.target.files || e.target.files.length === 0) return;
 
         const file = e.target.files[0];
@@ -127,6 +132,9 @@ export default function FormPaso3Empresa({ valoresIniciales, empresa, fotosActua
 
     // Eliminar foto
     const handleEliminarFoto = async (url: string) => {
+        if (eliminandoFotoRef.current.has(url)) return;
+        eliminandoFotoRef.current.add(url);
+
         const idCarga = toast.loading("Eliminando foto...");
         const result = await eliminarFotoEmpresa(url);
 
@@ -136,6 +144,8 @@ export default function FormPaso3Empresa({ valoresIniciales, empresa, fotosActua
             toast.success("Foto eliminada", { id: idCarga });
             setFotos(prev => prev.filter(f => f !== url));
         }
+
+        eliminandoFotoRef.current.delete(url);
     };
 
     return (
@@ -329,10 +339,10 @@ export default function FormPaso3Empresa({ valoresIniciales, empresa, fotosActua
 
                 <button
                     type="submit"
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || isPending}
                     className="flex items-center bg-gray-900 text-white text-sm font-bold px-8 py-2.5 rounded-xl hover:bg-black transition-colors shadow-sm disabled:opacity-50"
                 >
-                    {isSubmitting ? "Guardando..." : "Finalizar y Ver Perfil"} <Check className="w-4 h-4 ml-2" />
+                    {isSubmitting || isPending ? "Guardando..." : "Finalizar y Ver Perfil"} <Check className="w-4 h-4 ml-2" />
                 </button>
             </div>
         </form>

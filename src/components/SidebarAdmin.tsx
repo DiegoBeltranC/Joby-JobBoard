@@ -3,7 +3,8 @@
 import { logoutAdminAction } from "@/actions/auth";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Building2, Users, LogOut, Settings } from "lucide-react";
+import { LayoutDashboard, Building2, Users, LogOut } from "lucide-react";
+import { MobileCloseButton } from "./ConfirmLogoutModal";
 
 interface SidebarAdminProps {
     admin: {
@@ -26,11 +27,7 @@ export default function SidebarAdmin({ admin, onClose }: SidebarAdminProps) {
                     <span className="font-bold text-primary text-xl tracking-tight">Joby</span>
                     <span className="ml-2 text-[10px] font-bold text-primary/70 uppercase tracking-wider bg-primary/10 px-2 py-0.5 rounded-full">Admin</span>
                 </div>
-                {onClose && (
-                    <button onClick={onClose} className="md:hidden text-gray-400 hover:text-gray-600">
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                    </button>
-                )}
+                {onClose && <MobileCloseButton onClick={onClose} />}
             </div>
 
             {/* Información del Perfil */}

@@ -161,8 +161,3 @@
   from { width: 0%; }
   to { width: 100%; }
 }
-
-/* Bloquear scroll cuando un modal está abierto */
-body.modal-open {
-  overflow: hidden !important;
-}

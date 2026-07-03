@@ -5,10 +5,8 @@ import { toast } from "sonner";
 import { X, Building2 } from "lucide-react";
 import { agregarExperiencia, editarExperiencia } from "@/actions/perfil";
 import { useRouter } from "next/navigation";
-import { useScrollLock } from "@/hooks/useScrollLock";
 
 export default function ModalExperiencia({ experienciaInicial, onClose }: { experienciaInicial: any, onClose: () => void }) {
-    useScrollLock();
     const router = useRouter();
     const [isSubmitting, setIsSubmitting] = useState(false);
 

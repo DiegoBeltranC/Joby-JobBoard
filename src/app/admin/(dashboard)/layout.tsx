@@ -1,9 +1,10 @@
-import DashboardShellAdmin from '@/components/DashboardShellAdmin';
+import DashboardShell from '@/components/DashboardShell';
+import SidebarAdmin from '@/components/SidebarAdmin';
+import AdminEventosWatcher from '@/components/admin/AdminEventosWatcher';
 import { getSession } from '@/lib/session';
-import { prisma } from '@/lib/prisma';
 import { redirect } from 'next/navigation';
-import { cookies } from 'next/headers';
 import CompletarPerfilAdminPage from './completar-perfil/page';
+import { obtenerAdminDeSesion } from '@/lib/session-admin';
 
 export default async function AdminLayout({ children }: { children: React.ReactNode; }) {
     const session = await getSession();
@@ -12,12 +13,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         redirect('/admin/login');
     }
 
-    const usuarioInfo = await prisma.user.findUnique({
-        where: { id: session.userId },
-        include: {
-            admin: true
-        }
-    });
+    const usuarioInfo = await obtenerAdminDeSesion(session.userId);
 
     if (!usuarioInfo || usuarioInfo.rol !== "ADMIN" || !usuarioInfo.admin) {
         redirect('/inicio');
@@ -42,8 +38,17 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     };
 
     return (
-        <DashboardShellAdmin admin={adminData}>
+        <DashboardShell
+            sidebar={<SidebarAdmin admin={adminData} />}
+            brandColorClass="text-primary"
+            brandBadgeText="Admin"
+            brandBadgeTextClass="text-primary"
+            brandBadgeBgClass="bg-primary/10"
+            breakpoint="lg"
+            contentMaxWidth={false}
+        >
             {children}
-        </DashboardShellAdmin>
+            <AdminEventosWatcher />
+        </DashboardShell>
     );
 }

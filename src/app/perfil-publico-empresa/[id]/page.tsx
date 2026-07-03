@@ -18,7 +18,7 @@ import {
 import Link from "next/link";
 import ShareButton from "@/components/ShareButton";
 import { Metadata } from "next";
-import { decodeId, encodeId } from "@/lib/hash";
+import { decodeId } from "@/lib/utils/hash";
 import { getSession } from "@/lib/session";
 import PostularButton from "@/components/PostularButton";
 import { cn } from "@/lib/utils";

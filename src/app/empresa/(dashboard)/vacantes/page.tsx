@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { obtenerVacantesEmpresa } from "@/actions/vacantes"
+import { obtenerVacantesEmpresa, cerrarVacanteAction } from "@/actions/vacantes"
 import FormularioVacante from "@/components/empresa/FormularioVacante"
 import DetalleVacanteModal from "@/components/empresa/DetalleVacanteModal"
 import { toast } from "sonner"
@@ -42,7 +42,9 @@ export default function VacantesPage() {
     const [vacanteAEditar, setVacanteAEditar] = useState<any | null>(null)
     const [vacanteParaExtender, setVacanteParaExtender] = useState<any | null>(null)
     const [filtroTab, setFiltroTab] = useState<FiltroVacantes>("activas")
-    const [estatusEmpresa, setEstatusEmpresa] = useState<string>("PENDIENTE") 
+    const [estatusEmpresa, setEstatusEmpresa] = useState<string>("PENDIENTE")
+    const [confirmarCerrarId, setConfirmarCerrarId] = useState<number | null>(null)
+    const [cerrandoId, setCerrandoId] = useState<number | null>(null)
 
     useEffect(() => {
         const init = async () => {
@@ -73,6 +75,24 @@ export default function VacantesPage() {
         setVacanteSeleccionada(null)
         setVacanteAEditar(vacante)
         setMostrarForm(true)
+    }
+
+    const handleCerrarConvocatoria = async (vacanteId: number) => {
+        setCerrandoId(vacanteId)
+        try {
+            const res = await cerrarVacanteAction(vacanteId)
+            if (res.success) {
+                toast.success(res.message)
+                setConfirmarCerrarId(null)
+                await cargarVacantes()
+            } else {
+                toast.error(res.error)
+            }
+        } catch {
+            toast.error("Error al cerrar la convocatoria")
+        } finally {
+            setCerrandoId(null)
+        }
     }
 
     const estaAprobada = estatusEmpresa === "APROBADA"
@@ -240,17 +260,46 @@ export default function VacantesPage() {
                                     </div>
                                 </div>
                                 <div className="flex flex-col gap-2 shrink-0 w-full md:w-auto">
-                                    {v.estatus === "VENCIDA" && (
-                                        <button
-                                            type="button"
-                                            onClick={() => setVacanteParaExtender(v)}
-                                            title="Extender convocatoria"
-                                            className="inline-flex items-center justify-center gap-2 h-10 px-4 w-full md:w-auto bg-violet-600 text-white text-sm font-bold rounded-xl hover:bg-violet-700 transition-all whitespace-nowrap"
-                                        >
-                                            <CalendarClock className="w-4 h-4 shrink-0" />
-                                            Extender convocatoria
-                                        </button>
-                                    )}
+                                    {v.estatus === "VENCIDA" &&
+                                        (confirmarCerrarId === v.id ? (
+                                            <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleCerrarConvocatoria(v.id)}
+                                                    disabled={cerrandoId === v.id}
+                                                    className="inline-flex items-center justify-center h-10 px-4 flex-1 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-xl transition-all whitespace-nowrap disabled:opacity-50"
+                                                >
+                                                    {cerrandoId === v.id ? "Cerrando…" : "Confirmar cierre"}
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setConfirmarCerrarId(null)}
+                                                    disabled={cerrandoId === v.id}
+                                                    className="inline-flex items-center justify-center h-10 px-4 text-sm font-medium text-gray-600 rounded-xl hover:bg-gray-100 transition-all"
+                                                >
+                                                    No
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 md:flex gap-2 w-full md:w-auto">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setVacanteParaExtender(v)}
+                                                    title="Extender convocatoria"
+                                                    className="inline-flex items-center justify-center gap-2 h-10 px-4 bg-violet-600 text-white text-sm font-bold rounded-xl hover:bg-violet-700 transition-all whitespace-nowrap md:flex-1"
+                                                >
+                                                    <CalendarClock className="w-4 h-4 shrink-0" />
+                                                    Extender
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setConfirmarCerrarId(v.id)}
+                                                    className="inline-flex items-center justify-center h-10 px-4 text-sm font-semibold rounded-xl border border-red-300 bg-red-50 text-red-700 hover:bg-red-100 hover:text-red-800 transition-all whitespace-nowrap md:flex-1"
+                                                >
+                                                    Cerrar convocatoria
+                                                </button>
+                                            </div>
+                                        ))}
                                     <div className="grid grid-cols-2 md:flex md:flex-row md:items-center gap-2">
                                         <Link
                                             href={`/empresa/candidatos/${encodeId(v.id)}`}

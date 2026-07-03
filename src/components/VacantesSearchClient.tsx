@@ -17,7 +17,7 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import { postularVacanteAction, verificarPostulacionExistente } from "@/actions/postulaciones";
 import { toast } from "sonner";
-import { encodeId } from "@/lib/hash";
+import { encodeId } from "@/lib/utils/hash";
 
 interface Vacante {
     id: number;
