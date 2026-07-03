@@ -5,8 +5,11 @@ import Link from "next/link";
 import ModalProyecto from "@/app/perfil/components/ModalProyecto";
 import ListaProyectos from "@/app/perfil/components/ListaProyectos";
 import ListaExperiencias from "@/app/perfil/components/ListaExperiencias";
+import ListaEducacion from "@/app/perfil/components/ListaEducacion";
 import AvatarEditor from "@/app/perfil/components/AvatarEditor";
 import GestionCV from "@/app/perfil/components/GestionCV";
+import CompartirPerfil from "@/app/perfil/components/CompartirPerfil";
+import { encryptId } from "@/lib/utils/encryption";
 import { MapPin, ArrowLeft } from "lucide-react";
 
 export default async function PerfilPage() {
@@ -36,7 +39,7 @@ export default async function PerfilPage() {
     const enlaces = estudiante.enlaces ? (estudiante.enlaces as { linkedin?: string, github?: string, portafolio?: string }) : {};
 
     return (
-        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-5xl mx-auto space-y-6 pb-12">
+        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-7xl mx-auto space-y-6 pb-12">
 
             {/* BOTÓN VOLVER */}
             <div>
@@ -56,6 +59,10 @@ export default async function PerfilPage() {
                     <Link href="/perfil/editar/paso-1" className="bg-white border text-gray-700 px-4 py-2 rounded-lg font-medium hover:bg-gray-50 flex items-center gap-2 shadow-sm transition-colors text-sm">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                         Editar Perfil
+                    </Link>
+                    <Link href="/configuracion" className="bg-white border text-gray-700 px-4 py-2 rounded-lg font-medium hover:bg-gray-50 flex items-center gap-2 shadow-sm transition-colors text-sm">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                        Configuración
                     </Link>
                 </div>
             </div>
@@ -114,17 +121,20 @@ export default async function PerfilPage() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-6 items-start">
+                <div className="lg:col-span-2 xl:col-span-3 space-y-6 lg:sticky lg:top-6 self-start">
                     <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
                         <ListaExperiencias experiencias={estudiante.experiencias} />
                     </div>
                     <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
                         <ListaProyectos proyectos={estudiante.proyectos} />
                     </div>
+                    <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
+                        <ListaEducacion educacion={estudiante.educacion_extra} />
+                    </div>
                 </div>
 
-                <div className="space-y-6">
+                <div className="space-y-6 lg:sticky lg:top-6 self-start">
                     <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
                         <div className="flex justify-between items-center mb-4">
                             <Link href="/perfil/editar/paso-2" className="group flex items-center gap-2">
@@ -169,6 +179,16 @@ export default async function PerfilPage() {
                             {/* ... Redes ... */}
                         </div>
                     </div>
+
+                    <CompartirPerfil 
+                        idEncriptado={encryptId(estudiante.id)} 
+                        publicoInicial={estudiante.perfil_publico} 
+                        compartirExperienciaInicial={estudiante.compartir_experiencia}
+                        compartirProyectosInicial={estudiante.compartir_proyectos}
+                        compartirHabilidadesInicial={estudiante.compartir_habilidades}
+                        compartirIdiomasInicial={estudiante.compartir_idiomas}
+                        compartirEducacionInicial={estudiante.compartir_educacion}
+                    />
                 </div>
             </div>
         </div>

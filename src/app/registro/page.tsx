@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { CheckCircle2, ChevronRight, ArrowLeft, ShieldCheck, Building2, GraduationCap } from "lucide-react"
-import { registrarEstudiante } from "@/actions/registro"
+import { registrarEstudiante, verificarCorreoDisponibleRegistro } from "@/actions/registro"
 import { registrarEmpresa } from "@/actions/registroEmpresa"
 import { useRouter, useSearchParams } from "next/navigation"
 import { toast } from "sonner"
@@ -31,7 +31,7 @@ const registroEstudianteSchema = z.object({
     apellidoMaterno: z.string().trim().optional(),
     matricula: z.string().trim().regex(/^\d{10}$/, "La matrícula debe tener exactamente 10 números"),
     carreraId: z.string().min(1, "Selecciona tu carrera"),
-    estatus_academico: z.enum(["ACTIVO", "EGRESADO"], { required_error: "Selecciona tu estatus" }),
+    estatus_academico: z.enum(["ACTIVO", "EGRESADO"]),
     periodo_academico: z.string().optional(),
 }).superRefine((data, ctx) => {
     if (data.password !== data.confirmPassword) {
@@ -108,11 +108,40 @@ export default function RegistroPage() {
 
     const estatusSeleccionado = tipoRegistro === "estudiante" ? formEstudiante.watch("estatus_academico") : null
 
-    // Reset al cambiar de tipo
+    // Cargar datos en cache al montar o al cambiar de tipo
     useEffect(() => {
         setPasoActual(1)
-        formEstudiante.reset()
-        formEmpresa.reset()
+        if (typeof window !== "undefined") {
+            if (tipoRegistro === "estudiante") {
+                const cacheRaw = sessionStorage.getItem("registro_estudiante_cache")
+                if (cacheRaw) {
+                    try {
+                        const cache = JSON.parse(cacheRaw)
+                        cache.confirmPassword = cache.password
+                        formEstudiante.reset(cache)
+                    } catch (e) {
+                        formEstudiante.reset()
+                    }
+                } else {
+                    formEstudiante.reset({ estatus_academico: "ACTIVO" })
+                }
+                formEmpresa.reset()
+            } else {
+                const cacheRaw = sessionStorage.getItem("registro_empresa_cache")
+                if (cacheRaw) {
+                    try {
+                        const cache = JSON.parse(cacheRaw)
+                        cache.confirmPassword = cache.password
+                        formEmpresa.reset(cache)
+                    } catch (e) {
+                        formEmpresa.reset()
+                    }
+                } else {
+                    formEmpresa.reset()
+                }
+                formEstudiante.reset({ estatus_academico: "ACTIVO" })
+            }
+        }
     }, [tipoRegistro])
 
     // Color primario según tipo
@@ -127,10 +156,25 @@ export default function RegistroPage() {
 
         if (pasoValido) {
             if (pasoActual === 1) {
-                const { password, confirmPassword } = getValues()
+                const { password, confirmPassword, correo } = getValues()
                 if (password !== confirmPassword) {
                     setError("confirmPassword", { type: "manual", message: "Las contraseñas no coinciden" })
                     return
+                }
+
+                if (isEmpresa) {
+                    const verificacionCorreo = await verificarCorreoDisponibleRegistro(correo)
+                    if (!verificacionCorreo.disponible) {
+                        if ("redirect" in verificacionCorreo && verificacionCorreo.redirect) {
+                            router.push(verificacionCorreo.redirect)
+                            return
+                        }
+                        setError("correo", {
+                            type: "manual",
+                            message: verificacionCorreo.error ?? "Este correo ya está registrado en Joby.",
+                        })
+                        return
+                    }
                 }
             }
             if (pasoActual < PASOS.length) {
@@ -159,38 +203,56 @@ export default function RegistroPage() {
     // ===== SUBMIT ESTUDIANTE =====
     const onSubmitEstudiante = async (data: RegistroEstudianteValues) => {
         const idCarga = toast.loading("Creando tu cuenta en Joby...")
-        const respuesta = await registrarEstudiante(data)
-        if (!respuesta.success) {
-            toast.dismiss(idCarga)
-            toast.error("Hubo un problema", { description: respuesta.error })
-            return
-        }
-        toast.dismiss(idCarga)
+        try {
+            const redirectUrl = searchParams.get("redirect")
+            const respuesta = await registrarEstudiante(data, redirectUrl || undefined)
+            if (!respuesta.success) {
+                toast.error("Hubo un problema", { description: respuesta.error })
+                return
+            }
 
-        if (respuesta.redirect) {
-            router.push(respuesta.redirect)
-        } else {
-            toast.success("¡Bienvenido a Joby!", { description: "Tu cuenta ha sido creada exitosamente." })
-            router.push("/login")
+            if (respuesta.redirect) {
+                if (typeof window !== "undefined") {
+                    sessionStorage.setItem("registro_estudiante_cache", JSON.stringify(data))
+                }
+                router.push(respuesta.redirect)
+            } else {
+                toast.success("¡Bienvenido a Joby!", { description: "Tu cuenta ha sido creada exitosamente." })
+                const redirectSuffix = redirectUrl ? `?redirect=${encodeURIComponent(redirectUrl)}` : ""
+                router.push(`/login${redirectSuffix}`)
+            }
+        } catch (error) {
+            console.error("Error al registrar estudiante:", error)
+            toast.error("Error en el registro", { description: "Ocurrió un problema inesperado." })
+        } finally {
+            toast.dismiss(idCarga)
         }
     }
 
     // ===== SUBMIT EMPRESA =====
     const onSubmitEmpresa = async (data: RegistroEmpresaValues) => {
         const idCarga = toast.loading("Registrando tu empresa en Joby...")
-        const respuesta = await registrarEmpresa(data)
-        if (!respuesta.success) {
-            toast.dismiss(idCarga)
-            toast.error("Hubo un problema", { description: respuesta.error })
-            return
-        }
-        toast.dismiss(idCarga)
+        try {
+            const respuesta = await registrarEmpresa(data)
+            if (!respuesta.success) {
+                toast.error("Hubo un problema", { description: respuesta.error })
+                return
+            }
 
-        if (respuesta.redirect) {
-            router.push(respuesta.redirect)
-        } else {
-            toast.success("¡Empresa registrada!", { description: "Ya puedes iniciar sesión con tu cuenta empresarial." })
-            router.push("/login?tipo=empresa")
+            if (respuesta.redirect) {
+                if (typeof window !== "undefined") {
+                    sessionStorage.setItem("registro_empresa_cache", JSON.stringify(data))
+                }
+                router.push(respuesta.redirect)
+            } else {
+                toast.success("¡Empresa registrada!", { description: "Ya puedes iniciar sesión con tu cuenta empresarial." })
+                router.push("/login?tipo=empresa")
+            }
+        } catch (error) {
+            console.error("Error al registrar empresa:", error)
+            toast.error("Error en el registro", { description: "Ocurrió un problema inesperado." })
+        } finally {
+            toast.dismiss(idCarga)
         }
     }
 
@@ -281,106 +343,105 @@ export default function RegistroPage() {
 
                     {/* ===== FORMULARIO ===== */}
                     <form onSubmit={manejarSubmit} className="space-y-6">
+                        <input type="hidden" {...register("correoAnterior")} />
 
                         {/* PASO 1: CUENTA (Compartido — solo cambia validación de correo) */}
-                        {pasoActual === 1 && (
-                            <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-500">
-                                <h2 className="text-xl font-bold text-foreground border-b border-border pb-2 mb-6">Datos de acceso</h2>
+                        <div className={`space-y-4 animate-in fade-in slide-in-from-right-4 duration-500 ${pasoActual === 1 ? "" : "hidden"}`}>
+                            <h2 className="text-xl font-bold text-foreground border-b border-border pb-2 mb-6">Datos de acceso</h2>
+                            <div className="space-y-2">
+                                <Label htmlFor="correo">{isEmpresa ? 'Correo Electrónico' : 'Correo Institucional'}</Label>
+                                <Input
+                                    id="correo"
+                                    placeholder={isEmpresa ? "contacto@tuempresa.com" : "usuario@utchetumal.edu.mx"}
+                                    {...register("correo")}
+                                    className={errors.correo ? "border-destructive focus-visible:ring-destructive" : ""}
+                                />
+                                {errors.correo && <p className="text-sm text-destructive font-medium">{(errors.correo as any).message}</p>}
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="correo">{isEmpresa ? 'Correo Electrónico' : 'Correo Institucional'}</Label>
-                                    <Input
-                                        id="correo"
-                                        placeholder={isEmpresa ? "contacto@tuempresa.com" : "usuario@utchetumal.edu.mx"}
-                                        {...register("correo")}
-                                        className={errors.correo ? "border-destructive focus-visible:ring-destructive" : ""}
-                                    />
-                                    {errors.correo && <p className="text-sm text-destructive font-medium">{(errors.correo as any).message}</p>}
+                                    <Label htmlFor="password">Contraseña</Label>
+                                    <Input id="password" type="password" placeholder="Mínimo 8 caracteres" {...register("password")} />
+                                    {errors.password && <p className="text-sm text-destructive font-medium">{(errors.password as any).message}</p>}
                                 </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="password">Contraseña</Label>
-                                        <Input id="password" type="password" placeholder="Mínimo 8 caracteres" {...register("password")} />
-                                        {errors.password && <p className="text-sm text-destructive font-medium">{(errors.password as any).message}</p>}
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="confirmPassword">Confirmar contraseña</Label>
-                                        <Input id="confirmPassword" type="password" placeholder="Repite tu contraseña" {...register("confirmPassword")} />
-                                        {errors.confirmPassword && <p className="text-sm text-destructive font-medium">{(errors.confirmPassword as any).message}</p>}
-                                    </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="confirmPassword">Confirmar contraseña</Label>
+                                    <Input id="confirmPassword" type="password" placeholder="Repite tu contraseña" {...register("confirmPassword")} />
+                                    {errors.confirmPassword && <p className="text-sm text-destructive font-medium">{(errors.confirmPassword as any).message}</p>}
                                 </div>
                             </div>
-                        )}
+                        </div>
 
                         {/* ===== PASOS DE ESTUDIANTE ===== */}
-                        {tipoRegistro === "estudiante" && pasoActual === 2 && (
-                            <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-500">
-                                <h2 className="text-xl font-bold text-foreground border-b border-border pb-2 mb-6">Identidad Estudiantil</h2>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="nombre">Nombre(s)</Label>
-                                        <Input id="nombre" placeholder="Ej. Diego" {...register("nombre")} />
-                                        {errors.nombre && <p className="text-sm text-destructive">{(errors.nombre as any).message}</p>}
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="matricula">Matrícula</Label>
-                                        <Input id="matricula" placeholder="Ej. 23000123" {...register("matricula")} />
-                                        {errors.matricula && <p className="text-sm text-destructive">{(errors.matricula as any).message}</p>}
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="apellidoPaterno">Apellido Paterno</Label>
-                                        <Input id="apellidoPaterno" placeholder="Ej. Beltran" {...register("apellidoPaterno")} />
-                                        {errors.apellidoPaterno && <p className="text-sm text-destructive">{(errors.apellidoPaterno as any).message}</p>}
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="apellidoMaterno">Apellido Materno (Opcional)</Label>
-                                        <Input id="apellidoMaterno" placeholder="Ej. Can" {...register("apellidoMaterno")} />
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {tipoRegistro === "estudiante" && pasoActual === 3 && (
-                            <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-500">
-                                <h2 className="text-xl font-bold text-foreground border-b border-border pb-2 mb-6">Perfil Académico</h2>
-                                <div className="space-y-2">
-                                    <Label htmlFor="carreraId">Carrera</Label>
-                                    <select id="carreraId" {...register("carreraId")} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
-                                        <option value="">Selecciona tu carrera...</option>
-                                        <option value="1">Ingeniería de Software</option>
-                                        <option value="2">Licenciatura en Gastronomía</option>
-                                        <option value="3">Ingeniería en Mecatrónica</option>
-                                        <option value="4">Licenciatura en Negocios</option>
-                                    </select>
-                                    {errors.carreraId && <p className="text-sm text-destructive">{(errors.carreraId as any).message}</p>}
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="estatus_academico">Estatus Académico</Label>
-                                        <select id="estatus_academico" {...register("estatus_academico")} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
-                                            <option value="ACTIVO">Estudiante Activo</option>
-                                            <option value="EGRESADO">Egresado</option>
-                                        </select>
-                                    </div>
-                                    {estatusSeleccionado === "ACTIVO" && (
+                        {tipoRegistro === "estudiante" && (
+                            <>
+                                <div className={`space-y-4 animate-in fade-in slide-in-from-right-4 duration-500 ${pasoActual === 2 ? "" : "hidden"}`}>
+                                    <h2 className="text-xl font-bold text-foreground border-b border-border pb-2 mb-6">Identidad Estudiantil</h2>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div className="space-y-2">
-                                            <Label htmlFor="periodo_academico">Cuatrimestre</Label>
-                                            <select id="periodo_academico" {...register("periodo_academico")} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
-                                                <option value="">Selecciona...</option>
-                                                {[...Array(11)].map((_, i) => (
-                                                    <option key={i + 1} value={i + 1}>{i + 1}º Cuatrimestre</option>
-                                                ))}
+                                            <Label htmlFor="nombre">Nombre(s)</Label>
+                                            <Input id="nombre" placeholder="Ej. Diego" {...register("nombre")} />
+                                            {errors.nombre && <p className="text-sm text-destructive">{(errors.nombre as any).message}</p>}
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="matricula">Matrícula</Label>
+                                            <Input id="matricula" placeholder="Ej. 23000123" {...register("matricula")} />
+                                            {errors.matricula && <p className="text-sm text-destructive">{(errors.matricula as any).message}</p>}
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="apellidoPaterno">Apellido Paterno</Label>
+                                            <Input id="apellidoPaterno" placeholder="Ej. Beltran" {...register("apellidoPaterno")} />
+                                            {errors.apellidoPaterno && <p className="text-sm text-destructive">{(errors.apellidoPaterno as any).message}</p>}
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="apellidoMaterno">Apellido Materno (Opcional)</Label>
+                                            <Input id="apellidoMaterno" placeholder="Ej. Can" {...register("apellidoMaterno")} />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className={`space-y-4 animate-in fade-in slide-in-from-right-4 duration-500 ${pasoActual === 3 ? "" : "hidden"}`}>
+                                    <h2 className="text-xl font-bold text-foreground border-b border-border pb-2 mb-6">Perfil Académico</h2>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="carreraId">Carrera</Label>
+                                        <select id="carreraId" {...register("carreraId")} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                                            <option value="">Selecciona tu carrera...</option>
+                                            <option value="1">Ingeniería de Software</option>
+                                            <option value="2">Licenciatura en Gastronomía</option>
+                                            <option value="3">Ingeniería en Mecatrónica</option>
+                                            <option value="4">Licenciatura en Negocios</option>
+                                        </select>
+                                        {errors.carreraId && <p className="text-sm text-destructive">{(errors.carreraId as any).message}</p>}
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="estatus_academico">Estatus Académico</Label>
+                                            <select id="estatus_academico" {...register("estatus_academico")} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                                                <option value="ACTIVO">Estudiante Activo</option>
+                                                <option value="EGRESADO">Egresado</option>
                                             </select>
                                         </div>
-                                    )}
+                                        {estatusSeleccionado === "ACTIVO" && (
+                                            <div className="space-y-2">
+                                                <Label htmlFor="periodo_academico">Cuatrimestre</Label>
+                                                <select id="periodo_academico" {...register("periodo_academico")} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                                                    <option value="">Selecciona...</option>
+                                                    {[...Array(11)].map((_, i) => (
+                                                        <option key={i + 1} value={i + 1}>{i + 1}º Cuatrimestre</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
+                            </>
                         )}
 
                         {/* ===== PASOS DE EMPRESA ===== */}
-                        {tipoRegistro === "empresa" && pasoActual === 2 && (
-                            <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-500">
+                        {tipoRegistro === "empresa" && (
+                            <div className={`space-y-4 animate-in fade-in slide-in-from-right-4 duration-500 ${pasoActual === 2 ? "" : "hidden"}`}>
                                 <h2 className="text-xl font-bold text-foreground border-b border-border pb-2 mb-6">Datos de la Empresa</h2>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-2">

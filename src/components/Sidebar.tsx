@@ -15,6 +15,8 @@ interface SidebarProps {
         ubicacion: string | null;
         progreso: number;
         faltantes?: string[];
+        faltantesAlerta?: string[];
+        perfilCompletado?: boolean;
         idiomas: string[];
         fotoUrl?: string | null;
         buscando: string | null;
@@ -28,7 +30,7 @@ export default function Sidebar({ perfil, onClose }: SidebarProps) {
 
     return (
         <>
-            <aside className="flex flex-col w-80 bg-white border-r border-gray-200 h-screen sticky top-0 rounded-r-[20px] drop-shadow-sm z-40">
+            <aside className="flex flex-col w-80 bg-white border-r border-gray-200 h-screen sticky top-0 rounded-r-[20px] drop-shadow-sm z-40 overflow-y-auto no-scrollbar">
             <div className="p-6">
                 <span className="font-bold text-teal-700 text-xl tracking-tight">Joby</span>
                 {onClose && (
@@ -105,8 +107,8 @@ export default function Sidebar({ perfil, onClose }: SidebarProps) {
                     </div>
                 )}
 
-                {/* Barra de progreso interactiva */}
-                {perfil && perfil.progreso < 100 && (
+                {/* Progreso: barra solo antes del hito de completado */}
+                {perfil && !perfil.perfilCompletado && perfil.progreso < 100 && (
                     <div className="w-full mt-6 px-1.5">
                         <div className="flex justify-between items-end text-xs mb-2">
                             <span className="text-gray-500 font-medium tracking-tight">Completar perfil</span>
@@ -120,7 +122,7 @@ export default function Sidebar({ perfil, onClose }: SidebarProps) {
                         {perfil.faltantes && perfil.faltantes.length > 0 ? (
                             <div className="mt-3 bg-red-50/50 p-2.5 rounded-lg border border-red-100/50 tour-faltantes-box">
                                 <p className="text-[10px] text-red-800 font-semibold mb-1.5 flex items-center gap-1">
-                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                                    <AlertTriangle className="w-3 h-3" />
                                     Te falta por completar:
                                 </p>
                                 <ul className="text-[10px] text-red-600/90 list-disc list-inside space-y-0.5 ml-1">
@@ -134,29 +136,73 @@ export default function Sidebar({ perfil, onClose }: SidebarProps) {
                         )}
                     </div>
                 )}
-                {perfil && perfil.progreso === 100 && (
-                    <div className="w-full mt-6 px-1.5 flex items-center justify-center gap-1.5 text-emerald-600 bg-emerald-50 py-2 rounded-xl border border-emerald-100">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                        <span className="text-xs font-bold tracking-tight">Perfil Completo</span>
+                {perfil && perfil.perfilCompletado && (
+                    <div className="w-full mt-6 px-1.5 space-y-2">
+                        <div className="flex items-center justify-center gap-1.5 text-emerald-600 bg-emerald-50 py-2 rounded-xl border border-emerald-100">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                            <span className="text-xs font-bold tracking-tight">Perfil Completo</span>
+                        </div>
+                        {perfil.faltantesAlerta && perfil.faltantesAlerta.length > 0 && (
+                            <div className="bg-amber-50/80 p-2.5 rounded-lg border border-amber-100/80">
+                                <p className="text-[10px] text-amber-900 font-semibold mb-1.5 flex items-center gap-1">
+                                    <AlertTriangle className="w-3 h-3 shrink-0" />
+                                    Tu perfil necesita atención:
+                                </p>
+                                <ul className="text-[10px] text-red-600/90 list-disc list-inside space-y-0.5 ml-1">
+                                    {perfil.faltantesAlerta.map((falta, i) => (
+                                        <li key={i}>{falta}</li>
+                                    ))}
+                                </ul>
+                                <Link
+                                    href="/perfil/editar/paso-1"
+                                    className="mt-2 block text-center text-[10px] font-bold text-teal-700 hover:text-teal-800 underline"
+                                >
+                                    Actualizar mi perfil
+                                </Link>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
 
             {/* Navegación (Igual que antes) */}
-            <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto mt-2">
+            <nav className="flex-1 p-4 space-y-1.5 mt-2">
                 <Link href="/inicio" className={`flex items-center gap-3 p-3.5 rounded-xl font-medium transition-all ${pathname === '/inicio' ? 'text-teal-800 bg-teal-50 font-semibold shadow-sm' : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50 group'}`}>
                     <svg className={`w-5 h-5 ${pathname === '/inicio' ? 'text-teal-600' : 'text-gray-400 group-hover:text-gray-600 transition-colors'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                     Buscar Vacantes
                 </Link>
 
-                <Link href="#" className="flex items-center gap-3 p-3.5 text-gray-500 hover:text-gray-800 hover:bg-gray-50 rounded-xl font-medium transition-all group">
-                    <svg className="w-5 h-5 text-gray-400 group-hover:text-gray-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                <Link
+                    href="/mis-postulaciones"
+                    className={`flex items-center gap-3 p-3.5 rounded-xl font-medium transition-all ${
+                        pathname === "/mis-postulaciones" || pathname?.startsWith("/mis-postulaciones/")
+                            ? "text-teal-800 bg-teal-50 font-semibold shadow-sm"
+                            : "text-gray-500 hover:text-gray-800 hover:bg-gray-50 group"
+                    }`}
+                >
+                    <svg
+                        className={`w-5 h-5 ${
+                            pathname === "/mis-postulaciones" || pathname?.startsWith("/mis-postulaciones/")
+                                ? "text-teal-600"
+                                : "text-gray-400 group-hover:text-gray-600 transition-colors"
+                        }`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
                     Mis Postulaciones
                 </Link>
 
                 <Link href="/perfil" className={`flex items-center gap-3 p-3.5 rounded-xl font-medium transition-all ${pathname?.startsWith('/perfil') ? 'text-teal-800 bg-teal-50 font-semibold shadow-sm' : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50 group'}`}>
                     <svg className={`w-5 h-5 ${pathname?.startsWith('/perfil') ? 'text-teal-600' : 'text-gray-400 group-hover:text-gray-600 transition-colors'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
                     Mi Perfil
+                </Link>
+
+                <Link href="/configuracion" className={`flex items-center gap-3 p-3.5 rounded-xl font-medium transition-all ${pathname === '/configuracion' ? 'text-teal-800 bg-teal-50 font-semibold shadow-sm' : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50 group'}`}>
+                    <svg className={`w-5 h-5 ${pathname === '/configuracion' ? 'text-teal-600' : 'text-gray-400 group-hover:text-gray-600 transition-colors'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                    Configuración
                 </Link>
             </nav>
 

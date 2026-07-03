@@ -4,15 +4,14 @@ import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
 import { createSession } from "@/lib/session"
 import { redirect } from "next/navigation"
-import { Resend } from "resend"
-
-const resend = new Resend(process.env.RESEND_API_KEY)
+import { sendEmail } from "@/lib/mail"
 
 
 export async function loginAction(formData: FormData) {
   const email = formData.get("email") as string
   const password = formData.get("password") as string
   const tipo = (formData.get("tipo") as string) || "estudiante"
+  const redirectUrl = formData.get("redirect") as string
 
   if (!email || !password) return { error: "Por favor, llena todos los campos." }
 
@@ -38,10 +37,50 @@ export async function loginAction(formData: FormData) {
     const passwordMatch = await bcrypt.compare(password, user.password_hash)
     if (!passwordMatch) return { error: "Credenciales incorrectas." }
 
+    // Interceptar si la cuenta está suspendida por eliminación
+    if (user.deletedAt) {
+      const scheduledDate = user.scheduledDeletionAt ? new Date(user.scheduledDeletionAt) : new Date(Date.now() + 15 * 24 * 60 * 60 * 1000);
+      const fechaLimite = scheduledDate.toLocaleDateString("es-MX", {
+        day: "numeric",
+        month: "long",
+        year: "numeric"
+      });
+
+      return { 
+        suspended: true, 
+        email: user.correo, 
+        scheduledDeletionAt: fechaLimite 
+      }
+    }
+
     // Edge Case: Limbo de Usuario (Estudiante o Empresa no verificados)
     if ((user.rol === "ESTUDIANTE" || user.rol === "EMPRESA") && !user.verifiedAt) {
+      // Validación de expiración universal:
+      // Si otpExpiresAt ya pasó, limpiamos otpCode, otpExpiresAt, intentos y último reenvío
+      if (user.otpExpiresAt && new Date() > user.otpExpiresAt) {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            otpCode: null,
+            otpExpiresAt: null,
+            intentos_reenvio: 0,
+            ultimo_reenvio_at: null
+          }
+        })
+      }
+
+      // Establecer o renovar cookie registro_pendiente
+      const cookieStore = await cookies()
+      cookieStore.set("registro_pendiente", user.correo, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        maxAge: 15 * 60,
+        sameSite: "lax",
+        path: "/",
+      })
       // Devolver al frontend la instruccion de redireccion para evitar atrapar NEXT_REDIRECT
-      return { redirect: `/verificar-correo?email=${encodeURIComponent(user.correo)}` }
+      const redirectSuffix = redirectUrl ? `&redirect=${encodeURIComponent(redirectUrl)}` : ""
+      return { redirect: `/verificar-correo?email=${encodeURIComponent(user.correo)}${redirectSuffix}` }
     }
 
     // Creamos la cookie de sesión
@@ -81,6 +120,14 @@ export async function verificarOTPAction(email: string, otpOriginal: string) {
     }
 
     if (!user.otpExpiresAt || new Date() > user.otpExpiresAt) {
+      // Eliminar el token expirado de la base de datos
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          otpCode: null,
+          otpExpiresAt: null
+        }
+      })
       return { error: "El código ha expirado. Solicita uno nuevo." }
     }
 
@@ -90,9 +137,15 @@ export async function verificarOTPAction(email: string, otpOriginal: string) {
       data: {
         verifiedAt: new Date(),
         otpCode: null,
-        otpExpiresAt: null
+        otpExpiresAt: null,
+        intentos_reenvio: 0,
+        ultimo_reenvio_at: null
       }
     })
+
+    // Eliminar la cookie registro_pendiente
+    const cookieStore = await cookies()
+    cookieStore.delete("registro_pendiente")
 
     // Iniciar Sesión automáticamente
     await createSession(user.id)
@@ -107,11 +160,42 @@ export async function verificarOTPAction(email: string, otpOriginal: string) {
 // -----------------------------------------------------------------------------
 // REENVIAR OTP
 // -----------------------------------------------------------------------------
+function getCooldownDuration(attempts: number): number {
+  switch (attempts) {
+    case 0: return 60 * 1000      // 1 minuto
+    case 1: return 5 * 60 * 1000  // 5 minutos
+    case 2: return 15 * 60 * 1000 // 15 minutos
+    case 3: return 60 * 60 * 1000 // 1 hora
+    default: return -1            // Bloqueado por completo
+  }
+}
+
 export async function reenviarOTPAction(email: string) {
   try {
     const user = await prisma.user.findUnique({ where: { correo: email } })
     if (!user) return { error: "Usuario no encontrado" }
     if (user.verifiedAt) return { error: "Usuario ya está verificado." }
+
+    // Validación de Cooldown Progresiva
+    if (user.ultimo_reenvio_at) {
+      const msSinceLastSend = Date.now() - user.ultimo_reenvio_at.getTime()
+      const attempts = user.intentos_reenvio
+      const cooldownMs = getCooldownDuration(attempts)
+      
+      if (cooldownMs === -1) {
+        return { 
+          error: "Has excedido el número máximo de reenvíos de código de seguridad. Tu solicitud ha sido bloqueada por seguridad." 
+        }
+      }
+      
+      if (msSinceLastSend < cooldownMs) {
+        const secondsLeft = Math.ceil((cooldownMs - msSinceLastSend) / 1000)
+        return { 
+          error: `Debes esperar ${secondsLeft} segundos antes de solicitar otro código.`, 
+          tiempo_restante: secondsLeft 
+        }
+      }
+    }
 
     // Generar código de 6 dígitos
     const newOtp = Math.floor(100000 + Math.random() * 900000).toString()
@@ -122,79 +206,167 @@ export async function reenviarOTPAction(email: string) {
       where: { id: user.id },
       data: {
         otpCode: newOtp,
-        otpExpiresAt: expires
+        otpExpiresAt: expires,
+        ultimo_reenvio_at: new Date(),
+        intentos_reenvio: { increment: 1 }
       }
     })
 
-    // Mandar mail con Resend
-    const { data: resendData, error: resendError } = await resend.emails.send({
-      from: 'Joby Chetumal <no-reply@jobychetumal.online>',
-      to: email,
-      subject: 'Tu nuevo código de verificación - Joby',
-      html: `
-        <!DOCTYPE html>
-        <html>
-        <body style="margin:0; padding:0; background-color:#f4f4f5; font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;">
-          <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color:#f4f4f5; padding: 40px 0;">
-            <tr>
-              <td align="center">
-                <!-- Main Card -->
-                <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color:#ffffff; border-radius:12px; overflow:hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);">
-                  <!-- Header -->
-                  <tr>
-                    <td align="center" style="background-color:#0d9488; padding:30px 0;">
-                      <h1 style="color:#ffffff; margin:0; font-size:28px; font-weight:bold; letter-spacing:1px; font-style:italic;">Joby</h1>
-                      <p style="color:#ccfbf1; margin:5px 0 0 0; font-size:14px; font-weight:500;">Bolsa de Trabajo UT Chetumal</p>
-                    </td>
-                  </tr>
-                  <!-- Body -->
-                  <tr>
-                    <td style="padding: 40px 30px; text-align:center;">
-                      <h2 style="color:#1f2937; font-size:22px; margin:0 0 20px; font-weight:bold;">Verifica tu identidad</h2>
-                      <p style="color:#4b5563; font-size:16px; line-height:1.6; margin:0 0 30px;">
-                        Detectamos un intento de registro o acceso a tu cuenta. Para continuar de forma segura, por favor ingresa este código de 6 dígitos:
-                      </p>
-                      
-                      <!-- OTP Box -->
-                      <table border="0" cellspacing="0" cellpadding="0" style="margin:0 auto; background-color:#f8fafc; border:2px dashed #94a3b8; border-radius:12px;">
-                        <tr>
-                          <td align="center" style="padding: 20px 40px;">
-                            <span style="font-size:38px; font-weight:900; color:#0f766e; letter-spacing:10px;">${newOtp}</span>
-                          </td>
-                        </tr>
-                      </table>
-                      
-                      <p style="color:#64748b; font-size:14px; margin:30px 0 0 0;">
-                        Este código expira automáticamente en <strong>15 minutos</strong>.
-                      </p>
-                    </td>
-                  </tr>
-                  <!-- Footer -->
-                  <tr>
-                    <td style="background-color:#f8fafc; padding:20px 30px; text-align:center; border-top:1px solid #e2e8f0;">
-                      <p style="color:#94a3b8; font-size:12px; margin:0; line-height:1.5;">
-                        Si tú no solicitaste este código, puedes ignorar este mensaje de forma segura. Alguien posiblemente se equivocó tipeando su correo.<br/><br/>
-                        &copy; ${new Date().getFullYear()} Joby. Plataforma Oficial UT Chetumal.
-                      </p>
-                    </td>
-                  </tr>
-                </table>
-              </td>
-            </tr>
-          </table>
-        </body>
-        </html>
-      `
+    // Renovar la cookie registro_pendiente para el navegador actual
+    const cookieStore = await cookies()
+    cookieStore.set("registro_pendiente", email, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 15 * 60,
+      sameSite: "lax",
+      path: "/",
     })
 
-    if (resendError) {
-      console.error("Resend Error Reenviar OTP:", resendError)
-      return { error: `No se pudo enviar el correo: ${resendError.message}` }
+    // Mandar mail con Resend y botón de enlace directo para navegación cruzada
+    const resMail = await sendEmail({
+      to: email,
+      subject: 'Tu nuevo código de verificación - Joby',
+      title: 'Verifica tu identidad',
+      message: `Detectamos un intento de registro o acceso a tu cuenta. Para continuar de forma segura, por favor ingresa este código de 6 dígitos:\n\n${newOtp}\n\nEste código expira automáticamente en 15 minutos.`,
+      buttonText: "Ir a verificar mi cuenta",
+      buttonUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/verificar-correo?email=${encodeURIComponent(email)}`,
+      type: "SUCCESS"
+    });
+
+    if (!resMail.success) {
+      console.error("Resend Error Reenviar OTP:", resMail.error)
+      return { error: `No se pudo enviar el correo: ${resMail.error}` }
     }
 
     return { success: true }
   } catch (error) {
     console.error("Error reenviando OTP:", error)
     return { error: "Error al reenviar el código" }
+  }
+}
+
+// -----------------------------------------------------------------------------
+// ESTABLECER COOKIE DE REGISTRO PENDIENTE (SEGURO PARA NAVEGACIÓN CRUZADA)
+// -----------------------------------------------------------------------------
+export async function establecerCookieRegistroPendienteAction(email: string) {
+  try {
+    const user = await prisma.user.findUnique({ where: { correo: email } })
+    if (!user || user.verifiedAt) {
+      return { error: "Usuario inválido o ya verificado" }
+    }
+
+    const cookieStore = await cookies()
+    cookieStore.set("registro_pendiente", email, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 15 * 60, // 15 minutos en segundos
+      sameSite: "lax",
+      path: "/",
+    })
+    return { success: true }
+  } catch (error) {
+    console.error("Error setting pending cookie:", error)
+    return { error: "Error interno de servidor" }
+  }
+}
+
+// -----------------------------------------------------------------------------
+// REACTIVAR CUENTA SUSPENDIDA
+// -----------------------------------------------------------------------------
+export async function reactivarCuentaAction(formData: FormData) {
+  const email = formData.get("email") as string
+  const password = formData.get("password") as string
+
+  if (!email || !password) return { error: "Por favor, ingresa tus credenciales." }
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { correo: email }
+    })
+
+    if (!user) return { error: "Usuario no encontrado." }
+
+    const passwordMatch = await bcrypt.compare(password, user.password_hash)
+    if (!passwordMatch) return { error: "Credenciales incorrectas." }
+
+    if (!user.deletedAt) return { error: "Esta cuenta no está suspendida." }
+
+    // Reactivar: limpiar campos de eliminación
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        deletedAt: null,
+        scheduledDeletionAt: null
+      }
+    })
+
+    // Enviar correo de confirmación de reactivación
+    await sendEmail({
+      to: user.correo,
+      subject: "Tu cuenta de Bolsa Educativa ha sido reactivada - Joby",
+      title: "¡Cuenta Reactivada con Éxito!",
+      message: `Hola,\n\nTe informamos que tu cuenta en la Bolsa Educativa Joby ha sido reactivada con éxito.\n\nYa puedes acceder normalmente a la plataforma. Por favor toma en cuenta que tus postulaciones anteriores fueron eliminadas permanentemente y deberás volver a postularte a las vacantes de tu interés.\n\n¡Bienvenido de nuevo!`,
+      type: "SUCCESS"
+    })
+
+    // Iniciar sesión creando cookie
+    await createSession(user.id)
+    return { success: true, rol: user.rol }
+  } catch (error) {
+    console.error("Error al reactivar cuenta:", error)
+    return { error: "Error interno al reactivar la cuenta." }
+  }
+}
+
+// -----------------------------------------------------------------------------
+// CANCELAR REGISTRO PENDIENTE (ELIMINAR USUARIO EN LIMBO)
+// -----------------------------------------------------------------------------
+export async function cancelarRegistroPendienteAction(email: string) {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { correo: email },
+      select: { id: true, verifiedAt: true, rol: true }
+    })
+
+    if (!user) {
+      return { success: true }
+    }
+
+    if (user.verifiedAt) {
+      return { error: "No se puede cancelar un registro ya verificado" }
+    }
+
+    // 1. Eliminar el usuario (por onDelete: Cascade, se borra Estudiante/Empresa)
+    await prisma.user.delete({
+      where: { id: user.id }
+    })
+
+    // 2. Borrar la cookie del navegador actual
+    const cookieStore = await cookies()
+    cookieStore.delete("registro_pendiente")
+
+    return { success: true, rol: user.rol }
+  } catch (error) {
+    console.error("Error al cancelar registro:", error)
+    return { error: "Error al cancelar el registro en el servidor" }
+  }
+}
+
+// Acción para preparar la modificación de correo sin eliminar el usuario
+export async function prepararModificacionCorreoAction(email: string) {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { correo: email },
+      select: { rol: true }
+    })
+
+    // Borrar la cookie para que el middleware permita acceder a /registro
+    const cookieStore = await cookies()
+    cookieStore.delete("registro_pendiente")
+
+    return { success: true, rol: user?.rol || "ESTUDIANTE" }
+  } catch (error) {
+    console.error("Error al preparar modificacion de correo:", error)
+    return { error: "Error en el servidor al preparar la modificación" }
   }
 }

@@ -55,6 +55,14 @@ enum ModalidadTrabajo {
   HIBRIDO
   REMOTO
 }
+
+enum EstatusVacante {
+  ABIERTA
+  PAUSADA
+  VENCIDA
+  CERRADA
+}
+
 enum RolUsuario {
   ESTUDIANTE
   EMPRESA
@@ -94,6 +102,12 @@ model User {
   verifiedAt    DateTime?   
   otpCode       String?     
   otpExpiresAt  DateTime?
+  ultimo_reenvio_at DateTime?
+  intentos_reenvio  Int       @default(0)
+  
+  // --- CAMPOS PARA SUSPENSIÓN Y ELIMINACIÓN ---
+  deletedAt           DateTime?
+  scheduledDeletionAt DateTime?
   
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
@@ -101,6 +115,9 @@ model User {
   estudiante    Estudiante? 
   empresa       Empresa?    
   admin         Admin?
+
+  subscription  Subscription?
+  aiUsageLogs   AIUsageLog[]
 }
 
 model Estudiante {
@@ -132,7 +149,18 @@ model Estudiante {
   habilidades       String[] // ["React", "Excel", "Distintivo H"]
   idiomas           String[] // ["Inglés - B2", "Francés - A1"]
   enlaces           Json?    // { "linkedin": "...", "github": "..." }
-  cv_url            String?  
+  cv_url            String?
+  perfil_completado_at DateTime? // Hito: llegó al 100% al menos una vez (no se revierte)
+  perfil_publico        Boolean   @default(false)
+  compartir_experiencia Boolean   @default(true)
+  compartir_proyectos   Boolean   @default(true)
+  compartir_habilidades Boolean   @default(true)
+  compartir_idiomas     Boolean   @default(true)
+  compartir_educacion   Boolean   @default(true)
+  
+  // Reglas de negocio de configuración
+  cambio_carrera_usado Boolean   @default(false)
+  nombre_modificado_at DateTime?
   
   // Relaciones
   usuario           User           @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
@@ -143,6 +171,7 @@ model Estudiante {
   educacion_extra   EducacionExtra[] // Para TSU, Cursos y Certificados
   
   magicCVDraft      MagicCVDraft?
+  postulaciones     Postulacion[]
 
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
@@ -158,6 +187,7 @@ model Empresa {
   nombre_comercial    String   // Ej: "Hotel Xcaret"
   descripcion         String?  @db.Text // A qué se dedican
   logo_url            String?
+  banner_url          String?
   sitio_web           String?
   enlaces             Json?    // { "linkedin": "...", "facebook": "..." }
   
@@ -225,20 +255,52 @@ model Vacante {
   // Ubicación del puesto (Puede ser distinto a la ubicación de la empresa)
   estado              String?
   municipio           String?
+  horario             String? // Ej: "09:00 AM - 05:00 PM (L-V)" o "Turno matutino"
+  
   // El "Match" con los alumnos
   habilidades_req     String[] // ["React", "TypeScript"] <- Esto cruzará con las habilidades del estudiante
+  idiomas_req         String[] // ["Inglés - B2", "Francés - A1"] <- Esto cruzará con los idiomas del estudiante
 
   // Datos opcionales y control
   sueldo_min          Int?     // Para filtros de búsqueda (opcional)
   sueldo_max          Int?
-  activa              Boolean  @default(true) // Si la empresa ya contrató, la pasa a false
+  estatus             EstatusVacante @default(ABIERTA)
   fecha_limite        DateTime? // Cuándo caduca la oferta
+  cerrada_en          DateTime? // Cuándo la empresa cerró la convocatoria
   
   // Relaciones
   empresa             Empresa  @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  postulaciones       Postulacion[]
   
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
+}
+
+enum EstatusPostulacion {
+  ENVIADA
+  VISTA
+  EN_REVISION
+  ACEPTADA
+  RECHAZADA
+}
+
+model Postulacion {
+  id              Int      @id @default(autoincrement())
+  estudianteId    Int
+  vacanteId       Int
+  estatus         EstatusPostulacion @default(ENVIADA)
+  
+  // SNAPSHOTS (Inmutables)
+  cv_url_snapshot String?
+  perfil_snapshot Json?    // { bio: string, habilidades: string[], idiomas: string[] }
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @default(now()) @updatedAt
+
+  estudiante      Estudiante @relation(fields: [estudianteId], references: [id], onDelete: Cascade)
+  vacante         Vacante    @relation(fields: [vacanteId], references: [id], onDelete: Cascade)
+
+  @@unique([estudianteId, vacanteId])
 }
 
 // -----------------------------------------------------------------------------
@@ -314,3 +376,64 @@ model MagicCVDraft {
   
   estudiante   Estudiante @relation(fields: [estudianteId], references: [id], onDelete: Cascade)
 }
+
+// -----------------------------------------------------------------------------
+// TOKENS DE RECUPERACIÓN DE CONTRASEÑA
+// -----------------------------------------------------------------------------
+model PasswordResetToken {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+// -----------------------------------------------------------------------------
+// CONTROL DE SUSCRIPCIONES Y CONSUMO DE IA (SAAS)
+// -----------------------------------------------------------------------------
+
+enum SubscriptionPlan {
+  FREE
+  PREMIUM
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  UNPAID
+  INACTIVE
+}
+
+model Subscription {
+  id                     Int                @id @default(autoincrement())
+  usuarioId              Int                @unique
+  stripeCustomerId       String?            @unique
+  stripeSubscriptionId   String?            @unique
+  plan                   SubscriptionPlan   @default(FREE)
+  status                 SubscriptionStatus @default(INACTIVE)
+  
+  currentPeriodStart     DateTime           @default(now())
+  currentPeriodEnd       DateTime           @default(now())
+  
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+
+  usuario                User               @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+}
+
+model AIUsageLog {
+  id            Int      @id @default(autoincrement())
+  usuarioId     Int
+  action        String   // Ej. "CV_PDF_PARSE", "CV_REWRITE"
+  modelUsed     String   // Ej. "gemini-2.5-flash"
+  tokensInput   Int      @default(0)
+  tokensOutput  Int      @default(0)
+  createdAt     DateTime @default(now())
+
+  usuario       User     @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([usuarioId, createdAt])
+}
+
+

@@ -32,7 +32,7 @@ export default function DashboardShell({ children, perfil }: { children: React.R
                 </header>
 
                 <div className="p-4 md:p-8 flex-1 overflow-y-auto">
-                    <div className="max-w-4xl mx-auto">
+                    <div className="max-w-7xl mx-auto w-full">
                         {children}
                     </div>
                 </div>
