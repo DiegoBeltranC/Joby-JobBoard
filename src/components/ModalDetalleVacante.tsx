@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { 
     X, 
     Briefcase, 
@@ -8,10 +9,14 @@ import {
     DollarSign, 
     MapPin, 
     Building2,
-    Calendar
+    Calendar,
+    QrCode
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useScrollLock } from "@/hooks/useScrollLock";
+import { encodeId } from "@/lib/hash";
+import CompartirVacanteModal from "@/components/CompartirVacanteModal";
+
 
 interface ModalDetalleVacanteProps {
     vacante: any;
@@ -20,6 +25,14 @@ interface ModalDetalleVacanteProps {
 
 export default function ModalDetalleVacante({ vacante, onClose }: ModalDetalleVacanteProps) {
     useScrollLock();
+    const [showQrModal, setShowQrModal] = useState(false);
+
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const empresaId = vacante.empresa?.id || vacante.empresaId;
+    const hashEmpresaId = encodeId(empresaId);
+    const hashVacanteId = encodeId(vacante.id);
+    const publicUrl = `${origin}/e/${hashEmpresaId}?vacante=${hashVacanteId}`;
+
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-300">
             <div className="bg-white rounded-[40px] w-full max-w-2xl max-h-[90vh] overflow-hidden shadow-2xl animate-in zoom-in-95 slide-in-from-bottom-4 duration-300 border border-slate-200 flex flex-col relative z-[110]">
@@ -137,16 +150,33 @@ export default function ModalDetalleVacante({ vacante, onClose }: ModalDetalleVa
                 </div>
 
                 {/* Footer del Modal */}
-                <div className="p-6 bg-slate-50 border-t border-slate-100 shrink-0">
+                <div className="p-6 bg-slate-50 border-t border-slate-100 shrink-0 flex flex-col sm:flex-row gap-3">
+                    <button
+                        onClick={() => setShowQrModal(true)}
+                        className="flex-1 py-4 bg-teal-50 hover:bg-teal-100 text-teal-700 font-black rounded-2xl transition-all border border-teal-100 uppercase text-xs tracking-widest flex items-center justify-center gap-2 shadow-sm cursor-pointer"
+                    >
+                        <QrCode className="w-4 h-4" />
+                        Compartir QR
+                    </button>
                     <button
                         onClick={onClose}
-                        className="w-full py-4 bg-white hover:bg-slate-100 text-slate-600 font-black rounded-2xl transition-all border border-slate-200 uppercase text-xs tracking-widest flex items-center justify-center gap-2 shadow-sm"
+                        className="flex-1 py-4 bg-white hover:bg-slate-100 text-slate-600 font-black rounded-2xl transition-all border border-slate-200 uppercase text-xs tracking-widest flex items-center justify-center gap-2 shadow-sm cursor-pointer"
                     >
                         <X className="w-4 h-4" />
                         Cerrar Detalles
                     </button>
                 </div>
             </div>
+
+            {/* Modal de Compartir QR */}
+            <CompartirVacanteModal
+                isOpen={showQrModal}
+                onClose={() => setShowQrModal(false)}
+                tituloVacante={vacante.titulo}
+                nombreEmpresa={vacante.empresa?.nombre_comercial || "Nuestra Empresa"}
+                publicUrl={publicUrl}
+                colorTheme="teal"
+            />
         </div>
     );
 }

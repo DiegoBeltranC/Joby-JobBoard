@@ -9,14 +9,25 @@ export async function GET(request: NextRequest) {
     return new NextResponse('Falta el parámetro "data"', { status: 400 });
   }
 
+  let darkColor = searchParams.get('dark') || '#009374';
+  let lightColor = searchParams.get('light') || '#ffffff';
+
+  // Asegurar formato hexadecimal correcto
+  if (darkColor && !darkColor.startsWith('#')) {
+    darkColor = `#${darkColor}`;
+  }
+  if (lightColor && !lightColor.startsWith('#')) {
+    lightColor = `#${lightColor}`;
+  }
+
   try {
     // Generamos el QR como un Buffer de imagen PNG directamente en el servidor
     const qrBuffer = await QRCode.toBuffer(data, {
       width: 350,
       margin: 2,
       color: {
-        dark: '#009374',   // Verde UT Joby exacto
-        light: '#ffffff',  // Fondo blanco
+        dark: darkColor,
+        light: lightColor,
       },
       errorCorrectionLevel: 'H' // Nivel de corrección Alto
     });
@@ -34,3 +45,4 @@ export async function GET(request: NextRequest) {
     return new NextResponse('Error interno al generar QR', { status: 500 });
   }
 }
+

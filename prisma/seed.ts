@@ -18,12 +18,12 @@ async function main() {
   })
   console.log(`✅ Universidad registrada: ${utch.nombre}`)
 
-  // 2. Crear las Carreras oficiales de Joby
+  // 2. Crear las Carreras oficiales de Joby (Ajustado según la interfaz)
   const carreras = [
-    'Innovación de Negocios y Mercadotecnia',
-    'Gastronomía',
-    'Mecatrónica',
-    'Desarrollo y Gestión de Software'
+    'Ingeniería de Software',
+    'Licenciatura en Gastronomía',
+    'Ingeniería en Mecatrónica',
+    'Licenciatura en Negocios'
   ]
 
   for (const nombreCarrera of carreras) {
@@ -51,8 +51,8 @@ async function main() {
         rol: 'ADMIN',
         admin: {
           create: {
-            nombre: 'Sistemas',
-            apellidoPaterno: 'UTCH',
+            nombre: '',
+            apellidoPaterno: '',
             esSuperAdmin: true,
           }
         }
