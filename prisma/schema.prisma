@@ -149,6 +149,14 @@ model Estudiante {
   cv_url            String?
   perfil_completado_at DateTime? // Hito: llegó al 100% al menos una vez (no se revierte)
   
+  // Visibilidad del perfil público
+  perfil_publico        Boolean  @default(false)
+  compartir_experiencia Boolean  @default(true)
+  compartir_proyectos   Boolean  @default(true)
+  compartir_habilidades Boolean  @default(true)
+  compartir_idiomas     Boolean  @default(true)
+  compartir_educacion   Boolean  @default(true)
+  
   // Reglas de negocio de configuración
   cambio_carrera_usado Boolean   @default(false)
   nombre_modificado_at DateTime?
@@ -377,5 +385,18 @@ model PasswordResetToken {
   tokenHash String   @unique
   expiresAt DateTime
   createdAt DateTime @default(now())
+}
+
+// -----------------------------------------------------------------------------
+// LOG DE USO DE IA (Límite de uso por usuario)
+// -----------------------------------------------------------------------------
+model AIUsageLog {
+  id          Int      @id @default(autoincrement())
+  usuarioId   Int
+  action      String   // 'CV_ASSISTANT' | 'CV_OPTIMIZE' | 'IMPORTAR_IA'
+  modelUsed   String?  // Modelo de IA utilizado
+  usedAt      DateTime @default(now())
+
+  @@index([usuarioId, action, usedAt])
 }
 

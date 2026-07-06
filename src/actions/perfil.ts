@@ -554,3 +554,87 @@ export async function suspenderCuentaEstudiante(data: {
         return { error: "Error interno al suspender la cuenta" };
     }
 }
+
+// -----------------------------------------------------------------------------
+// EDUCACIÓN EXTRA
+// -----------------------------------------------------------------------------
+
+export async function agregarEducacion(data: {
+    titulo: string;
+    institucion: string;
+    año?: number | null;
+}) {
+    try {
+        const session = await getSession();
+        if (!session) return { error: "No autorizado" };
+
+        const estudiante = await prisma.estudiante.findUnique({
+            where: { usuarioId: session.userId },
+        });
+        if (!estudiante) return { error: "Estudiante no encontrado" };
+
+        const nueva = await prisma.educacionExtra.create({
+            data: {
+                estudianteId: estudiante.id,
+                titulo: data.titulo,
+                institucion: data.institucion,
+                año: data.año ?? null,
+            },
+        });
+
+        revalidatePath("/perfil");
+        await marcarPerfilCompletoSiAplica(estudiante.id);
+        revalidateDashboardEstudiante();
+
+        return { success: true, data: nueva };
+    } catch (error) {
+        console.error("Error al agregar educación:", error);
+        return { error: "Error al agregar la educación" };
+    }
+}
+
+export async function editarEducacion(
+    id: number,
+    data: {
+        titulo: string;
+        institucion: string;
+        año?: number | null;
+    }
+) {
+    try {
+        const session = await getSession();
+        if (!session) return { error: "No autorizado" };
+
+        const actualizada = await prisma.educacionExtra.update({
+            where: { id },
+            data: {
+                titulo: data.titulo,
+                institucion: data.institucion,
+                año: data.año ?? null,
+            },
+        });
+
+        revalidatePath("/perfil");
+
+        return { success: true, data: actualizada };
+    } catch (error) {
+        console.error("Error al editar educación:", error);
+        return { error: "Error al editar la educación" };
+    }
+}
+
+export async function eliminarEducacion(id: number) {
+    try {
+        const session = await getSession();
+        if (!session) return { error: "No autorizado" };
+
+        await prisma.educacionExtra.delete({ where: { id } });
+
+        revalidatePath("/perfil");
+
+        return { success: true };
+    } catch (error) {
+        console.error("Error al eliminar educación:", error);
+        return { error: "Error al eliminar la educación" };
+    }
+}
