@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { actualizarConfiguracionEstudiante, actualizarPasswordEstudiante, suspenderCuentaEstudiante } from "@/actions/perfil";
 import { logoutAction } from "@/actions/auth";
-import { User, GraduationCap, IdCard, Loader2, ArrowLeft, Lock, Shield, AlertTriangle, ChevronDown, Settings, Trash2 } from "lucide-react";
+import { User, GraduationCap, IdCard, Loader2, ArrowLeft, Lock, Shield, AlertTriangle, ChevronDown, Settings, Trash2, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 
 interface FormConfiguracionProps {
@@ -61,6 +61,10 @@ export default function FormConfiguracion({ estudiante, carreras }: FormConfigur
     const [confirmarPasswordNuevo, setConfirmarPasswordNuevo] = useState("");
     const [passwordLoading, setPasswordLoading] = useState(false);
     const [passwordErrors, setPasswordErrors] = useState<{ [key: string]: string }>({});
+    const [showPasswordActual, setShowPasswordActual] = useState(false);
+    const [showPasswordNuevo, setShowPasswordNuevo] = useState(false);
+    const [showConfirmarPasswordNuevo, setShowConfirmarPasswordNuevo] = useState(false);
+    const [showSuspensionPassword, setShowSuspensionPassword] = useState(false);
 
     // Calcular cooldown de 30 días
     const isCooldownActive = () => {
@@ -449,40 +453,67 @@ export default function FormConfiguracion({ estudiante, carreras }: FormConfigur
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="passwordActual">Contraseña actual *</Label>
-                                    <Input
-                                        id="passwordActual"
-                                        type="password"
-                                        value={passwordActual}
-                                        onChange={(e) => setPasswordActual(e.target.value)}
-                                        placeholder="••••••••"
-                                        className={passwordErrors.passwordActual ? "border-red-500 focus-visible:ring-red-500" : ""}
-                                    />
+                                    <div className="relative">
+                                        <Input
+                                            id="passwordActual"
+                                            type={showPasswordActual ? "text" : "password"}
+                                            value={passwordActual}
+                                            onChange={(e) => setPasswordActual(e.target.value)}
+                                            placeholder="••••••••"
+                                            className={`pr-10 ${passwordErrors.passwordActual ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPasswordActual(!showPasswordActual)}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                                        >
+                                            {showPasswordActual ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                        </button>
+                                    </div>
                                     {passwordErrors.passwordActual && <p className="text-xs text-red-500 font-semibold">{passwordErrors.passwordActual}</p>}
                                 </div>
 
                                 <div className="space-y-2">
                                     <Label htmlFor="passwordNuevo">Nueva contraseña *</Label>
-                                    <Input
-                                        id="passwordNuevo"
-                                        type="password"
-                                        value={passwordNuevo}
-                                        onChange={(e) => setPasswordNuevo(e.target.value)}
-                                        placeholder="Mín. 8 caracteres"
-                                        className={passwordErrors.passwordNuevo ? "border-red-500 focus-visible:ring-red-500" : ""}
-                                    />
+                                    <div className="relative">
+                                        <Input
+                                            id="passwordNuevo"
+                                            type={showPasswordNuevo ? "text" : "password"}
+                                            value={passwordNuevo}
+                                            onChange={(e) => setPasswordNuevo(e.target.value)}
+                                            placeholder="Mín. 8 caracteres"
+                                            className={`pr-10 ${passwordErrors.passwordNuevo ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPasswordNuevo(!showPasswordNuevo)}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                                        >
+                                            {showPasswordNuevo ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                        </button>
+                                    </div>
                                     {passwordErrors.passwordNuevo && <p className="text-xs text-red-500 font-semibold">{passwordErrors.passwordNuevo}</p>}
                                 </div>
 
                                 <div className="space-y-2">
                                     <Label htmlFor="confirmarPasswordNuevo">Confirmar nueva contraseña *</Label>
-                                    <Input
-                                        id="confirmarPasswordNuevo"
-                                        type="password"
-                                        value={confirmarPasswordNuevo}
-                                        onChange={(e) => setConfirmarPasswordNuevo(e.target.value)}
-                                        placeholder="Repite la contraseña"
-                                        className={passwordErrors.confirmarPasswordNuevo ? "border-red-500 focus-visible:ring-red-500" : ""}
-                                    />
+                                    <div className="relative">
+                                        <Input
+                                            id="confirmarPasswordNuevo"
+                                            type={showConfirmarPasswordNuevo ? "text" : "password"}
+                                            value={confirmarPasswordNuevo}
+                                            onChange={(e) => setConfirmarPasswordNuevo(e.target.value)}
+                                            placeholder="Repite la contraseña"
+                                            className={`pr-10 ${passwordErrors.confirmarPasswordNuevo ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowConfirmarPasswordNuevo(!showConfirmarPasswordNuevo)}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                                        >
+                                            {showConfirmarPasswordNuevo ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                        </button>
+                                    </div>
                                     {passwordErrors.confirmarPasswordNuevo && <p className="text-xs text-red-500 font-semibold">{passwordErrors.confirmarPasswordNuevo}</p>}
                                 </div>
                             </div>
@@ -628,14 +659,23 @@ export default function FormConfiguracion({ estudiante, carreras }: FormConfigur
                         <div className="space-y-4">
                             <div className="space-y-2">
                                 <Label htmlFor="suspensionPassword">Contraseña Actual *</Label>
-                                <Input
-                                    id="suspensionPassword"
-                                    type="password"
-                                    value={suspensionPassword}
-                                    onChange={(e) => setSuspensionPassword(e.target.value)}
-                                    placeholder="••••••••"
-                                    className="border-gray-200 focus-visible:ring-red-500"
-                                />
+                                <div className="relative">
+                                    <Input
+                                        id="suspensionPassword"
+                                        type={showSuspensionPassword ? "text" : "password"}
+                                        value={suspensionPassword}
+                                        onChange={(e) => setSuspensionPassword(e.target.value)}
+                                        placeholder="••••••••"
+                                        className="pr-10 border-gray-200 focus-visible:ring-red-500"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowSuspensionPassword(!showSuspensionPassword)}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                                    >
+                                        {showSuspensionPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                    </button>
+                                </div>
                             </div>
 
                             <div className="space-y-2">

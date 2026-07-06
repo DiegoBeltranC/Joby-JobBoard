@@ -8,9 +8,10 @@ import * as z from "zod"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { CheckCircle2, ChevronRight, ArrowLeft, ShieldCheck, Building2, GraduationCap, Loader2 } from "lucide-react"
+import { CheckCircle2, ChevronRight, ArrowLeft, ShieldCheck, Building2, GraduationCap, Loader2, Eye, EyeOff } from "lucide-react"
 import { registrarEstudiante, verificarCorreoDisponibleRegistro } from "@/actions/registro"
 import { registrarEmpresa } from "@/actions/registroEmpresa"
+import { verificarMatriculaParaRegistro, verificarRfcEmpresaParaRegistro } from "@/actions/validacionesRegistro"
 import { useRouter, useSearchParams } from "next/navigation"
 import { toast } from "sonner"
 
@@ -88,6 +89,8 @@ export default function RegistroPage() {
         searchParams.get("tipo") === "empresa" ? "empresa" : "estudiante"
     )
     const [pasoActual, setPasoActual] = useState(1)
+    const [showPassword, setShowPassword] = useState(false)
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false)
     const router = useRouter()
     const [isPending, startTransition] = useTransition()
     const procesandoRef = useRef(false)
@@ -164,21 +167,47 @@ export default function RegistroPage() {
                     return
                 }
 
-                if (isEmpresa) {
-                    const verificacionCorreo = await verificarCorreoDisponibleRegistro(correo)
-                    if (!verificacionCorreo.disponible) {
-                        if ("redirect" in verificacionCorreo && verificacionCorreo.redirect) {
-                            router.push(verificacionCorreo.redirect)
-                            return
-                        }
-                        setError("correo", {
+                const verificacionCorreo = await verificarCorreoDisponibleRegistro(correo)
+                if (!verificacionCorreo.disponible) {
+                    if ("redirect" in verificacionCorreo && verificacionCorreo.redirect) {
+                        router.push(verificacionCorreo.redirect)
+                        return
+                    }
+                    setError("correo", {
+                        type: "manual",
+                        message: verificacionCorreo.error ?? "Este correo ya está registrado en Joby.",
+                    })
+                    return
+                }
+            }
+
+            if (pasoActual === 2) {
+                const { correo } = getValues()
+                if (!isEmpresa) {
+                    const { matricula } = getValues()
+                    const verificacionMatricula = await verificarMatriculaParaRegistro(matricula, correo)
+                    if (!verificacionMatricula.ok) {
+                        setError("matricula", {
                             type: "manual",
-                            message: verificacionCorreo.error ?? "Este correo ya está registrado en Joby.",
+                            message: verificacionMatricula.error,
                         })
                         return
                     }
+                } else {
+                    const { rfc } = getValues()
+                    if (rfc) {
+                        const verificacionRfc = await verificarRfcEmpresaParaRegistro(rfc, correo)
+                        if (!verificacionRfc.ok) {
+                            setError("rfc", {
+                                type: "manual",
+                                message: verificacionRfc.error,
+                            })
+                            return
+                        }
+                    }
                 }
             }
+
             if (pasoActual < PASOS.length) {
                 setPasoActual(pasoActual + 1)
             }
@@ -274,7 +303,7 @@ export default function RegistroPage() {
                     <div className={`w-8 h-8 rounded flex items-center justify-center text-white font-bold italic ${isEmpresa ? 'bg-indigo-600' : 'bg-primary'}`}>UT</div>
                     <span className="font-bold text-xl tracking-tight text-foreground">Joby</span>
                 </Link>
-                <Link href="/login" className="text-sm font-medium text-muted-foreground hover:text-primary">
+                <Link href={isEmpresa ? "/login?tipo=empresa" : "/login?tipo=estudiante"} className="text-sm font-medium text-muted-foreground hover:text-primary">
                     ¿Ya tienes cuenta? <span className={`font-bold ${isEmpresa ? 'text-indigo-600' : 'text-primary'}`}>Inicia sesión</span>
                 </Link>
             </header>
@@ -371,12 +400,30 @@ export default function RegistroPage() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="password">Contraseña</Label>
-                                    <Input id="password" type="password" placeholder="Mínimo 8 caracteres" {...register("password")} />
+                                    <div className="relative">
+                                        <Input id="password" type={showPassword ? "text" : "password"} placeholder="Mínimo 8 caracteres" className="pr-10" {...register("password")} />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                                        >
+                                            {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                                        </button>
+                                    </div>
                                     {errors.password && <p className="text-sm text-destructive font-medium">{(errors.password as any).message}</p>}
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="confirmPassword">Confirmar contraseña</Label>
-                                    <Input id="confirmPassword" type="password" placeholder="Repite tu contraseña" {...register("confirmPassword")} />
+                                    <div className="relative">
+                                        <Input id="confirmPassword" type={showConfirmPassword ? "text" : "password"} placeholder="Repite tu contraseña" className="pr-10" {...register("confirmPassword")} />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                                        >
+                                            {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                                        </button>
+                                    </div>
                                     {errors.confirmPassword && <p className="text-sm text-destructive font-medium">{(errors.confirmPassword as any).message}</p>}
                                 </div>
                             </div>

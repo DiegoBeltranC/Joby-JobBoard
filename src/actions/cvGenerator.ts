@@ -3,6 +3,7 @@
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { renderToBuffer } from '@react-pdf/renderer';
+import type { DocumentProps } from '@react-pdf/renderer';
 import { PlantillaCV } from "@/lib/pdf/PlantillaCV";
 import fs from "fs";
 import path from "path";
@@ -11,6 +12,40 @@ import { marcarPerfilCompletoSiAplica, revalidateDashboardEstudiante } from "@/l
 import React from 'react';
 
 const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads", "cvs");
+
+function isPerfilVacio(estudiante: any) {
+    const hasBio = !!estudiante.bio?.trim();
+    const hasHabilidades = estudiante.habilidades && estudiante.habilidades.length > 0;
+    const hasIdiomas = estudiante.idiomas && estudiante.idiomas.length > 0;
+    const hasExperiencias = estudiante.experiencias && estudiante.experiencias.length > 0;
+    const hasProyectos = estudiante.proyectos && estudiante.proyectos.length > 0;
+    const hasEducacion = estudiante.educacion_extra && estudiante.educacion_extra.length > 0;
+
+    return !hasBio && !hasHabilidades && !hasIdiomas && !hasExperiencias && !hasProyectos && !hasEducacion;
+}
+
+function isDraftPerfilVacio(estudiante: any, updatedData?: any) {
+    const bio = updatedData?.bio !== undefined ? updatedData.bio : estudiante.bio;
+    const hasBio = !!bio?.trim();
+    
+    const habilidades = updatedData?.habilidades !== undefined ? updatedData.habilidades : estudiante.habilidades;
+    const hasHabilidades = habilidades && habilidades.length > 0;
+
+    const idiomas = updatedData?.idiomas !== undefined ? updatedData.idiomas : estudiante.idiomas;
+    const hasIdiomas = idiomas && idiomas.length > 0;
+    
+    const experiencias = updatedData?.experiencias !== undefined ? updatedData.experiencias : estudiante.experiencias;
+    const hasExperiencias = experiencias && experiencias.length > 0;
+    
+    const proyectos = updatedData?.proyectos !== undefined ? updatedData.proyectos : estudiante.proyectos;
+    const hasProyectos = proyectos && proyectos.length > 0;
+
+    const educacion = updatedData?.educacion_extra !== undefined ? updatedData.educacion_extra : estudiante.educacion_extra;
+    const hasEducacion = educacion && educacion.length > 0;
+
+    return !hasBio && !hasHabilidades && !hasIdiomas && !hasExperiencias && !hasProyectos && !hasEducacion;
+}
+
 
 export async function generarCVAction() {
     try {
@@ -37,6 +72,10 @@ export async function generarCVAction() {
         }
 
         const estudiante = usuarioInfo.estudiante;
+
+        if (isPerfilVacio(estudiante)) {
+            return { error: "No puedes generar un currículum vacío. Por favor, añade información a tu perfil primero (como biografía, habilidades o experiencia laboral)." };
+        }
 
         // Limpiar archivo viejo si existe
         if (estudiante.cv_url) {
@@ -68,8 +107,58 @@ export async function generarCVAction() {
             educacion_extra: estudiante.educacion_extra
         };
 
+        // Buscar borrador previo para conservar estilos y ordenamiento
+        const draft = await prisma.magicCVDraft.findUnique({
+            where: { estudianteId: estudiante.id }
+        });
+
+        let accentColor = '#0F766E';
+        let showPhoto = true;
+        let templateInfo = undefined;
+        let styling = undefined;
+
+        if (draft) {
+            accentColor = draft.colorAcento;
+            const draftState = (draft.draftState as any) || {};
+            showPhoto = draftState.showPhoto ?? true;
+            
+            const tId = draft.templateId || '1';
+            const PLANTILLAS_CONFIG = [
+              { id: '1', base: 'moderno', variante: 'classic' },
+              { id: '2', base: 'moderno', variante: 'left' },
+              { id: '3', base: 'moderno', variante: 'compact' },
+              { id: '4', base: 'minimalista', variante: 'classic' },
+              { id: '5', base: 'minimalista', variante: 'modern' },
+              { id: '6', base: 'ejecutivo', variante: 'classic' },
+              { id: '7', base: 'ejecutivo', variante: 'modern' },
+              { id: '8', base: 'creativo', variante: 'classic' },
+              { id: '9', base: 'creativo', variante: 'split' },
+              { id: '10', base: 'minimalista_centrado', variante: 'classic' },
+              { id: '11', base: 'creativo', variante: 'cards' },
+              { id: '12', base: 'minimalista_centrado', variante: 'clean' },
+              { id: '13', base: 'tradicional', variante: 'serif' }
+            ];
+            const currentT = PLANTILLAS_CONFIG.find(t => t.id === tId) || PLANTILLAS_CONFIG[0];
+            templateInfo = {
+                base: currentT.base,
+                variante: currentT.variante,
+                sections: draftState.sections
+            };
+            styling = {
+                fontSize: draftState.fontSize,
+                lineSpacing: draftState.lineSpacing,
+                fontFamily: draftState.fontFamily
+            };
+        }
+
         // Renderizar PDF a buffer
-        const buffer = await renderToBuffer(React.createElement(PlantillaCV, { data: dataParaPDF }));
+        const buffer = await renderToBuffer(React.createElement(PlantillaCV, { 
+            data: dataParaPDF,
+            accentColor,
+            showPhoto,
+            templateInfo,
+            styling
+        }) as React.ReactElement<DocumentProps>);
 
         const timestamp = Date.now();
         const fileName = `cv-magic-${estudiante.matricula}-${timestamp}.pdf`;
@@ -188,6 +277,11 @@ export async function saveMagicCVAction(formData: FormData) {
 
         const estudiante = await prisma.estudiante.findUnique({
             where: { usuarioId: session.userId },
+            include: {
+                experiencias: true,
+                proyectos: true,
+                educacion_extra: true,
+            }
         });
 
         if (!estudiante) return { error: "Estudiante no encontrado" };
@@ -196,14 +290,24 @@ export async function saveMagicCVAction(formData: FormData) {
         if (!pdfBlob) return { error: "No se generó el archivo PDF" };
 
         const updatedDataStr = formData.get("updatedData") as string | null;
+        let updatedData = null;
         if (updatedDataStr) {
-            const updatedData = JSON.parse(updatedDataStr);
+            updatedData = JSON.parse(updatedDataStr);
+        }
+
+        if (isDraftPerfilVacio(estudiante, updatedData)) {
+            return { error: "No puedes generar un currículum vacío. Por favor, añade información a tu perfil primero (como biografía, habilidades o experiencia laboral)." };
+        }
+
+        if (updatedData) {
             
-            // 1. Update Bio on Estudiante
+            // 1. Update Bio, Habilidades e Idiomas on Estudiante
             await prisma.estudiante.update({
                 where: { id: estudiante.id },
                 data: {
                     bio: updatedData.bio,
+                    habilidades: updatedData.habilidades || [],
+                    idiomas: updatedData.idiomas || []
                 }
             });
 
@@ -227,26 +331,71 @@ export async function saveMagicCVAction(formData: FormData) {
                 }
             }
 
-            // 3. Upsert Draft Config (Persistencia)
+            // Safe Update for Proyectos
+            if (updatedData.proyectos && Array.isArray(updatedData.proyectos)) {
+                for (const proj of updatedData.proyectos) {
+                    if (proj.id) {
+                        try {
+                            await prisma.proyecto.update({
+                                where: { id: parseInt(proj.id, 10) || proj.id },
+                                data: {
+                                    nombre: proj.nombre,
+                                    puntos_clave: proj.puntos_clave
+                                }
+                            });
+                        } catch (e) {
+                            console.error("No se pudo actualizar el proj:", proj.id, e);
+                        }
+                    }
+                }
+            }
+
+            // Safe Update for Educacion Extra
+            if (updatedData.educacion_extra && Array.isArray(updatedData.educacion_extra)) {
+                for (const edu of updatedData.educacion_extra) {
+                    if (edu.id) {
+                        try {
+                            await prisma.educacionExtra.update({
+                                where: { id: parseInt(edu.id, 10) || edu.id },
+                                data: {
+                                    titulo: edu.titulo,
+                                    institucion: edu.institucion,
+                                    año: edu.año ? parseInt(edu.año, 10) || null : null
+                                }
+                            });
+                        } catch (e) {
+                            console.error("No se pudo actualizar la edu:", edu.id, e);
+                        }
+                    }
+                }
+            }
+
+            // 3. Upsert Draft Config (Persistencia Completa)
             if (updatedData.draftConfig) {
+                const draftPayload = {
+                    showPhoto: updatedData.draftConfig.showPhoto,
+                    sections: updatedData.draftConfig.sections,
+                    fontSize: updatedData.draftConfig.fontSize,
+                    lineSpacing: updatedData.draftConfig.lineSpacing,
+                    fontFamily: updatedData.draftConfig.fontFamily,
+                    singlePage: updatedData.draftConfig.singlePage,
+                    showCarrera: updatedData.draftConfig.showCarrera,
+                    hiddenExperiences: updatedData.draftConfig.hiddenExperiences || [],
+                    hiddenProjects: updatedData.draftConfig.hiddenProjects || [],
+                    hiddenEducations: updatedData.draftConfig.hiddenEducations || []
+                };
                 await prisma.magicCVDraft.upsert({
                     where: { estudianteId: estudiante.id },
                     update: {
                         templateId: updatedData.draftConfig.templateId,
                         colorAcento: updatedData.draftConfig.accentColor,
-                        draftState: {
-                            showPhoto: updatedData.draftConfig.showPhoto,
-                            sections: updatedData.draftConfig.sections
-                        }
+                        draftState: draftPayload
                     },
                     create: {
                         estudianteId: estudiante.id,
                         templateId: updatedData.draftConfig.templateId,
                         colorAcento: updatedData.draftConfig.accentColor,
-                        draftState: {
-                            showPhoto: updatedData.draftConfig.showPhoto,
-                            sections: updatedData.draftConfig.sections
-                        }
+                        draftState: draftPayload
                     }
                 });
             }

@@ -117,6 +117,8 @@ export default async function EmpresaPublicPage({ params, searchParams }: Params
     let yaPostulado = false;
     let tieneCVPerfil = false;
     let esPerfilCompleto = false;
+    let esEstudiante = false;
+    let panelPath = "/inicio";
 
     if (session) {
         const usuarioInfo = await prisma.user.findUnique({
@@ -130,6 +132,15 @@ export default async function EmpresaPublicPage({ params, searchParams }: Params
                 }
             }
         });
+
+        if (usuarioInfo) {
+            esEstudiante = usuarioInfo.rol === "ESTUDIANTE";
+            if (usuarioInfo.rol === "ADMIN") {
+                panelPath = "/admin";
+            } else if (usuarioInfo.rol === "EMPRESA") {
+                panelPath = "/empresa/inicio";
+            }
+        }
 
         if (usuarioInfo?.estudiante) {
             tieneCVPerfil = !!usuarioInfo.estudiante.cv_url;
@@ -302,15 +313,17 @@ export default async function EmpresaPublicPage({ params, searchParams }: Params
                                     </div>
 
                                     {/* Botón de Postulación de Estudiante */}
-                                    <PostularButton
-                                        vacanteId={highlightedVacante.id}
-                                        vacanteTitulo={highlightedVacante.titulo}
-                                        empresaNombre={empresa.nombre_comercial}
-                                        tieneCVPerfil={tieneCVPerfil}
-                                        yaPostulado={yaPostulado}
-                                        isLoggedIn={!!session}
-                                        esPerfilCompleto={esPerfilCompleto}
-                                    />
+                                    {(!session || esEstudiante) && (
+                                        <PostularButton
+                                            vacanteId={highlightedVacante.id}
+                                            vacanteTitulo={highlightedVacante.titulo}
+                                            empresaNombre={empresa.nombre_comercial}
+                                            tieneCVPerfil={tieneCVPerfil}
+                                            yaPostulado={yaPostulado}
+                                            isLoggedIn={!!session}
+                                            esPerfilCompleto={esPerfilCompleto}
+                                        />
+                                    )}
                                 </div>
                             </div>
                         )}
@@ -340,6 +353,7 @@ export default async function EmpresaPublicPage({ params, searchParams }: Params
                                 text={`¡Mira las vacantes de ${empresa.nombre_comercial} en Joby!`}
                                 url={shortUrl}
                                 variant="premium"
+                                showQR={true}
                             />
                         </div>
 
@@ -349,15 +363,17 @@ export default async function EmpresaPublicPage({ params, searchParams }: Params
                                 Búsqueda Rápida
                             </h3>
                             <div className="space-y-4">
-                                <Link
-                                    href="/inicio"
-                                    className="block w-full py-4 bg-gray-50 hover:bg-gray-100 text-gray-600 font-bold rounded-2xl text-center transition-all"
-                                >
-                                    Ver todas las vacantes
-                                </Link>
-                                {session && (
+                                {(!session || esEstudiante) && (
                                     <Link
                                         href="/inicio"
+                                        className="block w-full py-4 bg-gray-50 hover:bg-gray-100 text-gray-600 font-bold rounded-2xl text-center transition-all"
+                                    >
+                                        Ver todas las vacantes
+                                    </Link>
+                                )}
+                                {session && (
+                                    <Link
+                                        href={panelPath}
                                         className="block w-full py-4 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-2xl text-center transition-all shadow-md hover:shadow-lg"
                                     >
                                         Ir a mi Panel

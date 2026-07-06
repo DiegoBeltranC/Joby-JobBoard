@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ShieldCheck, Briefcase, GraduationCap, Building2, AlertTriangle, Loader2 } from "lucide-react"
+import { ShieldCheck, Briefcase, GraduationCap, Building2, AlertTriangle, Loader2, Eye, EyeOff } from "lucide-react"
 import { loginAction, reactivarCuentaAction } from "@/actions/auth"
 import { toast } from "sonner"
 
@@ -20,6 +20,8 @@ export default function LoginPage() {
   const [showReactivateModal, setShowReactivateModal] = useState(false)
   const [reactivationPassword, setReactivationPassword] = useState("")
   const [reactivationLoading, setReactivationLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [showReactivationPassword, setShowReactivationPassword] = useState(false)
   const router = useRouter()
 
   const isEmpresa = tipoLogin === "empresa"
@@ -122,7 +124,7 @@ export default function LoginPage() {
                 name="email"
                 type="email"
                 placeholder={isEmpresa ? "contacto@tuempresa.com" : "usuario@utchetumal.edu.mx"}
-                className="h-12"
+                className={`h-12 ${isEmpresa ? 'focus-visible:ring-indigo-600' : ''}`}
                 required
               />
             </div>
@@ -134,14 +136,23 @@ export default function LoginPage() {
                   ¿Olvidaste tu contraseña?
                 </Link>
               </div>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                placeholder="••••••••"
-                className="h-12"
-                required
-              />
+              <div className="relative">
+                <Input
+                  id="password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  className={`h-12 pr-10 ${isEmpresa ? 'focus-visible:ring-indigo-600' : ''}`}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </button>
+              </div>
             </div>
 
             <Button
@@ -220,14 +231,23 @@ export default function LoginPage() {
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="reactivationPassword">Contraseña *</Label>
-                <Input
-                  id="reactivationPassword"
-                  type="password"
-                  value={reactivationPassword}
-                  onChange={(e) => setReactivationPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="border-gray-200 focus-visible:ring-teal-500"
-                />
+                <div className="relative">
+                  <Input
+                    id="reactivationPassword"
+                    type={showReactivationPassword ? "text" : "password"}
+                    value={reactivationPassword}
+                    onChange={(e) => setReactivationPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="border-gray-200 focus-visible:ring-teal-500 pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowReactivationPassword(!showReactivationPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {showReactivationPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </button>
+                </div>
               </div>
             </div>
 

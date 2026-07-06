@@ -4,8 +4,10 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { X, Briefcase } from "lucide-react";
 import { agregarProyecto, editarProyecto } from "@/actions/perfil";
+import { useScrollLock } from "@/hooks/useScrollLock";
 
 export default function ModalProyecto({ proyectoInicial, onClose }: { proyectoInicial: any, onClose: () => void }) {
+    useScrollLock();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Extraer fechas para los inputs type="date" (Formato YYYY-MM-DD)

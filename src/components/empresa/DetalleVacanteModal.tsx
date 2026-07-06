@@ -17,6 +17,7 @@ import {
     Info,
     AlertTriangle,
     CalendarClock,
+    QrCode,
 } from "lucide-react"
 import {
     cambiarEstatusVacanteAction,
@@ -31,6 +32,9 @@ import {
     clasesEncabezadoDetalleVacante,
     etiquetaEstatusVacante,
 } from "@/lib/vacanteEstatus"
+import { encodeId } from "@/lib/hash"
+import CompartirVacanteModal from "@/components/CompartirVacanteModal"
+
 
 interface DetalleVacanteModalProps {
     vacante: any
@@ -48,6 +52,12 @@ export default function DetalleVacanteModal({
     const [isPending, setIsPending] = useState(false)
     const [confirmarEliminar, setConfirmarEliminar] = useState(false)
     const [confirmarCerrar, setConfirmarCerrar] = useState(false)
+    const [showQrModal, setShowQrModal] = useState(false)
+
+    const origin = typeof window !== "undefined" ? window.location.origin : ""
+    const hashEmpresaId = encodeId(vacante.empresaId)
+    const hashVacanteId = encodeId(vacante.id)
+    const publicUrl = `${origin}/e/${hashEmpresaId}?vacante=${hashVacanteId}`
 
     const estatus = vacante.estatus as string
     const esCerrada = estatus === "CERRADA"
@@ -344,6 +354,15 @@ export default function DetalleVacanteModal({
                 </div>
 
                 <div className="flex flex-row flex-wrap items-center gap-2 sm:justify-end">
+                    <Button
+                        type="button"
+                        onClick={() => setShowQrModal(true)}
+                        className="bg-violet-50 text-violet-700 hover:bg-violet-100 border border-violet-200 font-semibold rounded-xl"
+                    >
+                        <QrCode className="w-4 h-4 mr-2" />
+                        Código QR
+                    </Button>
+
                     {esVencida && onExtender && (
                         <Button
                             type="button"
@@ -414,6 +433,16 @@ export default function DetalleVacanteModal({
                         ))}
                 </div>
             </div>
+
+            {/* Modal de Compartir QR */}
+            <CompartirVacanteModal
+                isOpen={showQrModal}
+                onClose={() => setShowQrModal(false)}
+                tituloVacante={vacante.titulo}
+                nombreEmpresa={vacante.empresa?.nombre_comercial || "Nuestra Empresa"}
+                publicUrl={publicUrl}
+                colorTheme="violet"
+            />
         </div>
     )
 }
