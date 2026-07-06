@@ -15,7 +15,7 @@ export async function createSession(userId: number) {
         .setExpirationTime("7d")
         .sign(encodedKey);
 
-    // 🔥 SOLUCIÓN: Agregamos "await" antes de cookies()
+    //  SOLUCIÓN: Agregamos "await" antes de cookies()
     const cookieStore = await cookies();
     cookieStore.set("session", session, {
         httpOnly: true,

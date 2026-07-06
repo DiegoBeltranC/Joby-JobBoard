@@ -147,3 +147,17 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Ocultar barra de desplazamiento manteniendo funcionalidad */
+.no-scrollbar {
+  -ms-overflow-style: none;  /* IE y Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari y Opera */
+}
+
+@keyframes progress {
+  from { width: 0%; }
+  to { width: 100%; }
+}

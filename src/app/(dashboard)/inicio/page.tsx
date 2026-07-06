@@ -1,15 +1,21 @@
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
-import { 
-    MapPin, 
-    Clock, 
-    Building2, 
-    Calendar, 
-    Search, 
+import {
+    MapPin,
+    Clock,
+    Building2,
+    Calendar,
+    Search,
     Briefcase,
-    ChevronRight
+    AlertTriangle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import Link from "next/link";
+import { calcularProgresoEstudiante } from "@/lib/perfilEstudiante";
+import { obtenerEstudianteYSincronizarHito } from "@/lib/syncPerfilEstudiante";
+import BienvenidaPerfilCompleto from "./BienvenidaPerfilCompleto";
+import VacantesWatcher from "@/components/estudiante/VacantesWatcher";
+import PostularButton from "@/components/PostularButton";
 
 // FASE 2: Forzar Datos Frescos (Anti-Stale Cache)
 export const dynamic = 'force-dynamic';
@@ -32,15 +38,23 @@ function calcularTiempoRelativo(fecha: Date) {
 export default async function InicioPage() {
     const session = await getSession();
     let ubicacionSugerida = "tu zona";
+    let perfilCompletado = false;
+    let progreso = 0;
+    let faltantesAlerta: string[] = [];
+    let estudianteId: number | null = null;
 
-    // 1. Obtener contexto del estudiante para personalización visual
     if (session) {
-        const usuarioInfo = await prisma.user.findUnique({
-            where: { id: session.userId },
-            include: { estudiante: true }
-        });
-        if (usuarioInfo?.estudiante?.municipio) {
-            ubicacionSugerida = usuarioInfo.estudiante.municipio;
+        const resultado = await obtenerEstudianteYSincronizarHito(session.userId);
+        if (resultado?.estudiante) {
+            const estudiante = resultado.estudiante;
+            estudianteId = estudiante.id;
+            perfilCompletado = !!estudiante.perfil_completado_at;
+            if (estudiante.municipio) {
+                ubicacionSugerida = estudiante.municipio;
+            }
+            const calculo = calcularProgresoEstudiante(estudiante);
+            progreso = calculo.progreso;
+            faltantesAlerta = calculo.faltantesAlerta;
         }
     }
 
@@ -48,14 +62,11 @@ export default async function InicioPage() {
     const vacantes = await prisma.vacante.findMany({
         take: 30, // Anti-DoS
         where: {
-            activa: true,
+            estatus: "ABIERTA",
             empresa: {
-                estatus_verificacion: "APROBADA" // Solo empresas validadas por UTCH
+                estatus_verificacion: "APROBADA",
             },
-            OR: [
-                { fecha_limite: null },
-                { fecha_limite: { gte: new Date() } }
-            ]
+            OR: [{ fecha_limite: null }, { fecha_limite: { gte: new Date() } }],
         },
         select: {
             id: true,
@@ -67,10 +78,18 @@ export default async function InicioPage() {
             createdAt: true,
             empresa: {
                 select: {
+                    id: true,
                     nombre_comercial: true,
                     logo_url: true
                 }
-            }
+            },
+            ...(estudianteId !== null && {
+                postulaciones: {
+                    where: { estudianteId: estudianteId },
+                    select: { id: true },
+                    take: 1,
+                }
+            })
         },
         orderBy: {
             createdAt: "desc"
@@ -79,7 +98,60 @@ export default async function InicioPage() {
 
     return (
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-6xl mx-auto">
-            
+
+            {perfilCompletado && estudianteId && (
+                <BienvenidaPerfilCompleto estudianteId={estudianteId} />
+            )}
+
+            {/* Banner: perfil incompleto (antes del hito) */}
+            {!perfilCompletado && progreso < 100 && (
+                <div className="mb-8 bg-gradient-to-r from-gray-50 to-slate-50 border border-gray-200 rounded-2xl p-6 flex flex-col sm:flex-row gap-4 items-start shadow-sm">
+                    <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center shrink-0">
+                        <Clock className="w-6 h-6 text-gray-500" />
+                    </div>
+                    <div className="flex-1">
+                        <h3 className="font-bold text-gray-800 text-lg">Completa tu perfil</h3>
+                        <p className="text-sm text-gray-600 mt-1 leading-relaxed">
+                            Un perfil completo te ayuda a destacar ante las empresas. Llévalo al <b>100%</b> para desbloquear tu mejor presentación profesional.
+                        </p>
+                        <div className="flex flex-wrap gap-3 mt-4">
+                            <Link
+                                href="/perfil/editar/paso-1"
+                                className="inline-flex items-center px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium rounded-xl transition-colors shadow-sm"
+                            >
+                                Completar perfil ({progreso}%)
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Banner: hito alcanzado pero falta información */}
+            {perfilCompletado && faltantesAlerta.length > 0 && (
+                <div className="mb-8 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-6 flex flex-col sm:flex-row gap-4 items-start shadow-sm">
+                    <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center shrink-0">
+                        <AlertTriangle className="w-6 h-6 text-amber-600" />
+                    </div>
+                    <div className="flex-1">
+                        <h3 className="font-bold text-amber-900 text-lg">Tu perfil necesita atención</h3>
+                        <p className="text-sm text-amber-800/80 mt-1 leading-relaxed">
+                            Completaste tu perfil, pero falta información importante para las empresas:
+                        </p>
+                        <ul className="text-sm text-red-700/90 list-disc list-inside mt-2 space-y-0.5">
+                            {faltantesAlerta.map((falta, i) => (
+                                <li key={i}>{falta}</li>
+                            ))}
+                        </ul>
+                        <Link
+                            href="/perfil/editar/paso-1"
+                            className="inline-flex items-center px-4 py-2 mt-4 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded-xl transition-colors shadow-sm"
+                        >
+                            Actualizar mi perfil
+                        </Link>
+                    </div>
+                </div>
+            )}
+
             {/* Header de Sección */}
             <div className="mb-8">
                 <h1 className="text-3xl font-black text-gray-900 mb-2 tracking-tight flex items-center gap-3">
@@ -149,10 +221,15 @@ export default async function InicioPage() {
                                 </div>
 
                                 <div className="mt-6">
-                                    <button className="w-full py-3.5 bg-gray-900 hover:bg-teal-600 text-white font-black rounded-2xl transition-all shadow-lg shadow-gray-200 hover:shadow-teal-200 flex items-center justify-center gap-2 group/btn">
-                                        Postularme ahora
-                                        <ChevronRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
-                                    </button>
+                                    <PostularButton
+                                        vacanteId={v.id}
+                                        vacanteTitulo={v.titulo}
+                                        empresaNombre={v.empresa.nombre_comercial}
+                                        tieneCVPerfil={true}
+                                        yaPostulado={(v.postulaciones?.length ?? 0) > 0}
+                                        isLoggedIn={true}
+                                        esPerfilCompleto={perfilCompletado}
+                                    />
                                 </div>
                             </div>
                         </div>
@@ -173,6 +250,7 @@ export default async function InicioPage() {
                     </button>
                 </div>
             )}
+            <VacantesWatcher />
         </div>
     );
 }

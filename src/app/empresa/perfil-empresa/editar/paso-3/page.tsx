@@ -1,16 +1,13 @@
 import { getSession } from "@/lib/session";
-import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
+import { obtenerEmpresaDeSesion } from "@/lib/session-empresa";
 import FormPaso3Empresa from "./FormPaso3Empresa";
 
 export default async function Paso3EmpresaPage() {
     const session = await getSession();
     if (!session) redirect("/login?tipo=empresa");
 
-    const usuario = await prisma.user.findUnique({
-        where: { id: session.userId },
-        include: { empresa: true }
-    });
+    const usuario = await obtenerEmpresaDeSesion(session.userId);
 
     if (!usuario?.empresa) redirect("/empresa/inicio");
 
@@ -28,9 +25,8 @@ export default async function Paso3EmpresaPage() {
             <h2 className="text-xl font-bold text-gray-800 border-b border-gray-100 pb-2 mb-6">Marketing y Presencia Digital</h2>
             <FormPaso3Empresa 
                 valoresIniciales={valoresIniciales} 
-                logoActualUrl={usuario.empresa.logo_url}
+                empresa={usuario.empresa}
                 fotosActuales={usuario.empresa.fotos_empresa}
-                nombreComercial={usuario.empresa.nombre_comercial}
             />
         </div>
     );

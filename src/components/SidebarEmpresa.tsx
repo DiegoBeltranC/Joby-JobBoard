@@ -2,11 +2,13 @@
 
 import { logoutAction } from "@/actions/auth";
 import { enviarSolicitudVerificacion } from "@/actions/perfilEmpresa";
+import { debeMostrarBarraProgreso, empresaAprobada } from "@/lib/perfilEmpresa";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { createPortal } from "react-dom";
 import { toast } from "sonner";
+import { AlertTriangle } from "lucide-react";
+import { LogoutButton, MobileCloseButton, useLogoutModal } from "./ConfirmLogoutModal";
 
 interface SidebarEmpresaProps {
     perfil?: {
@@ -15,6 +17,8 @@ interface SidebarEmpresaProps {
         cargo_contacto: string;
         ubicacion: string | null;
         progreso: number;
+        faltantes?: string[];
+        faltantesAlerta?: string[];
         logoUrl?: string | null;
         estatus: "SIN_ENVIAR" | "PENDIENTE" | "REQUIERE_CAMBIOS" | "APROBADA" | "RECHAZADA" | "SUSPENDIDA";
     };
@@ -24,7 +28,7 @@ interface SidebarEmpresaProps {
 export default function SidebarEmpresa({ perfil, onClose }: SidebarEmpresaProps) {
     const pathname = usePathname();
     const [enviando, setEnviando] = useState(false);
-    const [modalSalir, setModalSalir] = useState(false);
+    const logoutModal = useLogoutModal();
 
     const handleEnviarSolicitud = async () => {
         setEnviando(true);
@@ -52,18 +56,16 @@ export default function SidebarEmpresa({ perfil, onClose }: SidebarEmpresaProps)
     };
 
     const estatusActual = perfil ? estatusConfig[perfil.estatus] : null;
+    const mostrarBarra = perfil && debeMostrarBarraProgreso(perfil.estatus) && perfil.progreso < 100;
+    const aprobada = perfil && empresaAprobada(perfil.estatus);
 
     return (
         <>
-            <aside className="flex flex-col w-80 bg-white border-r border-gray-200 h-screen sticky top-0 rounded-r-[20px] drop-shadow-sm z-40">
+            <aside className="flex flex-col w-80 bg-white border-r border-gray-200 h-screen sticky top-0 rounded-r-[20px] drop-shadow-sm z-40 overflow-y-auto no-scrollbar">
             <div className="p-6">
                 <span className="font-bold text-violet-700 text-xl tracking-tight">Joby</span>
                 <span className="ml-2 text-[10px] font-bold text-violet-400 uppercase tracking-wider bg-violet-50 px-2 py-0.5 rounded-full">Empresa</span>
-                {onClose && (
-                    <button onClick={onClose} className="md:hidden float-right text-gray-400 hover:text-gray-600">
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                    </button>
-                )}
+                {onClose && <MobileCloseButton onClick={onClose} />}
             </div>
 
             {/* Información del Perfil */}
@@ -123,8 +125,8 @@ export default function SidebarEmpresa({ perfil, onClose }: SidebarEmpresaProps)
                     </div>
                 )}
 
-                {/* Barra de progreso (solo si < 100%) */}
-                {perfil && perfil.progreso < 100 && (
+                {/* Progreso: barra solo en onboarding / correcciones */}
+                {mostrarBarra && (
                     <div className="w-full mt-6 px-1.5">
                         <div className="flex justify-between items-end text-xs mb-2">
                             <span className="text-gray-500 font-medium tracking-tight">Completar perfil</span>
@@ -135,7 +137,21 @@ export default function SidebarEmpresa({ perfil, onClose }: SidebarEmpresaProps)
                                 <div className="absolute top-0 right-0 bottom-0 w-4 bg-white/30 blur-[2px]"></div>
                             </div>
                         </div>
-                        <p className="text-[10px] text-gray-400 text-center">Un perfil completo genera más confianza en los candidatos.</p>
+                        {perfil.faltantes && perfil.faltantes.length > 0 ? (
+                            <div className="mt-3 bg-red-50/50 p-2.5 rounded-lg border border-red-100/50">
+                                <p className="text-[10px] text-red-800 font-semibold mb-1.5 flex items-center gap-1">
+                                    <AlertTriangle className="w-3 h-3" />
+                                    Te falta por completar:
+                                </p>
+                                <ul className="text-[10px] text-red-600/90 list-disc list-inside space-y-0.5 ml-1">
+                                    {perfil.faltantes.map((falta, i) => (
+                                        <li key={i}>{falta}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                        ) : (
+                            <p className="text-[10px] text-gray-400 text-center">Un perfil completo genera más confianza en los candidatos.</p>
+                        )}
                     </div>
                 )}
 
@@ -160,22 +176,43 @@ export default function SidebarEmpresa({ perfil, onClose }: SidebarEmpresaProps)
                         {enviando ? "Enviando..." : "Reenviar Solicitud"}
                     </button>
                 )}
-                {perfil && perfil.progreso === 100 && perfil.estatus === "PENDIENTE" && (
+                {perfil && perfil.estatus === "PENDIENTE" && (
                     <div className="w-full mt-6 px-1.5 flex items-center justify-center gap-1.5 text-amber-600 bg-amber-50 py-2.5 rounded-xl border border-amber-100">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                         <span className="text-xs font-bold tracking-tight">Solicitud Enviada</span>
                     </div>
                 )}
-                {perfil && perfil.progreso === 100 && perfil.estatus === "APROBADA" && (
-                    <div className="w-full mt-6 px-1.5 flex items-center justify-center gap-1.5 text-emerald-600 bg-emerald-50 py-2.5 rounded-xl border border-emerald-100">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                        <span className="text-xs font-bold tracking-tight">Cuenta Verificada</span>
+                {perfil && (perfil.estatus === "RECHAZADA" || perfil.estatus === "SUSPENDIDA") && (
+                    <div className="w-full mt-6 px-1.5 flex items-center justify-center gap-1.5 text-red-600 bg-red-50 py-2.5 rounded-xl border border-red-100">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                        <span className="text-xs font-bold tracking-tight">{estatusActual?.text}</span>
+                    </div>
+                )}
+                {aprobada && (
+                    <div className="w-full mt-6 px-1.5 space-y-2">
+                        <div className="flex items-center justify-center gap-1.5 text-emerald-600 bg-emerald-50 py-2 rounded-xl border border-emerald-100">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                            <span className="text-xs font-bold tracking-tight">Cuenta Verificada</span>
+                        </div>
+                        {perfil.faltantesAlerta && perfil.faltantesAlerta.length > 0 && (
+                            <div className="bg-amber-50/80 p-2.5 rounded-lg border border-amber-100/80">
+                                <p className="text-[10px] text-amber-900 font-semibold mb-1.5 flex items-center gap-1">
+                                    <AlertTriangle className="w-3 h-3 shrink-0" />
+                                    Tu perfil necesita atención:
+                                </p>
+                                <ul className="text-[10px] text-red-600/90 list-disc list-inside space-y-0.5 ml-1">
+                                    {perfil.faltantesAlerta.map((falta, i) => (
+                                        <li key={i}>{falta}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
 
             {/* Navegación */}
-            <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto mt-2">
+            <nav className="flex-1 p-4 space-y-1.5 mt-2">
                 <Link href="/empresa/inicio" className={`flex items-center gap-3 p-3.5 rounded-xl font-medium transition-all ${pathname === '/empresa/inicio' ? 'text-violet-800 bg-violet-50 font-semibold shadow-sm' : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50 group'}`}>
                     <svg className={`w-5 h-5 ${pathname === '/empresa/inicio' ? 'text-violet-600' : 'text-gray-400 group-hover:text-gray-600 transition-colors'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
                     Inicio
@@ -199,30 +236,10 @@ export default function SidebarEmpresa({ perfil, onClose }: SidebarEmpresaProps)
 
             {/* Cerrar Sesión */}
             <div className="p-4 border-t border-gray-100">
-                <button onClick={() => setModalSalir(true)} className="w-full flex items-center justify-center gap-2 p-3 text-red-600 hover:bg-red-50 rounded-xl font-medium transition-colors">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-                    Cerrar sesión
-                </button>
+                <LogoutButton onClick={logoutModal.open} />
             </div>
         </aside>
-
-        {/* MODAL DE CONFIRMACIÓN PARA CERRAR SESIÓN */}
-        {modalSalir && typeof document !== 'undefined' && createPortal(
-            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 animate-in fade-in">
-                <div className="bg-white rounded-2xl w-full max-w-sm p-6 text-center shadow-2xl animate-in zoom-in-95 duration-200">
-                    <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto mb-4">
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-                    </div>
-                    <h3 className="text-lg font-bold text-gray-900 mb-2">¿Cerrar sesión?</h3>
-                    <p className="text-sm text-gray-500 mb-6">Tendrás que volver a ingresar tus credenciales para acceder a tu cuenta.</p>
-                    <div className="flex gap-3">
-                        <button onClick={() => setModalSalir(false)} className="flex-1 px-4 py-2.5 text-sm font-medium bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors">Cancelar</button>
-                        <button onClick={() => logoutAction()} className="flex-1 px-4 py-2.5 text-sm font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl transition-colors">Sí, cerrar sesión</button>
-                    </div>
-                </div>
-            </div>,
-            document.body
-        )}
+        {logoutModal.modal(() => logoutAction())}
         </>
     );
 }

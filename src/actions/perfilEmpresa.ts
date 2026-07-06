@@ -3,15 +3,8 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { guardarArchivo, eliminarArchivo } from "@/lib/uploadService";
-
-// =============================================================================
-// UTILIDAD: Title Case (Primera letra mayúscula por cada palabra)
-// =============================================================================
-function toTitleCase(str: string): string {
-    return str.trim().replace(/\w\S*/g, (txt) =>
-        txt.charAt(0).toUpperCase() + txt.substring(1).toLowerCase()
-    );
-}
+import { toTitleCase } from "@/lib/toTitleCase";
+import { calcularProgresoEmpresa } from "@/lib/perfilEmpresa";
 
 // =============================================================================
 // PASO 1: Datos Legales y Ubicación
@@ -182,6 +175,66 @@ export async function eliminarLogoEmpresa() {
 }
 
 // =============================================================================
+// BANNER: Subir y eliminar banner de empresa (Panorámico)
+// =============================================================================
+export async function actualizarBannerEmpresa(formData: FormData) {
+    const session = await getSession();
+    if (!session) return { error: "No autorizado" };
+
+    const archivo = formData.get("banner") as File;
+    if (!archivo || archivo.size === 0) return { error: "No se recibió ninguna imagen" };
+
+    if (archivo.size > 3 * 1024 * 1024) return { error: "El banner no debe pesar más de 3MB" };
+
+    try {
+        const usuario = await prisma.user.findUnique({ where: { id: session.userId }, include: { empresa: true } });
+        if (!usuario?.empresa) return { error: "Empresa no encontrada" };
+
+        if (usuario.empresa.banner_url) {
+            await eliminarArchivo(usuario.empresa.banner_url);
+        }
+
+        const urlBanner = await guardarArchivo(archivo, "banners", `banner-${usuario.empresa.id}`);
+
+        await prisma.empresa.update({
+            where: { id: usuario.empresa.id },
+            data: { banner_url: urlBanner }
+        });
+
+        revalidatePath("/empresa/perfil-empresa");
+        revalidatePath(`/perfil-publico-empresa/${usuario.empresa.id}`);
+        return { success: true };
+    } catch (error) {
+        console.error("Error al actualizar banner:", error);
+        return { error: "Error interno al guardar el banner" };
+    }
+}
+
+export async function eliminarBannerEmpresa() {
+    const session = await getSession();
+    if (!session) return { error: "No autorizado" };
+
+    try {
+        const usuario = await prisma.user.findUnique({ where: { id: session.userId }, include: { empresa: true } });
+        if (!usuario?.empresa) return { error: "Empresa no encontrada" };
+
+        if (usuario.empresa.banner_url) {
+            await eliminarArchivo(usuario.empresa.banner_url);
+        }
+
+        await prisma.empresa.update({
+            where: { id: usuario.empresa.id },
+            data: { banner_url: null }
+        });
+
+        revalidatePath("/empresa/perfil-empresa");
+        return { success: true };
+    } catch (error) {
+        return { error: "No se pudo eliminar el banner" };
+    }
+}
+
+// =============================================================================
 // FOTOS DE INSTALACIONES: Agregar y eliminar
 // =============================================================================
 export async function agregarFotoEmpresa(formData: FormData) {
@@ -263,19 +316,8 @@ export async function enviarSolicitudVerificacion() {
             return { error: "Tu solicitud ya fue enviada o no se puede reenviar." };
         }
 
-        // Validar que el perfil esté al 100% (cálculo en servidor)
         const empresa = usuario.empresa;
-        const enlaces = (empresa.enlaces as { linkedin?: string; facebook?: string }) || {};
-        const tieneEnlace = !!(empresa.sitio_web || enlaces.linkedin || enlaces.facebook);
-
-        let progreso = 10; // Base
-        if (empresa.razon_social && empresa.rfc) progreso += 15;
-        if (empresa.estado && empresa.municipio) progreso += 10;
-        if (empresa.telefono_contacto) progreso += 10;
-        if (empresa.descripcion) progreso += 15;
-        if (tieneEnlace) progreso += 10;
-        if (empresa.logo_url) progreso += 15;
-        if (empresa.fotos_empresa.length > 0) progreso += 15;
+        const { progreso } = calcularProgresoEmpresa(empresa);
 
         if (progreso < 100) {
             return { error: `Tu perfil está al ${progreso}%. Complétalo al 100% para poder enviar la solicitud.` };

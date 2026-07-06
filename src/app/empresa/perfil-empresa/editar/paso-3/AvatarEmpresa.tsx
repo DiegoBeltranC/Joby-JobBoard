@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Camera, Trash2, Upload, X, AlertTriangle } from "lucide-react";
 import { getCroppedImg } from "@/lib/cropImage";
 import { actualizarLogoEmpresa, eliminarLogoEmpresa } from "@/actions/perfilEmpresa";
+import { cn } from "@/lib/utils";
 
 interface AvatarEmpresaProps {
     logoActualUrl: string | null;
@@ -89,33 +90,38 @@ export default function AvatarEmpresa({ logoActualUrl, iniciales }: AvatarEmpres
         <>
             {/* EL AVATAR EN LA PÁGINA */}
             <div className="relative group shrink-0">
-                <div className="w-24 h-24 rounded-2xl bg-white p-1 shadow-md relative overflow-hidden">
-                    <div className="w-full h-full bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-xl flex items-center justify-center overflow-hidden">
+                <div className="w-24 h-24 rounded-2xl bg-white p-1.5 shadow-xl relative border-4 border-white overflow-hidden">
+                    <div className="w-full h-full rounded-xl flex items-center justify-center overflow-hidden">
                         {logoActualUrl ? (
                             <img src={logoActualUrl} alt="Logo de empresa" className="w-full h-full object-cover" />
                         ) : (
-                            <span className="text-3xl font-bold text-indigo-400">{iniciales}</span>
+                            <div className="w-full h-full bg-teal-600 flex items-center justify-center">
+                                <span className="text-3xl font-black text-white">{iniciales}</span>
+                            </div>
                         )}
                     </div>
 
                     {/* Overlay que aparece al hacer hover */}
-                    <label className="absolute inset-0 bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center cursor-pointer rounded-2xl m-1">
-                        <Camera className="w-6 h-6 mb-1" />
-                        <span className="text-[10px] font-bold uppercase tracking-wider">Cambiar</span>
-                        <input type="file" accept="image/png, image/jpeg, image/webp" className="hidden" onChange={onFileChange} />
-                    </label>
+                    <div className="absolute inset-0 bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center rounded-2xl m-1 overflow-hidden">
+                        <label className={cn(
+                            "flex flex-col items-center justify-center w-full hover:bg-white/20 transition-colors cursor-pointer",
+                            logoActualUrl ? "h-1/2 border-b border-white/10" : "h-full"
+                        )}>
+                            <Camera className="w-5 h-5 mb-0.5" />
+                            <span className="text-[9px] font-black uppercase tracking-tighter">Cambiar</span>
+                            <input type="file" accept="image/png, image/jpeg, image/webp" className="hidden" onChange={onFileChange} />
+                        </label>
+                        {logoActualUrl && (
+                            <button 
+                                onClick={(e) => { e.preventDefault(); setModalEliminar(true); }}
+                                className="flex items-center justify-center gap-1.5 w-full h-1/2 hover:bg-red-600/60 transition-colors text-red-100"
+                            >
+                                <Trash2 className="w-4 h-4" />
+                                <span className="text-[9px] font-black uppercase tracking-tighter">Eliminar</span>
+                            </button>
+                        )}
+                    </div>
                 </div>
-
-                {/* Botón flotante para eliminar (Solo si hay logo) */}
-                {logoActualUrl && (
-                    <button
-                        onClick={() => setModalEliminar(true)}
-                        className="absolute -bottom-2 -right-2 bg-white border border-red-100 text-red-500 p-1.5 rounded-full shadow-sm hover:bg-red-50 transition-colors"
-                        title="Eliminar logo"
-                    >
-                        <Trash2 className="w-4 h-4" />
-                    </button>
-                )}
             </div>
 
             {/* MODAL DE RECORTE */}

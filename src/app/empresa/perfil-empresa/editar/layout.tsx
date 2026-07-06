@@ -1,6 +1,6 @@
 import { getSession } from "@/lib/session"
-import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
+import { obtenerEmpresaDeSesion } from "@/lib/session-empresa"
 import StepperEdicionCliente from "./StepperEdicionCliente"
 
 import Link from "next/link";
@@ -10,10 +10,7 @@ export default async function EditarPerfilEmpresaLayout({ children }: { children
     const session = await getSession();
     if (!session) redirect("/login?tipo=empresa");
 
-    const usuarioInfo = await prisma.user.findUnique({
-        where: { id: session.userId },
-        include: { empresa: true }
-    });
+    const usuarioInfo = await obtenerEmpresaDeSesion(session.userId);
 
     if (!usuarioInfo || !usuarioInfo.empresa) redirect("/empresa/inicio");
 

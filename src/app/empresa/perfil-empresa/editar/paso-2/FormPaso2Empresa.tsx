@@ -1,5 +1,6 @@
 "use client";
 
+import { useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -32,23 +33,26 @@ type FormValues = z.infer<typeof paso2EmpresaSchema>;
 
 export default function FormPaso2Empresa({ valoresIniciales }: { valoresIniciales: FormValues }) {
     const router = useRouter();
+    const [isPending, startTransition] = useTransition();
     const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormValues>({
         resolver: zodResolver(paso2EmpresaSchema),
         defaultValues: valoresIniciales,
     });
 
-    const onSubmit = async (data: FormValues) => {
-        const idCarga = toast.loading("Guardando datos del reclutador...");
-        const result = await guardarPaso2Empresa(data);
+    const onSubmit = (data: FormValues) => {
+        startTransition(async () => {
+            const idCarga = toast.loading("Guardando datos del reclutador...");
+            const result = await guardarPaso2Empresa(data);
 
-        if (result?.error) {
-            toast.dismiss(idCarga);
-            toast.error(result.error);
-        } else {
-            toast.dismiss(idCarga);
-            toast.success("¡Datos del reclutador guardados!");
-            router.push("/empresa/perfil-empresa/editar/paso-3");
-        }
+            if (result?.error) {
+                toast.dismiss(idCarga);
+                toast.error(result.error);
+            } else {
+                toast.dismiss(idCarga);
+                toast.success("¡Datos del reclutador guardados!");
+                router.push("/empresa/perfil-empresa/editar/paso-3");
+            }
+        });
     };
 
     return (
@@ -147,8 +151,8 @@ export default function FormPaso2Empresa({ valoresIniciales }: { valoresIniciale
                 <button type="button" onClick={() => router.push("/empresa/perfil-empresa/editar/paso-1")} className="flex items-center text-sm font-medium text-gray-600 hover:bg-gray-100 px-4 py-2.5 rounded-xl transition-colors">
                     <ArrowLeft className="w-4 h-4 mr-1" /> Atrás
                 </button>
-                <button type="submit" disabled={isSubmitting} className="flex items-center bg-violet-600 text-white text-sm font-bold px-6 py-2.5 rounded-xl hover:bg-violet-700 transition-colors shadow-sm disabled:opacity-50">
-                    {isSubmitting ? "Guardando..." : "Guardar y Continuar"} <ChevronRight className="w-4 h-4 ml-1" />
+                <button type="submit" disabled={isSubmitting || isPending} className="flex items-center bg-violet-600 text-white text-sm font-bold px-6 py-2.5 rounded-xl hover:bg-violet-700 transition-colors shadow-sm disabled:opacity-50">
+                    {isSubmitting || isPending ? "Guardando..." : "Guardar y Continuar"} <ChevronRight className="w-4 h-4 ml-1" />
                 </button>
             </div>
         </form>

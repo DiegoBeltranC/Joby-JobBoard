@@ -17,7 +17,7 @@ export default async function AdminDashboardPage() {
         prisma.empresa.count({ where: { estatus_verificacion: "APROBADA" } }),
         prisma.empresa.count({ where: { estatus_verificacion: "SUSPENDIDA" } }),
         prisma.empresa.count({ where: { estatus_verificacion: "RECHAZADA" } }),
-        prisma.vacante.count({ where: { activa: true } })
+        prisma.vacante.count({ where: { estatus: "ABIERTA" } })
     ]);
 
     const stats = [

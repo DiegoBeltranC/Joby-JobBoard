@@ -1,13 +1,14 @@
 "use client";
 
 import * as React from "react";
+import { useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { toast } from "sonner";
 import { ChevronRight, ArrowLeft, X, Plus, Wrench, Languages } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { guardarPaso2 } from "@/actions/perfil"; 
+import { guardarPaso2 } from "@/actions/perfil";
 import { cn } from "@/lib/utils";
 
 // 1. Importaciones de catálogos
@@ -24,6 +25,7 @@ type FormValues = z.infer<typeof paso2Schema>;
 
 export default function FormPaso2({ valoresIniciales }: { valoresIniciales: { habilidades: string, idiomas: string } }) {
     const router = useRouter();
+    const [isPending, startTransition] = useTransition();
 
     // Convertimos los strings separados por comas que envía la BD a arreglos reales
     const habilidadesIniciales = valoresIniciales.habilidades ? valoresIniciales.habilidades.split(", ").filter(Boolean) : [];
@@ -100,16 +102,18 @@ export default function FormPaso2({ valoresIniciales }: { valoresIniciales: { ha
     };
 
     // --- ENVÍO A LA BASE DE DATOS ---
-    const onSubmit = async (data: FormValues) => {
-        const idCarga = toast.loading("Guardando herramientas...");
-        const result = await guardarPaso2(data);
+    const onSubmit = (data: FormValues) => {
+        startTransition(async () => {
+            const idCarga = toast.loading("Guardando herramientas...");
+            const result = await guardarPaso2(data);
 
-        if (result?.error) {
-            toast.error(result.error, { id: idCarga });
-        } else {
-            toast.success("¡Habilidades guardadas!", { id: idCarga });
-            router.push("/perfil/editar/paso-3");
-        }
+            if (result?.error) {
+                toast.error(result.error, { id: idCarga });
+            } else {
+                toast.success("¡Habilidades guardadas!", { id: idCarga });
+                router.push("/perfil/editar/paso-3");
+            }
+        });
     };
 
     return (
@@ -223,8 +227,8 @@ export default function FormPaso2({ valoresIniciales }: { valoresIniciales: { ha
                 <button type="button" onClick={() => router.push("/perfil/editar/paso-1")} className="flex items-center text-sm font-medium text-gray-600 hover:bg-gray-100 px-4 py-2.5 rounded-xl transition-colors">
                     <ArrowLeft className="w-4 h-4 mr-1" /> Atrás
                 </button>
-                <button type="submit" disabled={isSubmitting} className="flex items-center bg-teal-600 text-white text-sm font-bold px-6 py-2.5 rounded-xl hover:bg-teal-700 transition-colors shadow-sm disabled:opacity-50">
-                    {isSubmitting ? "Guardando..." : "Guardar y Continuar"} <ChevronRight className="w-4 h-4 ml-1" />
+                <button type="submit" disabled={isSubmitting || isPending} className="flex items-center bg-teal-600 text-white text-sm font-bold px-6 py-2.5 rounded-xl hover:bg-teal-700 transition-colors shadow-sm disabled:opacity-50">
+                    {isSubmitting || isPending ? "Guardando..." : "Guardar y Continuar"} <ChevronRight className="w-4 h-4 ml-1" />
                 </button>
             </div>
         </form>

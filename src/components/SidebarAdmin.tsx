@@ -3,7 +3,8 @@
 import { logoutAdminAction } from "@/actions/auth";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Building2, Users, LogOut, Settings } from "lucide-react";
+import { LayoutDashboard, Building2, Users, LogOut } from "lucide-react";
+import { MobileCloseButton } from "./ConfirmLogoutModal";
 
 interface SidebarAdminProps {
     admin: {
@@ -20,17 +21,13 @@ export default function SidebarAdmin({ admin, onClose }: SidebarAdminProps) {
     const iniciales = `${admin.nombre.charAt(0)}${admin.apellido.charAt(0)}`.toUpperCase() || "A";
 
     return (
-        <aside className="flex flex-col w-80 bg-white border-r border-gray-200 h-screen sticky top-0 rounded-r-[20px] drop-shadow-sm z-40">
+        <aside className="flex flex-col w-80 bg-white border-r border-gray-200 h-screen sticky top-0 rounded-r-[20px] drop-shadow-sm z-40 overflow-y-auto no-scrollbar">
             <div className="p-6 flex items-center justify-between">
                 <div>
                     <span className="font-bold text-primary text-xl tracking-tight">Joby</span>
                     <span className="ml-2 text-[10px] font-bold text-primary/70 uppercase tracking-wider bg-primary/10 px-2 py-0.5 rounded-full">Admin</span>
                 </div>
-                {onClose && (
-                    <button onClick={onClose} className="md:hidden text-gray-400 hover:text-gray-600">
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                    </button>
-                )}
+                {onClose && <MobileCloseButton onClick={onClose} />}
             </div>
 
             {/* Información del Perfil */}
@@ -52,7 +49,7 @@ export default function SidebarAdmin({ admin, onClose }: SidebarAdminProps) {
             </div>
 
             {/* Navegación */}
-            <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto mt-2">
+            <nav className="flex-1 p-4 space-y-1.5 mt-2">
                 <Link href="/admin" className={`flex items-center gap-3 p-3.5 rounded-xl font-medium transition-all ${pathname === '/admin' ? 'text-primary-foreground bg-primary shadow-sm' : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50 group'}`}>
                     <LayoutDashboard className={`w-5 h-5 ${pathname === '/admin' ? 'text-white' : 'text-gray-400 group-hover:text-gray-600 transition-colors'}`} />
                     Dashboard
