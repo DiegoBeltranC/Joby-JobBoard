@@ -1,0 +1,15 @@
+{
+  "lista": [
+    "Inglés", "Español", "Francés", "Alemán", "Italiano", "Portugués", 
+    "Chino Mandarín", "Japonés", "Coreano", "Ruso", "Árabe"
+  ],
+  "niveles": [
+    "A1 - Básico", 
+    "A2 - Básico Alto", 
+    "B1 - Intermedio", 
+    "B2 - Intermedio Alto", 
+    "C1 - Avanzado", 
+    "C2 - Bilingüe", 
+    "Nativo"
+  ]
+}
