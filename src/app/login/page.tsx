@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, Suspense } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -10,7 +10,7 @@ import { ShieldCheck, Briefcase, GraduationCap, Building2, AlertTriangle, Loader
 import { loginAction, reactivarCuentaAction } from "@/actions/auth"
 import { toast } from "sonner"
 
-export default function LoginPage() {
+function LoginContent() {
   const searchParams = useSearchParams()
   const [tipoLogin, setTipoLogin] = useState<"estudiante" | "empresa">(
     searchParams.get("tipo") === "empresa" ? "empresa" : "estudiante"
@@ -299,5 +299,17 @@ export default function LoginPage() {
         </div>
       )}
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gray-50/50">
+        <Loader2 className="w-8 h-8 animate-spin text-teal-600" />
+      </div>
+    }>
+      <LoginContent />
+    </Suspense>
   )
 }

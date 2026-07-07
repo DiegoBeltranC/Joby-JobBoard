@@ -1,10 +1,10 @@
 "use client"
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, Suspense } from "react";
 import { toast } from "sonner";
 import { useRouter, useSearchParams } from "next/navigation";
 
-export default function AlertsInterceptor() {
+function AlertsInterceptorContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const shownRef = useRef<Set<string>>(new Set());
@@ -24,4 +24,12 @@ export default function AlertsInterceptor() {
     }, [searchParams, router]);
 
     return null;
+}
+
+export default function AlertsInterceptor() {
+    return (
+        <Suspense fallback={null}>
+            <AlertsInterceptorContent />
+        </Suspense>
+    )
 }
