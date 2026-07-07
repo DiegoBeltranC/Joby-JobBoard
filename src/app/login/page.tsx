@@ -50,7 +50,7 @@ export default function LoginPage() {
       router.push((result as any).redirect)
     } else if ((result as any)?.suspended) {
       toast.dismiss(idCarga)
-      setSuspendedInfo({ email: result.email, scheduledDeletionAt: result.scheduledDeletionAt })
+      setSuspendedInfo({ email: result.email ?? "", scheduledDeletionAt: result.scheduledDeletionAt ?? "" })
       setShowReactivateModal(true)
       setLoading(false)
     } else if (result?.success) {

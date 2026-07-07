@@ -105,7 +105,7 @@ export default function FormPaso2({ valoresIniciales }: { valoresIniciales: { ha
     const onSubmit = (data: FormValues) => {
         startTransition(async () => {
             const idCarga = toast.loading("Guardando herramientas...");
-            const result = await guardarPaso2(data);
+            const result = await guardarPaso2({ ...data, idiomas: data.idiomas ?? [] });
 
             if (result?.error) {
                 toast.error(result.error, { id: idCarga });

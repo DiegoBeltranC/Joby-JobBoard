@@ -47,9 +47,11 @@ export default async function PerfilSnapshotPage({ params }: { params: Promise<{
     if (!postulacion) notFound();
 
     // Seguridad: Solo admin, la empresa dueña o el estudiante dueño pueden ver esto
-    const isAdmin = session.rol === "ADMIN";
-    const isEmpresaDueña = session.rol === "EMPRESA" && postulacion.vacante.empresa.usuarioId === session.userId;
-    const isEstudianteDueño = session.rol === "ESTUDIANTE" && postulacion.estudiante.usuarioId === session.userId;
+    const usuarioActual = await prisma.user.findUnique({ where: { id: session.userId } });
+    const rol = usuarioActual?.rol;
+    const isAdmin = rol === "ADMIN";
+    const isEmpresaDueña = rol === "EMPRESA" && postulacion.vacante.empresa.usuarioId === session.userId;
+    const isEstudianteDueño = rol === "ESTUDIANTE" && postulacion.estudiante.usuarioId === session.userId;
 
     if (!isAdmin && !isEmpresaDueña && !isEstudianteDueño) {
         notFound();

@@ -49,7 +49,7 @@ export default function FormPaso1({ valoresIniciales }: { valoresIniciales: Form
     const onSubmit = (data: FormValues) => {
         startTransition(async () => {
             const idCarga = toast.loading("Guardando información...");
-            const result = await guardarPaso1(data);
+            const result = await guardarPaso1({ ...data, bio: data.bio ?? "" });
 
             if (result?.error) {
                 toast.dismiss(idCarga);
