@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { generateOTP } from "@/lib/auth-helpers";
 
 export async function GET() {
   try {
-    // Usa el helper existente para generar el código y expiración
-    const { code, expiresAt } = generateOTP();
+    // Generar código de 6 dígitos
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
     const linkCode = await prisma.deviceLinkCode.create({
       data: {
