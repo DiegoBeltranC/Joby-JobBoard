@@ -43,10 +43,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     };
 
     return (
-        <DashboardShell
-            sidebar={<Sidebar perfil={perfilReal} />}
-            brandColorClass="text-teal-700"
-        >
+        <DashboardShell perfil={perfilReal}>
             {children}
         </DashboardShell>
     );

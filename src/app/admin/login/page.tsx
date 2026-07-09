@@ -6,13 +6,12 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ShieldAlert, Fingerprint, Eye, EyeOff } from "lucide-react"
+import { ShieldAlert, Fingerprint } from "lucide-react"
 import { loginAction } from "@/actions/auth"
 import { toast } from "sonner"
 
 export default function AdminLoginPage() {
   const [loading, setLoading] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
   const router = useRouter()
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -70,23 +69,14 @@ export default function AdminLoginPage() {
 
             <div className="space-y-2">
               <Label htmlFor="password" className="text-gray-700">Clave de Seguridad</Label>
-              <div className="relative">
-                <Input
-                  id="password"
-                  name="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="••••••••••••"
-                  className="h-12 pr-10 bg-white border-gray-200 text-gray-900 focus-visible:ring-emerald-600 tracking-widest"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                >
-                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                </button>
-              </div>
+              <Input
+                id="password"
+                name="password"
+                type="password"
+                placeholder="••••••••••••"
+                className="h-12 bg-white border-gray-200 text-gray-900 focus-visible:ring-emerald-600 tracking-widest"
+                required
+              />
             </div>
 
             <Button

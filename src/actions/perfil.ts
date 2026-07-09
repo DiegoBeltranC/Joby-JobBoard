@@ -555,86 +555,70 @@ export async function suspenderCuentaEstudiante(data: {
     }
 }
 
-// -----------------------------------------------------------------------------
-// EDUCACIÓN EXTRA
-// -----------------------------------------------------------------------------
+export async function agregarEducacion(data: { titulo: string; institucion: string; año: number | null }) {
+    const session = await getSession();
+    if (!session) return { error: "No autorizado" };
 
-export async function agregarEducacion(data: {
-    titulo: string;
-    institucion: string;
-    año?: number | null;
-}) {
     try {
-        const session = await getSession();
-        if (!session) return { error: "No autorizado" };
+        const usuario = await prisma.user.findUnique({ where: { id: session.userId }, include: { estudiante: true } });
+        if (!usuario?.estudiante) return { error: "Estudiante no encontrado" };
 
-        const estudiante = await prisma.estudiante.findUnique({
-            where: { usuarioId: session.userId },
-        });
-        if (!estudiante) return { error: "Estudiante no encontrado" };
-
-        const nueva = await prisma.educacionExtra.create({
+        await prisma.educacionExtra.create({
             data: {
-                estudianteId: estudiante.id,
+                estudianteId: usuario.estudiante.id,
                 titulo: data.titulo,
                 institucion: data.institucion,
-                año: data.año ?? null,
-            },
+                año: data.año,
+            }
         });
-
-        revalidatePath("/perfil");
-        await marcarPerfilCompletoSiAplica(estudiante.id);
-        revalidateDashboardEstudiante();
-
-        return { success: true, data: nueva };
+        await sincronizarHitoPerfilEstudiante(session.userId);
+        return { success: true };
     } catch (error) {
-        console.error("Error al agregar educación:", error);
-        return { error: "Error al agregar la educación" };
+        console.error("Error al guardar la educación:", error);
+        return { error: "Error al guardar la educación" };
     }
 }
 
-export async function editarEducacion(
-    id: number,
-    data: {
-        titulo: string;
-        institucion: string;
-        año?: number | null;
-    }
-) {
-    try {
-        const session = await getSession();
-        if (!session) return { error: "No autorizado" };
+export async function editarEducacion(id: number, data: { titulo: string; institucion: string; año: number | null }) {
+    const session = await getSession();
+    if (!session) return { error: "No autorizado" };
 
-        const actualizada = await prisma.educacionExtra.update({
-            where: { id },
+    try {
+        const usuario = await prisma.user.findUnique({ where: { id: session.userId }, include: { estudiante: true } });
+        if (!usuario?.estudiante) return { error: "Estudiante no encontrado" };
+
+        await prisma.educacionExtra.update({
+            where: { id: id, estudianteId: usuario.estudiante.id },
             data: {
                 titulo: data.titulo,
                 institucion: data.institucion,
-                año: data.año ?? null,
-            },
+                año: data.año,
+            }
         });
-
-        revalidatePath("/perfil");
-
-        return { success: true, data: actualizada };
+        await sincronizarHitoPerfilEstudiante(session.userId);
+        return { success: true };
     } catch (error) {
-        console.error("Error al editar educación:", error);
-        return { error: "Error al editar la educación" };
+        console.error("Error al actualizar la educación:", error);
+        return { error: "Error al actualizar la educación" };
     }
 }
 
-export async function eliminarEducacion(id: number) {
+export async function eliminarEducacion(educacionId: number) {
+    const session = await getSession();
+    if (!session) return { error: "No autorizado" };
+
     try {
-        const session = await getSession();
-        if (!session) return { error: "No autorizado" };
+        const usuario = await prisma.user.findUnique({ where: { id: session.userId }, include: { estudiante: true } });
+        if (!usuario?.estudiante) return { error: "Estudiante no encontrado" };
 
-        await prisma.educacionExtra.delete({ where: { id } });
+        await prisma.educacionExtra.delete({
+            where: { id: educacionId, estudianteId: usuario.estudiante.id }
+        });
 
-        revalidatePath("/perfil");
-
+        await sincronizarHitoPerfilEstudiante(session.userId);
         return { success: true };
     } catch (error) {
         console.error("Error al eliminar educación:", error);
-        return { error: "Error al eliminar la educación" };
+        return { error: "No se pudo eliminar la educación" };
     }
 }

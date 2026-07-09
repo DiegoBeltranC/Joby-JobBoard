@@ -5,13 +5,6 @@ export function middleware(request: NextRequest) {
   const registroPendiente = request.cookies.get("registro_pendiente")?.value
   const { pathname } = request.nextUrl
 
-  // 0. Si vienen a /login solicitando explícitamente limpiar el registro pendiente, se elimina la cookie
-  if (pathname === "/login" && request.nextUrl.searchParams.has("clear_registro_pendiente")) {
-    const response = NextResponse.next()
-    response.cookies.delete("registro_pendiente")
-    return response
-  }
-
   // 1. Si visitan la ruta de verificación con email en la URL, se propaga/contagia la cookie al nuevo navegador
   if (pathname === "/verificar-correo") {
     const emailParam = request.nextUrl.searchParams.get("email")

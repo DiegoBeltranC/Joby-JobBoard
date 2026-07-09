@@ -3,7 +3,6 @@
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { renderToBuffer } from '@react-pdf/renderer';
-import type { DocumentProps } from '@react-pdf/renderer';
 import { PlantillaCV } from "@/lib/pdf/PlantillaCV";
 import fs from "fs";
 import path from "path";
@@ -158,7 +157,7 @@ export async function generarCVAction() {
             showPhoto,
             templateInfo,
             styling
-        }) as React.ReactElement<DocumentProps>);
+        }) as any);
 
         const timestamp = Date.now();
         const fileName = `cv-magic-${estudiante.matricula}-${timestamp}.pdf`;

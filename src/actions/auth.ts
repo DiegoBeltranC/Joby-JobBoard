@@ -5,7 +5,6 @@ import bcrypt from "bcryptjs"
 import { createSession } from "@/lib/session"
 import { redirect } from "next/navigation"
 import { sendEmail } from "@/lib/mail"
-import { setRegistroPendienteCookie, generateOTP } from "@/lib/auth-helpers"
 
 
 export async function loginAction(formData: FormData) {
@@ -71,7 +70,14 @@ export async function loginAction(formData: FormData) {
       }
 
       // Establecer o renovar cookie registro_pendiente
-      await setRegistroPendienteCookie(user.correo)
+      const cookieStore = await cookies()
+      cookieStore.set("registro_pendiente", user.correo, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        maxAge: 15 * 60,
+        sameSite: "lax",
+        path: "/",
+      })
       // Devolver al frontend la instruccion de redireccion para evitar atrapar NEXT_REDIRECT
       const redirectSuffix = redirectUrl ? `&redirect=${encodeURIComponent(redirectUrl)}` : ""
       return { redirect: `/verificar-correo?email=${encodeURIComponent(user.correo)}${redirectSuffix}` }
@@ -192,7 +198,9 @@ export async function reenviarOTPAction(email: string) {
     }
 
     // Generar código de 6 dígitos
-    const { code: newOtp, expiresAt: expires } = generateOTP()
+    const newOtp = Math.floor(100000 + Math.random() * 900000).toString()
+    // Expira en 15 mins
+    const expires = new Date(Date.now() + 15 * 60 * 1000)
 
     await prisma.user.update({
       where: { id: user.id },
@@ -205,7 +213,14 @@ export async function reenviarOTPAction(email: string) {
     })
 
     // Renovar la cookie registro_pendiente para el navegador actual
-    await setRegistroPendienteCookie(email)
+    const cookieStore = await cookies()
+    cookieStore.set("registro_pendiente", email, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 15 * 60,
+      sameSite: "lax",
+      path: "/",
+    })
 
     // Mandar mail con Resend y botón de enlace directo para navegación cruzada
     const resMail = await sendEmail({
@@ -214,7 +229,7 @@ export async function reenviarOTPAction(email: string) {
       title: 'Verifica tu identidad',
       message: `Detectamos un intento de registro o acceso a tu cuenta. Para continuar de forma segura, por favor ingresa este código de 6 dígitos:\n\n${newOtp}\n\nEste código expira automáticamente en 15 minutos.`,
       buttonText: "Ir a verificar mi cuenta",
-      buttonUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/verificar-correo?email=${encodeURIComponent(email)}`,
+      buttonUrl: `${process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')}/verificar-correo?email=${encodeURIComponent(email)}`,
       type: "SUCCESS"
     });
 
@@ -240,7 +255,14 @@ export async function establecerCookieRegistroPendienteAction(email: string) {
       return { error: "Usuario inválido o ya verificado" }
     }
 
-    await setRegistroPendienteCookie(email)
+    const cookieStore = await cookies()
+    cookieStore.set("registro_pendiente", email, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 15 * 60, // 15 minutos en segundos
+      sameSite: "lax",
+      path: "/",
+    })
     return { success: true }
   } catch (error) {
     console.error("Error setting pending cookie:", error)

@@ -1,6 +1,5 @@
 "use client";
 
-import { useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -19,30 +18,27 @@ type FormValues = z.infer<typeof paso3Schema>;
 
 export default function FormPaso3({ valoresIniciales, isTech, cvUrl }: { valoresIniciales: FormValues, isTech: boolean, cvUrl: string | null }) {
     const router = useRouter();
-    const [isPending, startTransition] = useTransition();
     const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormValues>({
         resolver: zodResolver(paso3Schema),
         defaultValues: valoresIniciales,
     });
 
-    const onSubmit = (data: FormValues) => {
-        startTransition(async () => {
-            const idCarga = toast.loading("Finalizando actualización...");
-            const result = await guardarPaso3(data);
+    const onSubmit = async (data: FormValues) => {
+        const idCarga = toast.loading("Finalizando actualización...");
+        const result = await guardarPaso3(data);
 
-            if (result?.error) {
-                toast.dismiss(idCarga);
-                toast.error(result.error);
+        if (result?.error) {
+            toast.dismiss(idCarga);
+            toast.error(result.error);
+        } else {
+            toast.dismiss(idCarga);
+            if (result.recienCompletado) {
+                toast.success("¡Perfil completo al 100%!");
             } else {
-                toast.dismiss(idCarga);
-                if (result.recienCompletado) {
-                    toast.success("¡Perfil completo al 100%!");
-                } else {
-                    toast.success("Enlaces guardados correctamente");
-                }
-                router.push("/perfil");
+                toast.success("Enlaces guardados correctamente");
             }
-        });
+            router.push("/perfil");
+        }
     };
 
     return (
@@ -87,10 +83,10 @@ export default function FormPaso3({ valoresIniciales, isTech, cvUrl }: { valores
 
                 <button
                     type="submit"
-                    disabled={isSubmitting || isPending}
+                    disabled={isSubmitting}
                     className="flex items-center bg-gray-900 text-white text-sm font-bold px-8 py-2.5 rounded-lg hover:bg-black transition-colors shadow-sm disabled:opacity-50"
                 >
-                    {isSubmitting || isPending ? "Guardando..." : "Finalizar y Ver Perfil"} <Check className="w-4 h-4 ml-2" />
+                    {isSubmitting ? "Guardando..." : "Finalizar y Ver Perfil"} <Check className="w-4 h-4 ml-2" />
                 </button>
             </div>
         </form>

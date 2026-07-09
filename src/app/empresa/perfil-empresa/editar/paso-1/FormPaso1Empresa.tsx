@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -39,7 +38,6 @@ export default function FormPaso1Empresa({ valoresIniciales }: { valoresIniciale
     const router = useRouter();
     const [openEstado, setOpenEstado] = React.useState(false);
     const [openMunicipio, setOpenMunicipio] = React.useState(false);
-    const [isPending, startTransition] = useTransition();
 
     const { register, handleSubmit, setValue, watch, formState: { errors, isSubmitting } } = useForm<FormValues>({
         resolver: zodResolver(paso1EmpresaSchema),
@@ -50,20 +48,18 @@ export default function FormPaso1Empresa({ valoresIniciales }: { valoresIniciale
     const municipioActual = watch("municipio");
     const municipiosDisponibles = estadoActual ? (ubicaciones[estadoActual] || []) : [];
 
-    const onSubmit = (data: FormValues) => {
-        startTransition(async () => {
-            const idCarga = toast.loading("Guardando datos legales...");
-            const result = await guardarPaso1Empresa(data);
+    const onSubmit = async (data: FormValues) => {
+        const idCarga = toast.loading("Guardando datos legales...");
+        const result = await guardarPaso1Empresa(data);
 
-            if (result?.error) {
-                toast.dismiss(idCarga);
-                toast.error(result.error);
-            } else {
-                toast.dismiss(idCarga);
-                toast.success("¡Datos legales guardados!");
-                router.push("/empresa/perfil-empresa/editar/paso-2");
-            }
-        });
+        if (result?.error) {
+            toast.dismiss(idCarga);
+            toast.error(result.error);
+        } else {
+            toast.dismiss(idCarga);
+            toast.success("¡Datos legales guardados!");
+            router.push("/empresa/perfil-empresa/editar/paso-2");
+        }
     };
 
     return (
@@ -156,8 +152,8 @@ export default function FormPaso1Empresa({ valoresIniciales }: { valoresIniciale
 
             {/* BOTÓN DE ENVÍO */}
             <div className="flex justify-end pt-4 border-t border-gray-100">
-                <Button type="submit" disabled={isSubmitting || isPending} className="bg-violet-600 hover:bg-violet-700 px-8 rounded-xl shadow-sm">
-                    {isSubmitting || isPending ? "Guardando..." : "Guardar y Continuar"} <ChevronRight className="w-4 h-4 ml-1" />
+                <Button type="submit" disabled={isSubmitting} className="bg-violet-600 hover:bg-violet-700 px-8 rounded-xl shadow-sm">
+                    {isSubmitting ? "Guardando..." : "Guardar y Continuar"} <ChevronRight className="w-4 h-4 ml-1" />
                 </Button>
             </div>
         </form>

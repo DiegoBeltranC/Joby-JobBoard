@@ -47,7 +47,7 @@ export default function PostularButton({
                 <button 
                     type="button"
                     onClick={() => setShowLoginModal(true)}
-                    className="w-full py-5 font-black rounded-[24px] text-xl transition-all shadow-2xl flex items-center justify-center gap-3 bg-gray-900 hover:bg-teal-600 text-white shadow-gray-200 hover:shadow-teal-100 px-8 cursor-pointer"
+                    className="w-full py-5 font-black rounded-[24px] text-xl transition-all shadow-xl hover:shadow-2xl flex items-center justify-center gap-3 bg-teal-600 hover:bg-teal-500 text-white shadow-teal-200/50 hover:shadow-teal-500/30 hover:-translate-y-1 px-8 cursor-pointer"
                 >
                     Iniciar Sesión para Postularte
                     <ChevronRight className="w-6 h-6" />
@@ -100,7 +100,7 @@ export default function PostularButton({
                     "w-full py-5 font-black rounded-[24px] text-xl transition-all shadow-2xl flex items-center justify-center gap-3 group px-8",
                     inicial 
                         ? "bg-emerald-50 text-emerald-600 border border-emerald-100 cursor-not-allowed shadow-none" 
-                        : "bg-gray-900 hover:bg-teal-600 text-white shadow-gray-200 hover:shadow-teal-100"
+                        : "bg-teal-600 hover:bg-teal-500 text-white shadow-xl hover:shadow-2xl shadow-teal-200/50 hover:shadow-teal-500/30 hover:-translate-y-1"
                 )}
             >
                 {inicial ? (

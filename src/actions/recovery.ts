@@ -74,7 +74,7 @@ export async function requestPasswordResetAction(formData: FormData) {
     });
 
     // Construir enlace de recuperación
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
     const resetUrl = `${appUrl}/recuperar-contrasena/confirmar?token=${rawToken}`;
 
     // Configurar correo adaptado al rol del usuario

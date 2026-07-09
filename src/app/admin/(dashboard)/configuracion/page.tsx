@@ -2,14 +2,15 @@ import { prisma } from "@/lib/prisma"
 import { getSession } from "@/lib/session"
 import { ShieldCheck, Plus, UserCircle2, Settings2 } from "lucide-react"
 import FormEditarPerfil from "./FormEditarPerfil"
-import { obtenerAdminDeSesion } from "@/lib/session-admin"
 
 export default async function AdminConfiguracionPage() {
     const session = await getSession();
-    if (!session) return null;
 
     // Verificamos SuperAdmin
-    const usuarioInfo = await obtenerAdminDeSesion(session.userId);
+    const usuarioInfo = await prisma.user.findUnique({
+        where: { id: session?.userId },
+        include: { admin: true }
+    });
 
     const isSuperAdmin = !!usuarioInfo?.admin?.esSuperAdmin;
 

@@ -1,13 +1,16 @@
 import { getSession } from "@/lib/session";
+import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
-import { obtenerEmpresaDeSesion } from "@/lib/session-empresa";
 import FormPaso2Empresa from "./FormPaso2Empresa";
 
 export default async function Paso2EmpresaPage() {
     const session = await getSession();
     if (!session) redirect("/login?tipo=empresa");
 
-    const usuario = await obtenerEmpresaDeSesion(session.userId);
+    const usuario = await prisma.user.findUnique({
+        where: { id: session.userId },
+        include: { empresa: true }
+    });
 
     if (!usuario?.empresa) redirect("/empresa/inicio");
 

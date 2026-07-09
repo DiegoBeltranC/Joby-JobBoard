@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ArrowLeft, Lock, ShieldAlert, ShieldCheck, Eye, EyeOff } from "lucide-react"
+import { ArrowLeft, Lock, ShieldAlert, ShieldCheck } from "lucide-react"
 import { resetPasswordAction } from "@/actions/recovery"
 import { toast } from "sonner"
 
@@ -18,8 +18,6 @@ function ConfirmarRecuperarForm() {
   const [loading, setLoading] = useState(false)
   const [completado, setCompletado] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -165,18 +163,11 @@ function ConfirmarRecuperarForm() {
                   <Input
                     id="password"
                     name="password"
-                    type={showPassword ? "text" : "password"}
+                    type="password"
                     placeholder="Mínimo 8 caracteres"
-                    className="pl-10 pr-10 h-12"
+                    className="pl-10 h-12"
                     required
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                  </button>
                 </div>
               </div>
 
@@ -187,18 +178,11 @@ function ConfirmarRecuperarForm() {
                   <Input
                     id="confirmPassword"
                     name="confirmPassword"
-                    type={showConfirmPassword ? "text" : "password"}
+                    type="password"
                     placeholder="Repite la contraseña"
-                    className="pl-10 pr-10 h-12"
+                    className="pl-10 h-12"
                     required
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                  </button>
                 </div>
               </div>
 

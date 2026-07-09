@@ -1,14 +1,13 @@
 "use client";
 
 import * as React from "react";
-import { useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { toast } from "sonner";
 import { ChevronRight, Check, ChevronsUpDown, MapPin, UserCircle, Briefcase } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { guardarPaso1 } from "@/actions/perfil";
+import { guardarPaso1 } from "@/actions/perfil"; 
 import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
@@ -34,7 +33,6 @@ export default function FormPaso1({ valoresIniciales }: { valoresIniciales: Form
     const router = useRouter();
     const [openEstado, setOpenEstado] = React.useState(false);
     const [openMunicipio, setOpenMunicipio] = React.useState(false);
-    const [isPending, startTransition] = useTransition();
 
     const { register, handleSubmit, setValue, watch, formState: { errors, isSubmitting } } = useForm<FormValues>({
         resolver: zodResolver(paso1Schema),
@@ -46,20 +44,21 @@ export default function FormPaso1({ valoresIniciales }: { valoresIniciales: Form
     const contratosActuales = watch("tipos_contrato") || []; // 👈 Vigilamos los contratos
     const municipiosDisponibles = estadoActual ? ubicaciones[estadoActual] : [];
 
-    const onSubmit = (data: FormValues) => {
-        startTransition(async () => {
-            const idCarga = toast.loading("Guardando información...");
-            const result = await guardarPaso1({ ...data, bio: data.bio ?? "" });
-
-            if (result?.error) {
-                toast.dismiss(idCarga);
-                toast.error(result.error);
-            } else {
-                toast.dismiss(idCarga);
-                toast.success("¡Información personal guardada!");
-                router.push("/perfil/editar/paso-2");
-            }
+    const onSubmit = async (data: FormValues) => {
+        const idCarga = toast.loading("Guardando información...");
+        const result = await guardarPaso1({
+            ...data,
+            bio: data.bio || ""
         });
+
+        if (result?.error) {
+            toast.dismiss(idCarga);
+            toast.error(result.error);
+        } else {
+            toast.dismiss(idCarga);
+            toast.success("¡Información personal guardada!");
+            router.push("/perfil/editar/paso-2");
+        }
     };
 
     return (
@@ -171,7 +170,7 @@ export default function FormPaso1({ valoresIniciales }: { valoresIniciales: Form
 
             {/* BOTÓN DE ENVÍO */}
             <div className="flex justify-end pt-4 border-t border-gray-100">
-                <Button type="submit" disabled={isSubmitting || isPending} className="bg-teal-600 hover:bg-teal-700 px-8 rounded-xl shadow-sm">
+                <Button type="submit" disabled={isSubmitting} className="bg-teal-600 hover:bg-teal-700 px-8 rounded-xl shadow-sm">
                     Guardar y Continuar <ChevronRight className="w-4 h-4 ml-1" />
                 </Button>
             </div>

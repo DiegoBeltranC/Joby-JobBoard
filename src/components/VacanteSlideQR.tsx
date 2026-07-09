@@ -28,13 +28,13 @@ export default function VacanteSlideQR({ vacante }: VacanteSlideQRProps) {
 
     useEffect(() => {
         if (typeof window !== "undefined") {
-            const origin = window.location.origin;
+            const origin = "https://bolsa-trabajo-teal.vercel.app";
             const empresaId = vacante.empresaId || vacante.empresa?.id;
             const hashEmpresa = encodeId(empresaId);
             const hashVacante = encodeId(vacante.id);
             const urlDestino = `${origin}/perfil-publico-empresa/${hashEmpresa}?vacante=${hashVacante}`;
             
-            setUrlApiQr(`/api/qr?data=${encodeURIComponent(urlDestino)}&dark=009374`);
+            setUrlApiQr(`${origin}/api/qr?data=${encodeURIComponent(urlDestino)}&dark=009374`);
             setMounted(true);
         }
     }, [vacante]);

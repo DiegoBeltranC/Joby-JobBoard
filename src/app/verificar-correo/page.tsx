@@ -41,7 +41,7 @@ export default async function VerificarCorreoPage({ searchParams }: PageProps) {
 
     // SEGURIDAD: Si no existe el usuario o ya está verificado, no debe ver esta pantalla.
     if (!user || user.verifiedAt) {
-        redirect("/login?clear_registro_pendiente=1")
+        redirect("/login")
     }
 
     // Consultar el cooldown restante real en la base de datos

@@ -67,35 +67,14 @@ export async function verificarMatriculaParaRegistro(
 }
 
 /** Comprueba RFC opcional antes de avanzar del paso «Empresa». */
-export async function verificarRfcEmpresaParaRegistro(
-    rfcRaw: string,
-    correoFormularioRaw: string
-): Promise<VerificacionRegistroResult> {
+export async function verificarRfcEmpresaParaRegistro(rfcRaw: string): Promise<VerificacionRegistroResult> {
     const rfc = rfcRaw.trim().toUpperCase()
-    const correoFormulario = normalizarCorreo(correoFormularioRaw)
     if (!rfc) return { ok: true }
 
-    const registro = await prisma.empresa.findUnique({
-        where: { rfc },
-        include: { usuario: true }
-    })
-
-    if (!registro) return { ok: true }
-
-    if (registro.usuario.verifiedAt) {
+    const existe = await prisma.empresa.findUnique({ where: { rfc } })
+    if (existe) {
         return { ok: false, error: "Este RFC ya está registrado por otra empresa." }
     }
 
-    if (registro.usuario.correo !== correoFormulario) {
-        return {
-            ok: false,
-            error: `Este RFC ya tiene un registro pendiente con el correo ${registro.usuario.correo}. Usa ese correo para continuar o completa la verificación.`,
-        }
-    }
-
-    return {
-        ok: false,
-        error:
-            "Ya existe un registro pendiente con este RFC y tu correo. Ve a la página «Verificar correo» para ingresar el código y activar tu cuenta.",
-    }
+    return { ok: true }
 }
