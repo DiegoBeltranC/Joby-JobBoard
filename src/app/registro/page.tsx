@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { Suspense, useState, useEffect } from "react"
 import Link from "next/link"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -82,7 +82,7 @@ const PASOS_EMPRESA = [
 // ============================================================================
 // COMPONENTE PRINCIPAL
 // ============================================================================
-export default function RegistroPage() {
+function RegistroContent() {
     const searchParams = useSearchParams()
     const [tipoRegistro, setTipoRegistro] = useState<"estudiante" | "empresa">(
         searchParams.get("tipo") === "empresa" ? "empresa" : "estudiante"
@@ -522,5 +522,13 @@ export default function RegistroPage() {
                 </div>
             </main>
         </div>
+    )
+}
+
+export default function RegistroPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center"><div className="animate-spin w-10 h-10 border-4 border-primary border-t-transparent rounded-full"></div></div>}>
+            <RegistroContent />
+        </Suspense>
     )
 }
