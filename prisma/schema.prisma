@@ -118,6 +118,7 @@ model User {
 
   subscription  Subscription?
   aiUsageLogs   AIUsageLog[]
+  deviceLinkCodes DeviceLinkCode[]
 }
 
 model Estudiante {
@@ -436,4 +437,18 @@ model AIUsageLog {
   @@index([usuarioId, createdAt])
 }
 
+// -----------------------------------------------------------------------------
+// VINCULACIÓN DE DISPOSITIVOS (SMARTWATCH)
+// -----------------------------------------------------------------------------
+model DeviceLinkCode {
+  id        Int      @id @default(autoincrement())
+  codigo    String   @unique
+  expiresAt DateTime
+  
+  usuarioId Int?
+  usuario   User?    @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  
+  status    String   @default("PENDIENTE") // PENDIENTE o VINCULADO
+  createdAt DateTime @default(now())
+}
 
