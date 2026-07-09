@@ -374,7 +374,7 @@ export default async function EmpresaPublicPage({ params, searchParams }: Params
                                 {session && (
                                     <Link
                                         href={panelPath}
-                                        className="block w-full py-4 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-2xl text-center transition-all shadow-md hover:shadow-lg"
+                                        className="block w-full py-4 bg-gray-900 hover:bg-gray-800 text-white font-bold rounded-2xl text-center transition-all shadow-lg hover:shadow-xl hover:-translate-y-1"
                                     >
                                         Ir a mi Panel
                                     </Link>
