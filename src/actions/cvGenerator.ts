@@ -76,17 +76,7 @@ export async function generarCVAction() {
             return { error: "No puedes generar un currículum vacío. Por favor, añade información a tu perfil primero (como biografía, habilidades o experiencia laboral)." };
         }
 
-        // Limpiar archivo viejo si existe
-        if (estudiante.cv_url) {
-            try {
-                const oldFilePath = path.join(process.cwd(), "public", estudiante.cv_url);
-                if (fs.existsSync(oldFilePath)) {
-                    fs.unlinkSync(oldFilePath);
-                }
-            } catch (err) {
-                console.error("Error al borrar cv anterior", err);
-            }
-        }
+        // Limpiar archivo viejo si existe (omitido en vercel)
 
         // Preparar data para el PDF
         const dataParaPDF = {
@@ -159,17 +149,8 @@ export async function generarCVAction() {
             styling
         }) as any);
 
-        const timestamp = Date.now();
-        const fileName = `cv-magic-${estudiante.matricula}-${timestamp}.pdf`;
-        const filePath = path.join(UPLOAD_DIR, fileName);
-
-        if (!fs.existsSync(UPLOAD_DIR)) {
-            fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-        }
-
-        fs.writeFileSync(filePath, buffer);
-
-        const fileUrl = `/uploads/cvs/${fileName}`;
+        const base64String = buffer.toString('base64');
+        const fileUrl = `data:application/pdf;base64,${base64String}`;
 
         // Actualizar URL en BD
         await prisma.estudiante.update({
@@ -221,25 +202,8 @@ export async function getEstudianteCVDataAction() {
     
     let base64PhotoStr = undefined;
     if (est.foto_perfil_url) {
-        if (est.foto_perfil_url.startsWith('http')) {
-            base64PhotoStr = est.foto_perfil_url; // Use remote url if it's external (s3, etc)
-        } else {
-            try {
-                const photoPath = path.join(process.cwd(), 'public', est.foto_perfil_url);
-                if (fs.existsSync(photoPath)) {
-                    const bitmap = fs.readFileSync(photoPath);
-                    const base64Data = bitmap.toString('base64');
-                    const ext = path.extname(est.foto_perfil_url).toLowerCase();
-                    let mimeType = 'image/jpeg';
-                    if (ext === '.png') mimeType = 'image/png';
-                    else if (ext === '.gif') mimeType = 'image/gif';
-                    else if (ext === '.webp') mimeType = 'image/webp';
-                    
-                    base64PhotoStr = `data:${mimeType};base64,${base64Data}`;
-                }
-            } catch (err) {
-                 console.error("Error al leer la foto de perfil para base64:", err);
-            }
+        if (est.foto_perfil_url.startsWith('http') || est.foto_perfil_url.startsWith('data:')) {
+            base64PhotoStr = est.foto_perfil_url; // Use remote url or base64
         }
     }
 
@@ -400,28 +364,11 @@ export async function saveMagicCVAction(formData: FormData) {
             }
         }
 
-        // Limpiar archivo viejo si existe
-        if (estudiante.cv_url) {
-            try {
-                const oldFilePath = path.join(process.cwd(), "public", estudiante.cv_url);
-                if (fs.existsSync(oldFilePath)) fs.unlinkSync(oldFilePath);
-            } catch (err) {
-                console.error("Error al borrar cv anterior", err);
-            }
-        }
+        // Limpiar archivo viejo (omitido)
 
         const buffer = Buffer.from(await pdfBlob.arrayBuffer());
-        const timestamp = Date.now();
-        const fileName = `cv-magic-${estudiante.matricula}-${timestamp}.pdf`;
-        const filePath = path.join(UPLOAD_DIR, fileName);
-
-        if (!fs.existsSync(UPLOAD_DIR)) {
-            fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-        }
-
-        fs.writeFileSync(filePath, buffer);
-
-        const fileUrl = `/uploads/cvs/${fileName}`;
+        const base64String = buffer.toString('base64');
+        const fileUrl = `data:application/pdf;base64,${base64String}`;
 
         await prisma.estudiante.update({
             where: { id: estudiante.id },

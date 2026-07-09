@@ -35,26 +35,11 @@ export async function uploadCVAction(formData: FormData) {
             fs.mkdirSync(UPLOAD_DIR, { recursive: true });
         }
 
-        // Si ya hay un cv viejo, borrarlo
-        if (estudiante.cv_url) {
-            try {
-                const oldFilePath = path.join(process.cwd(), "public", estudiante.cv_url);
-                if (fs.existsSync(oldFilePath)) {
-                    fs.unlinkSync(oldFilePath);
-                }
-            } catch (err) {
-                console.error("Error al borrar cv anterior", err);
-            }
-        }
+        // Si ya hay un cv viejo, borrarlo (fs omitido en vercel)
 
         const buffer = Buffer.from(await file.arrayBuffer());
-        const timestamp = Date.now();
-        const fileName = `cv-${estudiante.matricula}-${timestamp}.pdf`;
-        const filePath = path.join(UPLOAD_DIR, fileName);
-
-        fs.writeFileSync(filePath, buffer);
-
-        const fileUrl = `/uploads/cvs/${fileName}`;
+        const base64String = buffer.toString('base64');
+        const fileUrl = `data:application/pdf;base64,${base64String}`;
 
         await prisma.estudiante.update({
             where: { id: estudiante.id },
@@ -88,14 +73,7 @@ export async function deleteCVAction() {
             return { error: "El estudiante no tiene un CV registrado" };
         }
 
-        try {
-            const oldFilePath = path.join(process.cwd(), "public", estudiante.cv_url);
-            if (fs.existsSync(oldFilePath)) {
-                fs.unlinkSync(oldFilePath);
-            }
-        } catch (err) {
-            console.error("Error al borrar cv físico", err);
-        }
+        // Borrar CV fisico (omitido en vercel)
 
         await prisma.estudiante.update({
             where: { id: estudiante.id },

@@ -85,13 +85,7 @@ export async function postularVacanteAction(formData: FormData) {
 
         if (opcionCV === "perfil") {
             if (!usuario.estudiante.cv_url) return { error: "No tienes un CV guardado en tu perfil." };
-            const originalPath = path.join(publicDir, usuario.estudiante.cv_url);
-            if (fs.existsSync(originalPath)) {
-                fs.copyFileSync(originalPath, finalPhysicalPath);
-                cvSnapshotPath = `/uploads/postulaciones/snapshots/${fileName}`;
-            } else {
-                return { error: "No se encontró el archivo de tu CV original." };
-            }
+            cvSnapshotPath = usuario.estudiante.cv_url;
         } else {
             const nuevoCV = formData.get("nuevo_cv") as File;
             if (!nuevoCV || nuevoCV.size === 0) {
@@ -101,19 +95,11 @@ export async function postularVacanteAction(formData: FormData) {
                 return { error: "Debes subir un archivo PDF." };
             }
             const buffer = Buffer.from(await nuevoCV.arrayBuffer());
-            fs.writeFileSync(finalPhysicalPath, buffer);
-            cvSnapshotPath = `/uploads/postulaciones/snapshots/${fileName}`;
+            const base64Data = buffer.toString('base64');
+            cvSnapshotPath = `data:application/pdf;base64,${base64Data}`;
         }
 
-        // 3. Limpieza de archivo anterior si es una actualización
-        if (postulacionExistente?.cv_url_snapshot) {
-            try {
-                const oldPath = path.join(publicDir, postulacionExistente.cv_url_snapshot);
-                if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
-            } catch (err) {
-                console.error("Error al borrar snapshot anterior:", err);
-            }
-        }
+        // 3. Limpieza de archivo anterior si es una actualización (omitido en Vercel)
 
         // 4. Upsert de Postulación con Snapshots Inmutables
         await prisma.postulacion.upsert({
@@ -175,14 +161,7 @@ export async function cancelarPostulacionAction(postulacionId: number) {
         }
 
         // Si pasa las reglas, eliminamos físicamente el snapshot si existe
-        if (postulacion.cv_url_snapshot) {
-            try {
-                const filePath = path.join(process.cwd(), 'public', postulacion.cv_url_snapshot);
-                if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-            } catch (err) {
-                console.error("Error borrar snapshot físico:", err);
-            }
-        }
+        // Eliminar archivos físicos (omitido en vercel)
 
         await prisma.postulacion.delete({ where: { id: postulacionId } });
         
