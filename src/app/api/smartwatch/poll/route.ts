@@ -29,7 +29,7 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: "El usuario no es un estudiante" }, { status: 403 });
       }
 
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://jobychetumal.online";
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://jobychetumal.online");
       const qr_url = `${baseUrl}/perfil-publico-estudiante/${encodeId(estudiante.id)}`;
 
       return NextResponse.json({ linked: true, qr_url });

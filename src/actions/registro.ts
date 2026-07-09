@@ -169,7 +169,7 @@ export async function registrarEstudiante(datos: any, redirectTarget?: string) {
             title: '¡Bienvenido a la bolsa de trabajo!',
             message: `Casi todo está listo. Para completar la creación de tu cuenta, por favor verifica tu correo ingresando este código de 6 dígitos:\n\n${initialOtp}\n\nEste código expira automáticamente en 15 minutos.`,
             buttonText: "Ir a verificar mi cuenta",
-            buttonUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/verificar-correo?email=${encodeURIComponent(datos.correo)}`,
+            buttonUrl: `${process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')}/verificar-correo?email=${encodeURIComponent(datos.correo)}`,
             type: "SUCCESS"
         })
 

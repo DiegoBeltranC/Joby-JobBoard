@@ -229,7 +229,7 @@ export async function reenviarOTPAction(email: string) {
       title: 'Verifica tu identidad',
       message: `Detectamos un intento de registro o acceso a tu cuenta. Para continuar de forma segura, por favor ingresa este código de 6 dígitos:\n\n${newOtp}\n\nEste código expira automáticamente en 15 minutos.`,
       buttonText: "Ir a verificar mi cuenta",
-      buttonUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/verificar-correo?email=${encodeURIComponent(email)}`,
+      buttonUrl: `${process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')}/verificar-correo?email=${encodeURIComponent(email)}`,
       type: "SUCCESS"
     });
 
