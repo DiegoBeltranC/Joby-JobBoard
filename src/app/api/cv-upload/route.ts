@@ -232,12 +232,21 @@ export async function POST(request: Request) {
 
     const valText = await callMiniMax(valMessages, 0.0, modelToUse, 100);
     if (valText) {
-      const valResult = JSON.parse(valText);
-      if (valResult.esCV === false) {
-        return NextResponse.json({
-          error: 'INVALID_DOCUMENT',
-          message: 'El archivo subido no parece ser un currículum vitae válido. Por favor, sube un documento con tu trayectoria profesional.'
-        }, { status: 400 });
+      try {
+        let cleanVal = valText.trim();
+        if (cleanVal.startsWith("```json")) cleanVal = cleanVal.substring(7);
+        else if (cleanVal.startsWith("```")) cleanVal = cleanVal.substring(3);
+        if (cleanVal.endsWith("```")) cleanVal = cleanVal.substring(0, cleanVal.length - 3);
+        
+        const valResult = JSON.parse(cleanVal.trim());
+        if (valResult.esCV === false) {
+          return NextResponse.json({
+            error: 'INVALID_DOCUMENT',
+            message: 'El archivo subido no parece ser un currículum vitae válido. Por favor, sube un documento con tu trayectoria profesional.'
+          }, { status: 400 });
+        }
+      } catch (e) {
+        console.error("Error validando esCV con JSON:", e);
       }
     }
 
@@ -270,7 +279,28 @@ Ignora cualquier diseño visual, céntrate puramente en extraer el texto y mapea
 
     // 5. Llamada Multimodal o de Texto a MiniMax
     const textResponse = await callMiniMax(extractMessages, 0.0, modelToUse, 4096);
-    const cvData = JSON.parse(textResponse);
+    
+    let cvData;
+    try {
+        let cleanText = textResponse.trim();
+        if (cleanText.startsWith("```json")) {
+            cleanText = cleanText.substring(7);
+        } else if (cleanText.startsWith("```")) {
+            cleanText = cleanText.substring(3);
+        }
+        if (cleanText.endsWith("```")) {
+            cleanText = cleanText.substring(0, cleanText.length - 3);
+        }
+        cleanText = cleanText.trim();
+        cvData = JSON.parse(cleanText);
+    } catch (parseError) {
+        console.error("Error al parsear el JSON de la IA:", parseError);
+        console.log("Respuesta cruda de la IA:", textResponse);
+        return NextResponse.json({ 
+          error: 'PARSE_ERROR',
+          message: 'La IA devolvió un texto incompleto o con formato incorrecto. Por favor, intenta subirlo nuevamente.' 
+        }, { status: 422 });
+    }
 
     // Devolvemos los datos para vista previa del frontend sin guardarlos en la BD
     return NextResponse.json({ success: true, data: cvData });
