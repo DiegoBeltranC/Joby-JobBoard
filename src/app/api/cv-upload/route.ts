@@ -98,7 +98,7 @@ function cleanJsonResponse(text: string): string {
   return cleaned.trim();
 }
 
-async function callMiniMax(messages: any[], temperature = 0.0, model = "MiniMax-M3", maxTokens = 4096) {
+async function callMiniMax(messages: any[], temperature = 0.0, model = "MiniMax-M3", maxTokens = 8192) {
   const apiKey = process.env.MINIMAX_API_KEY || process.env.GEMINI_API_KEY;
   const res = await fetch("https://api.minimax.io/v1/chat/completions", {
     method: "POST",
@@ -256,7 +256,8 @@ REGLAS ESTRICTAS:
 No inventes información. Si un dato no aparece explícitamente en el documento, debes devolver un string vacío ("") o un arreglo vacío ([]).
 No agregues claves ni campos nuevos que no estén definidos en el esquema.
 Ajusta las fechas al formato más limpio posible (Ej. 'Enero 2020 - Diciembre 2022' o '2020-2022').
-Ignora cualquier diseño visual, céntrate puramente en extraer el texto y mapearlo al esquema.`;
+Ignora cualquier diseño visual, céntrate puramente en extraer el texto y mapearlo al esquema.
+IMPORTANTE: Se extremadamente breve y conciso en las descripciones para evitar exceder el límite de texto. Resume cualquier descripción muy larga a un máximo de 1 o 2 oraciones breves.`;
 
     let extractMessages: any[] = [];
     if (isPdf) {

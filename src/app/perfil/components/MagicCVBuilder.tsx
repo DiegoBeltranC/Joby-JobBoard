@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { createPortal } from "react-dom";
 import dynamic from 'next/dynamic';
 import { Loader2, X, Save, Eye, EyeOff, Edit2, Sparkles, Send, RotateCcw } from "lucide-react";
 import { getEstudianteCVDataAction, saveMagicCVAction } from "@/actions/cvGenerator";
@@ -8,6 +9,7 @@ import { PlantillaCV } from "@/lib/pdf/PlantillaCV";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { pdf } from '@react-pdf/renderer';
+import { useScrollLock } from "@/hooks/useScrollLock";
 
 const BlobProvider = dynamic(() => import('@react-pdf/renderer').then(mod => mod.BlobProvider), {
   ssr: false,
@@ -54,6 +56,11 @@ function checkPerfilVacio(est: any) {
 }
 
 export default function MagicCVBuilder({ onClose }: MagicCVBuilderProps) {
+  useScrollLock();
+  
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -223,18 +230,21 @@ export default function MagicCVBuilder({ onClose }: MagicCVBuilderProps) {
   };
 
   if (loading) {
-    return (
+    if (!mounted) return null;
+    return createPortal(
       <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center">
         <div className="bg-white p-8 rounded-2xl flex flex-col items-center gap-4">
           <Loader2 className="w-10 h-10 animate-spin text-teal-600" />
           <p className="font-medium text-gray-700">Preparando tu Magic Builder...</p>
         </div>
-      </div>
+      </div>,
+      document.body
     );
   }
 
   if (isProfileEmpty) {
-    return (
+    if (!mounted) return null;
+    return createPortal(
       <div className="fixed inset-0 z-50 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-gray-100 animate-in zoom-in-95 duration-200">
           <div className="flex flex-col items-center text-center">
@@ -255,10 +265,6 @@ export default function MagicCVBuilder({ onClose }: MagicCVBuilderProps) {
               <div className="flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-teal-500"></span>
                 <span>Habilidades clave</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-teal-500"></span>
-                <span>Experiencia laboral</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-teal-500"></span>
@@ -290,7 +296,8 @@ export default function MagicCVBuilder({ onClose }: MagicCVBuilderProps) {
             </div>
           </div>
         </div>
-      </div>
+      </div>,
+      document.body
     );
   }
 
@@ -629,7 +636,9 @@ export default function MagicCVBuilder({ onClose }: MagicCVBuilderProps) {
       setSections(prev => prev.map(s => s.id === id ? { ...s, visible: !s.visible } : s));
   };
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <div className="fixed inset-0 z-50 bg-gray-900/40 backdrop-blur-sm flex items-center justify-center p-2 sm:p-6 animate-in fade-in">
       <div className="bg-white rounded-2xl shadow-2xl w-full h-full max-w-[1400px] flex flex-col overflow-hidden">
         
@@ -1195,9 +1204,9 @@ export default function MagicCVBuilder({ onClose }: MagicCVBuilderProps) {
                 </form>
              </div>
           )}
-
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

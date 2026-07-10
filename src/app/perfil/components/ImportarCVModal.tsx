@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { 
   X, Sparkles, UploadCloud, Loader2, Plus, Trash2, 
   Calendar, Briefcase, CheckCircle2, ChevronRight, AlertTriangle 
@@ -40,6 +41,9 @@ type Step = "UPLOAD" | "PROCESSING" | "PREVIEW" | "SUCCESS";
 
 export default function ImportarCVModal({ onClose }: ImportarCVModalProps) {
   useScrollLock();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   const [step, setStep] = useState<Step>("UPLOAD");
   const [isDragging, setIsDragging] = useState(false);
   const [progressMsg, setProgressMsg] = useState("Iniciando análisis...");
@@ -384,7 +388,9 @@ export default function ImportarCVModal({ onClose }: ImportarCVModalProps) {
     onClose();
   };
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <div className="fixed inset-0 z-[160] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
       <div className="bg-white rounded-[24px] w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col my-8 max-h-[85vh]">
         {/* Header */}
@@ -840,6 +846,7 @@ export default function ImportarCVModal({ onClose }: ImportarCVModalProps) {
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
