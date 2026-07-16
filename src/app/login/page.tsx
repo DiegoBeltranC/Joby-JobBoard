@@ -5,6 +5,7 @@ import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { PasswordInput } from "@/components/ui/password-input"
 import { Label } from "@/components/ui/label"
 import { ShieldCheck, Briefcase, GraduationCap, Building2, AlertTriangle, Loader2 } from "lucide-react"
 import { loginAction, reactivarCuentaAction } from "@/actions/auth"
@@ -125,7 +126,7 @@ function LoginContent() {
                 name="email"
                 type="email"
                 placeholder={isEmpresa ? "contacto@tuempresa.com" : "usuario@utchetumal.edu.mx"}
-                className="h-12"
+                className={`h-12 ${isEmpresa ? "focus-visible:ring-indigo-600" : "focus-visible:ring-primary"}`}
                 required
               />
             </div>
@@ -137,12 +138,12 @@ function LoginContent() {
                   ¿Olvidaste tu contraseña?
                 </Link>
               </div>
-              <Input
+              <PasswordInput
                 id="password"
                 name="password"
-                type="password"
                 placeholder="••••••••"
-                className="h-12"
+                className={isEmpresa ? "focus-visible:ring-indigo-600" : "focus-visible:ring-primary"}
+                iconClassName={isEmpresa ? "hover:text-indigo-600 focus:text-indigo-600" : "hover:text-primary focus:text-primary"}
                 required
               />
             </div>
@@ -223,9 +224,8 @@ function LoginContent() {
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="reactivationPassword">Contraseña *</Label>
-                <Input
+                <PasswordInput
                   id="reactivationPassword"
-                  type="password"
                   value={reactivationPassword}
                   onChange={(e) => setReactivationPassword(e.target.value)}
                   placeholder="••••••••"

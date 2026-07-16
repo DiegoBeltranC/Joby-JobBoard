@@ -235,24 +235,22 @@ export default async function EmpresaPublicPage({ params, searchParams }: Params
                                 {empresa.nombre_comercial}
                             </h1>
 
-                            {empresa.sitio_web && (
-                                <a
-                                    href={empresa.sitio_web.startsWith('http') ? empresa.sitio_web : `https://${empresa.sitio_web}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-2 text-teal-300 hover:text-teal-200 transition-colors font-bold text-sm"
-                                >
-                                    <Globe className="w-4 h-4" />
-                                    Visitar sitio web oficial
-                                </a>
-                            )}
+                            <div className="pt-2 flex justify-center md:justify-start">
+                                <ShareButton
+                                    title={empresa.nombre_comercial}
+                                    text={`¡Mira las vacantes de ${empresa.nombre_comercial} en Joby!`}
+                                    url={shortUrl}
+                                    variant="premium"
+                                    showQR={true}
+                                />
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
             {/* CONTENIDO PRINCIPAL */}
-            <main className="max-w-6xl mx-auto px-6 -mt-10 relative z-20 pb-24">
+            <main className="max-w-6xl mx-auto px-6 pt-10 pb-24">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
                     {/* COLUMNA IZQUIERDA (Principal) */}
                     <div className="lg:col-span-8 space-y-8">
@@ -332,7 +330,7 @@ export default async function EmpresaPublicPage({ params, searchParams }: Params
                         <div className="bg-white rounded-[40px] p-8 md:p-10 shadow-sm border border-gray-100">
                             <h2 className="text-2xl font-black text-gray-900 mb-6 flex items-center gap-3">
                                 <Building2 className="w-6 h-6 text-teal-500" />
-                                Descripción de la vacante
+                                Acerca de la empresa
                             </h2>
                             <p className="text-gray-600 text-sm font-semibold leading-relaxed whitespace-pre-line">
                                 {empresa.descripcion || "Sin descripción disponible."}
@@ -347,16 +345,6 @@ export default async function EmpresaPublicPage({ params, searchParams }: Params
 
                     {/* COLUMNA DERECHA (SIDEBAR) */}
                     <div className="lg:col-span-4 space-y-8">
-                        <div className="flex justify-center w-full -mt-24 mb-8">
-                            <ShareButton
-                                title={empresa.nombre_comercial}
-                                text={`¡Mira las vacantes de ${empresa.nombre_comercial} en Joby!`}
-                                url={shortUrl}
-                                variant="premium"
-                                showQR={true}
-                            />
-                        </div>
-
                         <div className="bg-white rounded-[40px] p-8 shadow-sm border border-gray-100 sticky top-24">
                             <h3 className="text-lg font-black text-gray-900 mb-6 flex items-center gap-3">
                                 <Search className="w-5 h-5 text-teal-500" />

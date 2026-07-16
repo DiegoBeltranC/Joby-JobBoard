@@ -16,6 +16,7 @@ import { encodeId } from "@/lib/hash";
 import { calcularProgresoEstudiante } from "@/lib/perfilEstudiante";
 import { obtenerEstudianteYSincronizarHito } from "@/lib/syncPerfilEstudiante";
 import BienvenidaPerfilCompleto from "./BienvenidaPerfilCompleto";
+import FiltrosVacantes from "./FiltrosVacantes";
 
 // FASE 2: Forzar Datos Frescos (Anti-Stale Cache)
 export const dynamic = 'force-dynamic';
@@ -35,8 +36,14 @@ function calcularTiempoRelativo(fecha: Date) {
     return 'Recién publicado';
 }
 
-export default async function InicioPage() {
+export default async function InicioPage(props: { searchParams?: Promise<{ [key: string]: string | string[] | undefined }> | { [key: string]: string | string[] | undefined } }) {
     const session = await getSession();
+    
+    // Resolver searchParams de forma segura (compatible con Next.js 14 y 15)
+    const resolvedSearchParams = await props.searchParams;
+    const q = typeof resolvedSearchParams?.q === "string" ? resolvedSearchParams.q : "";
+    const modalidad = typeof resolvedSearchParams?.modalidad === "string" ? resolvedSearchParams.modalidad : "";
+    const contrato = typeof resolvedSearchParams?.contrato === "string" ? resolvedSearchParams.contrato : "";
     let ubicacionSugerida = "tu zona";
     let perfilCompletado = false;
     let progreso = 0;
@@ -58,16 +65,38 @@ export default async function InicioPage() {
         }
     }
 
+    // Construir consulta dinámica
+    const whereClause: any = {
+        estatus: "ABIERTA",
+        empresa: {
+            estatus_verificacion: "APROBADA",
+        },
+        AND: [
+            { OR: [{ fecha_limite: null }, { fecha_limite: { gte: new Date() } }] }
+        ]
+    };
+
+    if (q) {
+        whereClause.AND.push({
+            OR: [
+                { titulo: { contains: q } },
+                { empresa: { nombre_comercial: { contains: q } } }
+            ]
+        });
+    }
+
+    if (modalidad) {
+        whereClause.modalidad = modalidad;
+    }
+
+    if (contrato) {
+        whereClause.tipo_contrato = contrato;
+    }
+
     // FASE 1: Consulta Prisma Blindada (Anti Over-fetching & Zero Trust)
     const vacantes = await prisma.vacante.findMany({
         take: 30, // Anti-DoS
-        where: {
-            estatus: "ABIERTA",
-            empresa: {
-                estatus_verificacion: "APROBADA",
-            },
-            OR: [{ fecha_limite: null }, { fecha_limite: { gte: new Date() } }],
-        },
+        where: whereClause,
         select: {
             id: true,
             titulo: true,
@@ -155,6 +184,8 @@ export default async function InicioPage() {
                     Oportunidades recomendadas para ti cerca de <span className="text-teal-600 font-bold underline decoration-teal-200 underline-offset-4">{ubicacionSugerida}</span>.
                 </p>
             </div>
+
+            <FiltrosVacantes />
 
             {/* FASE 3: Renderizado UI Dinámico */}
             {vacantes && vacantes.length > 0 ? (

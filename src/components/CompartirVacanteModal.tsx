@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { X, QrCode, Copy, Check, Download, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useScrollLock } from "@/hooks/useScrollLock";
@@ -26,6 +27,11 @@ export default function CompartirVacanteModal({
     useScrollLock(isOpen);
     const [copiado, setCopiado] = useState(false);
     const [qrCargando, setQrCargando] = useState(true);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     // Definir colores según el tema
     const isTeal = colorTheme === "teal";
@@ -38,7 +44,7 @@ export default function CompartirVacanteModal({
         }
     }, [isOpen, publicUrl]);
 
-    if (!isOpen) return null;
+    if (!isOpen || !mounted) return null;
 
     const fallbackCopiar = (text: string) => {
         try {
@@ -109,8 +115,8 @@ export default function CompartirVacanteModal({
         }
     };
 
-    return (
-        <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-300">
+    return createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-300">
             <div 
                 className="bg-white rounded-[40px] w-full max-w-md overflow-hidden shadow-2xl animate-in zoom-in-95 slide-in-from-bottom-4 duration-300 border border-slate-200 flex flex-col relative"
                 onClick={(e) => e.stopPropagation()}
@@ -222,6 +228,7 @@ export default function CompartirVacanteModal({
                     </button>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }

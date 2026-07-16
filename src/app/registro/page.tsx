@@ -1,12 +1,13 @@
 "use client"
 
-import { Suspense, useState, useEffect } from "react"
+import { Suspense, useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { PasswordInput } from "@/components/ui/password-input"
 import { Label } from "@/components/ui/label"
 import { CheckCircle2, ChevronRight, ArrowLeft, ShieldCheck, Building2, GraduationCap } from "lucide-react"
 import { registrarEstudiante, verificarCorreoDisponibleRegistro } from "@/actions/registro"
@@ -88,23 +89,27 @@ function RegistroContent() {
         searchParams.get("tipo") === "empresa" ? "empresa" : "estudiante"
     )
     const [pasoActual, setPasoActual] = useState(1)
+    const [isNavigating, setIsNavigating] = useState(false)
+    const lastActionTime = useRef<number>(0)
     const router = useRouter()
 
     const PASOS = tipoRegistro === "estudiante" ? PASOS_ESTUDIANTE : PASOS_EMPRESA
 
     // --- FORMULARIO ESTUDIANTE ---
     const formEstudiante = useForm<RegistroEstudianteValues>({
+        mode: "onTouched",
         resolver: zodResolver(registroEstudianteSchema),
         defaultValues: { estatus_academico: "ACTIVO" }
     })
 
     // --- FORMULARIO EMPRESA ---
     const formEmpresa = useForm<RegistroEmpresaValues>({
+        mode: "onTouched",
         resolver: zodResolver(registroEmpresaSchema),
     })
 
     const form = tipoRegistro === "estudiante" ? formEstudiante : formEmpresa
-    const { register, handleSubmit, trigger, formState: { errors }, watch, getValues, setError } = form as any
+    const { register, handleSubmit, trigger, formState: { errors }, watch, getValues, setError, clearErrors } = form as any
 
     const estatusSeleccionado = tipoRegistro === "estudiante" ? formEstudiante.watch("estatus_academico") : null
 
@@ -151,6 +156,9 @@ function RegistroContent() {
 
     // ===== NAVEGACIÓN =====
     const avanzarPaso = async () => {
+        if (isNavigating) return;
+        setIsNavigating(true);
+
         const camposDelPaso = PASOS[pasoActual - 1].campos as any[]
         const pasoValido = await trigger(camposDelPaso)
 
@@ -178,9 +186,12 @@ function RegistroContent() {
                 }
             }
             if (pasoActual < PASOS.length) {
-                setPasoActual(pasoActual + 1)
+                const camposSiguientePaso = PASOS[pasoActual].campos as string[]
+                clearErrors(camposSiguientePaso)
+                setPasoActual(prev => prev + 1)
             }
         }
+        setIsNavigating(false);
     }
 
     const retrocederPaso = () => {
@@ -189,6 +200,12 @@ function RegistroContent() {
 
     const manejarSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
+        if (isNavigating) return;
+        
+        const now = Date.now();
+        if (now - lastActionTime.current < 600) return; // Ignorar clics/enters fantasmas muy rápidos (600ms)
+        lastActionTime.current = now;
+
         if (pasoActual < PASOS.length) {
             await avanzarPaso()
         } else {
@@ -264,7 +281,7 @@ function RegistroContent() {
                     <div className={`w-8 h-8 rounded flex items-center justify-center text-white font-bold italic ${isEmpresa ? 'bg-indigo-600' : 'bg-primary'}`}>UT</div>
                     <span className="font-bold text-xl tracking-tight text-foreground">Joby</span>
                 </Link>
-                <Link href="/login" className="text-sm font-medium text-muted-foreground hover:text-primary">
+                <Link href={isEmpresa ? "/login?tipo=empresa" : "/login"} className="text-sm font-medium text-muted-foreground hover:text-primary">
                     ¿Ya tienes cuenta? <span className={`font-bold ${isEmpresa ? 'text-indigo-600' : 'text-primary'}`}>Inicia sesión</span>
                 </Link>
             </header>
@@ -342,7 +359,7 @@ function RegistroContent() {
                     </div>
 
                     {/* ===== FORMULARIO ===== */}
-                    <form onSubmit={manejarSubmit} className="space-y-6">
+                    <form key={tipoRegistro} onSubmit={manejarSubmit} className="space-y-6">
                         <input type="hidden" {...register("correoAnterior")} />
 
                         {/* PASO 1: CUENTA (Compartido — solo cambia validación de correo) */}
@@ -354,20 +371,32 @@ function RegistroContent() {
                                     id="correo"
                                     placeholder={isEmpresa ? "contacto@tuempresa.com" : "usuario@utchetumal.edu.mx"}
                                     {...register("correo")}
-                                    className={errors.correo ? "border-destructive focus-visible:ring-destructive" : ""}
+                                    className={`${errors.correo ? "border-destructive focus-visible:ring-destructive" : ""} ${isEmpresa ? "focus-visible:ring-indigo-600" : "focus-visible:ring-primary"}`}
                                 />
                                 {errors.correo && <p className="text-sm text-destructive font-medium">{(errors.correo as any).message}</p>}
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-2">
+                                <div className="space-y-2 relative">
                                     <Label htmlFor="password">Contraseña</Label>
-                                    <Input id="password" type="password" placeholder="Mínimo 8 caracteres" {...register("password")} />
-                                    {errors.password && <p className="text-sm text-destructive font-medium">{(errors.password as any).message}</p>}
+                                    <PasswordInput 
+                                      id="password" 
+                                      placeholder="Mínimo 8 caracteres" 
+                                      {...register("password")} 
+                                      className={isEmpresa ? "focus-visible:ring-indigo-600" : "focus-visible:ring-primary"}
+                                      iconClassName={isEmpresa ? "hover:text-indigo-600 focus:text-indigo-600" : "hover:text-primary focus:text-primary"}
+                                    />
+                                    {errors.password && <p className="text-sm text-red-500 font-medium">{(errors.password as any).message}</p>}
                                 </div>
-                                <div className="space-y-2">
+                                <div className="space-y-2 relative">
                                     <Label htmlFor="confirmPassword">Confirmar contraseña</Label>
-                                    <Input id="confirmPassword" type="password" placeholder="Repite tu contraseña" {...register("confirmPassword")} />
-                                    {errors.confirmPassword && <p className="text-sm text-destructive font-medium">{(errors.confirmPassword as any).message}</p>}
+                                    <PasswordInput 
+                                      id="confirmPassword" 
+                                      placeholder="Repite tu contraseña" 
+                                      {...register("confirmPassword")} 
+                                      className={isEmpresa ? "focus-visible:ring-indigo-600" : "focus-visible:ring-primary"}
+                                      iconClassName={isEmpresa ? "hover:text-indigo-600 focus:text-indigo-600" : "hover:text-primary focus:text-primary"}
+                                    />
+                                    {errors.confirmPassword && <p className="text-sm text-red-500 font-medium">{(errors.confirmPassword as any).message}</p>}
                                 </div>
                             </div>
                         </div>
@@ -432,6 +461,7 @@ function RegistroContent() {
                                                         <option key={i + 1} value={i + 1}>{i + 1}º Cuatrimestre</option>
                                                     ))}
                                                 </select>
+                                                {errors.periodo_academico && <p className="text-sm text-destructive">{(errors.periodo_academico as any).message}</p>}
                                             </div>
                                         )}
                                     </div>
@@ -504,6 +534,7 @@ function RegistroContent() {
                                 <Button
                                     type="button"
                                     onClick={avanzarPaso}
+                                    disabled={isNavigating}
                                     className={`font-bold ${isEmpresa ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : ''}`}
                                 >
                                     Continuar <ChevronRight className="w-4 h-4 ml-2" />
@@ -511,6 +542,7 @@ function RegistroContent() {
                             ) : (
                                 <Button
                                     type="submit"
+                                    disabled={isNavigating || formEstudiante.formState.isSubmitting || formEmpresa.formState.isSubmitting}
                                     className={`font-bold px-8 ${isEmpresa ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : 'bg-primary hover:bg-primary/90 text-primary-foreground'}`}
                                 >
                                     Finalizar Registro
