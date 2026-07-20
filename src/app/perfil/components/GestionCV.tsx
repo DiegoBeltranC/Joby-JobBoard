@@ -13,7 +13,17 @@ const MagicCVBuilder = dynamic(() => import('./MagicCVBuilder'), {
 });
 
 import ImportarCVModal from "./ImportarCVModal";
-
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 export default function GestionCV({ cvUrl }: { cvUrl?: string | null }) {
     const [isPending, startTransition] = useTransition();
     const router = useRouter();
@@ -81,8 +91,6 @@ export default function GestionCV({ cvUrl }: { cvUrl?: string | null }) {
     };
 
     const handleDelete = () => {
-        if (!confirm("¿Estás seguro de que quieres eliminar tu Currículum? Esta acción no se puede deshacer.")) return;
-
         startTransition(async () => {
             setIsDeleting(true);
             const idToast = toast.loading("Eliminando Currículum...");
@@ -100,6 +108,22 @@ export default function GestionCV({ cvUrl }: { cvUrl?: string | null }) {
     const handleGenerate = () => {
         // En vez de generar ciegamente, abrimos el Live Preview Builder
         setShowBuilder(true);
+    };
+
+    const handleViewPDF = (e: React.MouseEvent<HTMLAnchorElement>) => {
+        if (!cvUrl) return;
+        if (cvUrl.startsWith("data:application/pdf;base64,")) {
+            e.preventDefault();
+            const base64Data = cvUrl.split(',')[1];
+            const binaryData = atob(base64Data);
+            const array = new Uint8Array(binaryData.length);
+            for (let i = 0; i < binaryData.length; i++) {
+                array[i] = binaryData.charCodeAt(i);
+            }
+            const blob = new Blob([array], { type: 'application/pdf' });
+            const blobUrl = URL.createObjectURL(blob);
+            window.open(blobUrl, '_blank');
+        }
     };
 
     const isLocked = isPending || isGenerating || isDeleting || showBuilder;
@@ -144,35 +168,51 @@ export default function GestionCV({ cvUrl }: { cvUrl?: string | null }) {
                             href={cvUrl}
                             target="_blank"
                             rel="noreferrer"
+                            onClick={handleViewPDF}
                             className="flex items-center justify-center gap-1.5 h-8 px-3 text-xs flex-1 sm:flex-none border border-teal-200 bg-white shadow-sm text-teal-700 font-medium rounded-md hover:bg-teal-50 hover:text-teal-800 transition-colors"
                         >
                             <ExternalLink className="w-3 h-3" /> Ver PDF
                         </a>
 
-                        <button
-                            type="button"
-                            onClick={handleDelete}
-                            disabled={isLocked}
-                            className="flex items-center justify-center h-8 w-8 shrink-0 bg-white border border-rose-100 text-rose-500 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 rounded-md transition-colors shadow-sm disabled:opacity-50"
-                            title="Eliminar CV"
-                        >
-                            {isDeleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
-                        </button>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <button
+                                    type="button"
+                                    disabled={isLocked}
+                                    className="flex items-center justify-center h-8 w-8 shrink-0 bg-white border border-rose-100 text-rose-500 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 rounded-md transition-colors shadow-sm disabled:opacity-50"
+                                    title="Eliminar CV"
+                                >
+                                    {isDeleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                                </button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>¿Estás seguro de eliminar tu Currículum?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Esta acción no se puede deshacer.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel disabled={isLocked}>Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handleDelete} className="bg-rose-600 hover:bg-rose-700 text-white" disabled={isLocked}>
+                                        Eliminar
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
                       </div>
                     </div>
                     {/* Botones de edición / actualización */}
                     <div className="flex flex-wrap gap-3">
-                        {cvUrl.includes("magic") && (
-                            <button
-                                type="button"
-                                onClick={handleGenerate}
-                                disabled={isLocked}
-                                className="text-xs flex items-center gap-1.5 text-teal-700 hover:text-teal-800 font-bold disabled:opacity-50"
-                            >
-                                <Sparkles className="w-3.5 h-3.5" />
-                                ✨ Editar Magic Resume
-                            </button>
-                        )}
+                        <button
+                            type="button"
+                            onClick={handleGenerate}
+                            disabled={isLocked}
+                            className="text-xs flex items-center gap-1.5 text-teal-700 hover:text-teal-800 font-bold disabled:opacity-50"
+                        >
+                            <Sparkles className="w-3.5 h-3.5" />
+                            {cvUrl.includes("magic") ? "✨ Editar Magic Resume" : "✨ Editar Magic Resume"}
+                        </button>
                         <button
                             type="button"
                             onClick={() => setShowImportModal(true)}

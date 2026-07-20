@@ -198,7 +198,7 @@ export async function registrarEmpresa(datos: {
                       </table>
                       
                       <div style="margin-top: 30px;">
-                        <a href="${process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')}/verificar-correo?email=${encodeURIComponent(datos.correo)}" style="background-color:#4f46e5; color:#ffffff; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 14px; display: inline-block; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                        <a href="${process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000'))}/verificar-correo?email=${encodeURIComponent(datos.correo)}" style="background-color:#4f46e5; color:#ffffff; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 14px; display: inline-block; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
                           Ir a verificar mi cuenta
                         </a>
                       </div>

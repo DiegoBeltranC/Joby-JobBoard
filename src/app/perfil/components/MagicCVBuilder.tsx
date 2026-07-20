@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
 import dynamic from 'next/dynamic';
 import { Loader2, X, Save, Eye, EyeOff, Edit2, Sparkles, Send, RotateCcw } from "lucide-react";
@@ -97,6 +97,13 @@ export default function MagicCVBuilder({ onClose }: MagicCVBuilderProps) {
   const [sendingChat, setSendingChat] = useState(false);
   const [focusSection, setFocusSection] = useState<'bio' | 'habilidades' | 'experiencias' | 'proyectos'>('bio');
   const [backups, setBackups] = useState<Record<string, any>>({});
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (chatEndRef.current) {
+      chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [chatMessages, sendingChat]);
 
   useEffect(() => {
     if (!data) return;
@@ -1177,6 +1184,7 @@ export default function MagicCVBuilder({ onClose }: MagicCVBuilderProps) {
                          </div>
                       </div>
                    )}
+                   <div ref={chatEndRef} />
                 </div>
 
                 {/* Input de Chat */}

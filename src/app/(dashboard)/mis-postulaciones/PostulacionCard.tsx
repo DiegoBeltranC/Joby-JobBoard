@@ -23,6 +23,17 @@ import { cancelarPostulacionAction } from "@/actions/postulaciones";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { encodeId } from "@/lib/utils/hash";
 import ModalDetalleSnapshot from "@/components/ModalDetalleSnapshot";
 import ModalPostulacion from "@/components/ModalPostulacion";
@@ -66,8 +77,6 @@ export default function PostulacionCard({ postulacion }: PostulacionCardProps) {
     }, [postulacion.createdAt, postulacion.estatus]);
 
     const handleCancelar = async () => {
-        if (!confirm("¿Estás seguro de que deseas cancelar esta postulación? Esta acción eliminará tu snapshot y no podrá deshacerse.")) return;
-        
         setIsPending(true);
         const res = await cancelarPostulacionAction(postulacion.id);
         if (res.success) {
@@ -170,18 +179,35 @@ export default function PostulacionCard({ postulacion }: PostulacionCardProps) {
                                     >
                                         <FileText className="w-5 h-5 group-hover/edit:rotate-12 transition-transform" />
                                     </button>
-                                    <button
-                                        onClick={handleCancelar}
-                                        disabled={isPending}
-                                        className="p-3 bg-red-50 text-red-500 hover:bg-red-500 hover:text-white rounded-xl transition-all border border-red-100 group/btn"
-                                        title="Cancelar Envío"
-                                    >
-                                        {isPending ? (
-                                            <Loader2 className="w-5 h-5 animate-spin" />
-                                        ) : (
-                                            <Trash2 className="w-5 h-5 group-hover/btn:scale-110 transition-transform" />
-                                        )}
-                                    </button>
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <button
+                                                disabled={isPending}
+                                                className="p-3 bg-red-50 text-red-500 hover:bg-red-500 hover:text-white rounded-xl transition-all border border-red-100 group/btn"
+                                                title="Cancelar Envío"
+                                            >
+                                                {isPending ? (
+                                                    <Loader2 className="w-5 h-5 animate-spin" />
+                                                ) : (
+                                                    <Trash2 className="w-5 h-5 group-hover/btn:scale-110 transition-transform" />
+                                                )}
+                                            </button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>¿Estás seguro de que deseas cancelar esta postulación?</AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                    Esta acción eliminará tu snapshot y no podrá deshacerse.
+                                                </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel disabled={isPending}>Cancelar</AlertDialogCancel>
+                                                <AlertDialogAction onClick={handleCancelar} className="bg-rose-600 hover:bg-rose-700 text-white" disabled={isPending}>
+                                                    Aceptar
+                                                </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
                                 </>
                             )}
                             <button 

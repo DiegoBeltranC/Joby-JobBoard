@@ -37,7 +37,7 @@ async function triggerNotification(empresaId: number, subject: string, title: st
                 message,
                 type,
                 buttonText: "Ir a mi Panel",
-                buttonUrl: `${process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')}/login`
+                buttonUrl: `${process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000'))}/login`
             });
         }
     } catch (error) {
