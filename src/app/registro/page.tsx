@@ -413,20 +413,20 @@ function RegistroContent() {
                                             {errors.nombre && <p className="text-sm text-destructive">{(errors.nombre as any).message}</p>}
                                         </div>
                                         <div className="space-y-2">
-                                            <Label htmlFor="matricula">Matrícula</Label>
-                                            <Input id="matricula" placeholder="Ej. 23000123" {...register("matricula")} />
-                                            {errors.matricula && <p className="text-sm text-destructive">{(errors.matricula as any).message}</p>}
-                                        </div>
-                                    </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div className="space-y-2">
                                             <Label htmlFor="apellidoPaterno">Apellido Paterno</Label>
                                             <Input id="apellidoPaterno" placeholder="Ej. Beltran" {...register("apellidoPaterno")} />
                                             {errors.apellidoPaterno && <p className="text-sm text-destructive">{(errors.apellidoPaterno as any).message}</p>}
                                         </div>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div className="space-y-2">
                                             <Label htmlFor="apellidoMaterno">Apellido Materno (Opcional)</Label>
                                             <Input id="apellidoMaterno" placeholder="Ej. Can" {...register("apellidoMaterno")} />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="matricula">Matrícula</Label>
+                                            <Input id="matricula" placeholder="Ej. 23000123" {...register("matricula")} />
+                                            {errors.matricula && <p className="text-sm text-destructive">{(errors.matricula as any).message}</p>}
                                         </div>
                                     </div>
                                 </div>

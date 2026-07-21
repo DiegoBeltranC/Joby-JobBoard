@@ -37,9 +37,16 @@ export default async function ConfiguracionPage() {
         periodo_academico: estudiante.periodo_academico,
     };
 
+    const relojVinculadoDb = await prisma.deviceLinkCode.findFirst({
+        where: {
+            usuarioId: session.userId,
+            status: "VINCULADO",
+        },
+    });
+
     return (
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-4xl mx-auto space-y-6 pb-12">
-            <FormConfiguracion estudiante={estudianteData} carreras={carreras} />
+            <FormConfiguracion estudiante={estudianteData} carreras={carreras} relojVinculado={!!relojVinculadoDb} />
         </div>
     );
 }

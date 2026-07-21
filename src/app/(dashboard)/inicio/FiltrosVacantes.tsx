@@ -78,7 +78,6 @@ export default function FiltrosVacantes() {
                         <option value="">Cualquier Contrato</option>
                         <option value="TIEMPO_COMPLETO">Tiempo Completo</option>
                         <option value="MEDIO_TIEMPO">Medio Tiempo</option>
-                        <option value="POR_PROYECTO">Por Proyecto</option>
                         <option value="ESTADIA">Estadía</option>
                     </select>
                     <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-teal-500 pointer-events-none" />

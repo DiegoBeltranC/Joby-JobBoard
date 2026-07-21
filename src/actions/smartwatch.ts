@@ -14,6 +14,14 @@ export async function vincularRelojAction(codigo: string) {
       return { success: false, error: "El código debe tener 6 caracteres" };
     }
 
+    const relojYaVinculado = await prisma.deviceLinkCode.findFirst({
+        where: { usuarioId: session.userId, status: "VINCULADO" }
+    });
+
+    if (relojYaVinculado) {
+        return { success: false, error: "Ya tienes un reloj vinculado. Desvincúlalo primero." };
+    }
+
     const linkCode = await prisma.deviceLinkCode.findUnique({
       where: { codigo },
     });
@@ -44,4 +52,26 @@ export async function vincularRelojAction(codigo: string) {
     console.error("Error al vincular el reloj:", error);
     return { success: false, error: "Ocurrió un error inesperado al vincular" };
   }
+}
+
+export async function desvincularRelojAction() {
+    try {
+        const session = await getSession();
+        if (!session || !session.userId) {
+            return { success: false, error: "No autorizado" };
+        }
+
+        // Eliminar el enlace del dispositivo
+        await prisma.deviceLinkCode.deleteMany({
+            where: {
+                usuarioId: session.userId,
+                status: "VINCULADO",
+            },
+        });
+
+        return { success: true };
+    } catch (error) {
+        console.error("Error al desvincular el reloj:", error);
+        return { success: false, error: "Ocurrió un error inesperado al desvincular" };
+    }
 }
