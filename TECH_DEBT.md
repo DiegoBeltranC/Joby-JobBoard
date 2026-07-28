@@ -17,6 +17,12 @@
       migración con decodificación retrocompatible (probar esquema nuevo, caer al viejo), no un
       dedup drop-in. Diferido durante la Fase 1 de rearquitectura.
 
+- [ ] **TD-INFRA-02** 🟡 URL base hardcodeada en el QR de vacante.
+      Context: `src/components/VacanteSlideQR.tsx` fija `origin = "https://bolsa-trabajo-teal.vercel.app"`
+      en lugar de derivarla de `NEXT_PUBLIC_APP_URL` / `VERCEL_*` (ver CLAUDE.md / services.md). Rompe la
+      correspondencia Preview vs Producción de los QR generados. Es un cambio de comportamiento, fuera
+      del refactor behavior-preserving de la Fase 1.
+
 ## Resolved
 
 _Nothing yet._
