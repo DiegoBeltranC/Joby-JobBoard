@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { encodeId } from "@/lib/hash";
+import { urlPerfilPublicoVacante } from "@/lib/vacanteUrls";
 import { MapPin, DollarSign, Briefcase, Building2, Clock } from "lucide-react";
 
 interface VacanteSlideQRProps {
@@ -30,9 +30,7 @@ export default function VacanteSlideQR({ vacante }: VacanteSlideQRProps) {
         if (typeof window !== "undefined") {
             const origin = "https://bolsa-trabajo-teal.vercel.app";
             const empresaId = vacante.empresaId || vacante.empresa?.id;
-            const hashEmpresa = encodeId(empresaId);
-            const hashVacante = encodeId(vacante.id);
-            const urlDestino = `${origin}/perfil-publico-empresa/${hashEmpresa}?vacante=${hashVacante}`;
+            const urlDestino = urlPerfilPublicoVacante(empresaId, vacante.id, origin);
             
             setUrlApiQr(`${origin}/api/qr?data=${encodeURIComponent(urlDestino)}&dark=009374`);
             setMounted(true);

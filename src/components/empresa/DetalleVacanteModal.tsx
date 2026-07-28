@@ -32,7 +32,7 @@ import {
     clasesEncabezadoDetalleVacante,
     etiquetaEstatusVacante,
 } from "@/lib/vacanteEstatus"
-import { encodeId } from "@/lib/hash"
+import { urlCortaVacante } from "@/lib/vacanteUrls"
 import CompartirVacanteModal from "@/components/CompartirVacanteModal"
 
 
@@ -55,9 +55,7 @@ export default function DetalleVacanteModal({
     const [showQrModal, setShowQrModal] = useState(false)
 
     const origin = typeof window !== "undefined" ? window.location.origin : ""
-    const hashEmpresaId = encodeId(vacante.empresaId)
-    const hashVacanteId = encodeId(vacante.id)
-    const publicUrl = `${origin}/e/${hashEmpresaId}?vacante=${hashVacanteId}`
+    const publicUrl = urlCortaVacante(vacante.empresaId, vacante.id, origin)
 
     const estatus = vacante.estatus as string
     const esCerrada = estatus === "CERRADA"

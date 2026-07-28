@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useScrollLock } from "@/hooks/useScrollLock";
-import { encodeId } from "@/lib/hash";
+import { urlCortaVacante } from "@/lib/vacanteUrls";
 import CompartirVacanteModal from "@/components/CompartirVacanteModal";
 
 
@@ -29,9 +29,7 @@ export default function ModalDetalleVacante({ vacante, onClose }: ModalDetalleVa
 
     const origin = typeof window !== "undefined" ? window.location.origin : "";
     const empresaId = vacante.empresa?.id || vacante.empresaId;
-    const hashEmpresaId = encodeId(empresaId);
-    const hashVacanteId = encodeId(vacante.id);
-    const publicUrl = `${origin}/e/${hashEmpresaId}?vacante=${hashVacanteId}`;
+    const publicUrl = urlCortaVacante(empresaId, vacante.id, origin);
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-300">

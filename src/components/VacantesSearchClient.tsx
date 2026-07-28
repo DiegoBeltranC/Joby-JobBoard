@@ -18,6 +18,7 @@ import Link from "next/link";
 import { postularVacanteAction, verificarPostulacionExistente } from "@/actions/postulaciones";
 import { toast } from "sonner";
 import { encodeId } from "@/lib/hash";
+import { urlPerfilPublicoVacante } from "@/lib/vacanteUrls";
 
 interface Vacante {
     id: number;
@@ -86,9 +87,7 @@ export default function VacantesSearchClient({ vacantes }: VacantesSearchClientP
 
     const handleViewDetails = () => {
         if (!selectedVacante) return;
-        const companyHash = encodeId(selectedVacante.empresa.id);
-        const vacancyHash = encodeId(selectedVacante.id);
-        const url = `/perfil-publico-empresa/${companyHash}?vacante=${vacancyHash}`;
+        const url = urlPerfilPublicoVacante(selectedVacante.empresa.id, selectedVacante.id);
         window.open(url, '_blank');
         setSelectedVacante(null);
     };
