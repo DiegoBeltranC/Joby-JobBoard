@@ -1,22 +1,16 @@
 "use client";
 
-import * as React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { toast } from "sonner";
-import { ChevronRight, Check, ChevronsUpDown, MapPin, UserCircle, Briefcase } from "lucide-react";
+import { ChevronRight, MapPin, UserCircle, Briefcase } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { guardarPaso1 } from "@/actions/perfil"; 
 import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import mexicoData from "@/lib/data/mexico.json";
-
-const ubicaciones = mexicoData as Record<string, string[]>;
-const listaEstados = Object.keys(ubicaciones);
+import SelectorEstadoMunicipio from "@/components/SelectorEstadoMunicipio";
 
 // 👇 Añadimos tipos_contrato al esquema
 const paso1Schema = z.object({
@@ -31,8 +25,6 @@ type FormValues = z.infer<typeof paso1Schema>;
 
 export default function FormPaso1({ valoresIniciales }: { valoresIniciales: FormValues }) {
     const router = useRouter();
-    const [openEstado, setOpenEstado] = React.useState(false);
-    const [openMunicipio, setOpenMunicipio] = React.useState(false);
 
     const { register, handleSubmit, setValue, watch, formState: { errors, isSubmitting } } = useForm<FormValues>({
         resolver: zodResolver(paso1Schema),
@@ -42,7 +34,6 @@ export default function FormPaso1({ valoresIniciales }: { valoresIniciales: Form
     const estadoActual = watch("estado");
     const municipioActual = watch("municipio");
     const contratosActuales = watch("tipos_contrato") || []; // 👈 Vigilamos los contratos
-    const municipiosDisponibles = estadoActual ? ubicaciones[estadoActual] : [];
 
     const onSubmit = async (data: FormValues) => {
         const idCarga = toast.loading("Guardando información...");
@@ -70,41 +61,14 @@ export default function FormPaso1({ valoresIniciales }: { valoresIniciales: Form
                     <MapPin className="w-4 h-4 text-teal-600" /> Ubicación actual
                 </h3>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* ESTADO */}
-                    <div className="flex flex-col space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">Estado *</label>
-                        <Popover open={openEstado} onOpenChange={setOpenEstado}>
-                            <PopoverTrigger asChild>
-                                <Button variant="outline" role="combobox" aria-expanded={openEstado} className={cn("w-full justify-between bg-white font-normal", !estadoActual && "text-muted-foreground", errors.estado && "border-red-500")}>
-                                    {estadoActual || "Buscar estado..."} <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-[300px] p-0"><Command><CommandInput placeholder="Escribe tu estado..." /><CommandList><CommandEmpty>No se encontró el estado.</CommandEmpty><CommandGroup>
-                                {listaEstados.map((estado) => (<CommandItem key={estado} value={estado} onSelect={(v) => { const estadoReal = listaEstados.find(e => e.toLowerCase() === v.toLowerCase()); setValue("estado", estadoReal || "", { shouldValidate: true }); setValue("municipio", "", { shouldValidate: true }); setOpenEstado(false); }}>
-                                    <Check className={cn("mr-2 h-4 w-4", estadoActual === estado ? "opacity-100" : "opacity-0")} /> {estado}
-                                </CommandItem>))}
-                            </CommandGroup></CommandList></Command></PopoverContent>
-                        </Popover>
-                    </div>
-
-                    {/* MUNICIPIO */}
-                    <div className="flex flex-col space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">Municipio *</label>
-                        <Popover open={openMunicipio} onOpenChange={setOpenMunicipio}>
-                            <PopoverTrigger asChild>
-                                <Button variant="outline" role="combobox" aria-expanded={openMunicipio} disabled={!estadoActual} className={cn("w-full justify-between bg-white font-normal", !municipioActual && "text-muted-foreground", !estadoActual && "bg-gray-100", errors.municipio && "border-red-500")}>
-                                    {municipioActual || (estadoActual ? "Buscar municipio..." : "Primero elige un estado")} <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-[300px] p-0"><Command><CommandInput placeholder="Escribe tu municipio..." /><CommandList><CommandEmpty>No se encontró el municipio.</CommandEmpty><CommandGroup>
-                                {municipiosDisponibles.map((mun) => (<CommandItem key={mun} value={mun} onSelect={(v) => { const munReal = municipiosDisponibles.find(m => m.toLowerCase() === v.toLowerCase()); setValue("municipio", munReal || "", { shouldValidate: true }); setOpenMunicipio(false); }}>
-                                    <Check className={cn("mr-2 h-4 w-4", municipioActual === mun ? "opacity-100" : "opacity-0")} /> {mun}
-                                </CommandItem>))}
-                            </CommandGroup></CommandList></Command></PopoverContent>
-                        </Popover>
-                    </div>
-                </div>
+                <SelectorEstadoMunicipio
+                    estado={estadoActual}
+                    municipio={municipioActual}
+                    onEstadoChange={(e) => setValue("estado", e, { shouldValidate: true })}
+                    onMunicipioChange={(m) => setValue("municipio", m, { shouldValidate: true })}
+                    errorEstado={errors.estado?.message}
+                    errorMunicipio={errors.municipio?.message}
+                />
 
                 <div className="space-y-1.5 pt-2">
                     <label className="text-sm font-medium text-gray-700">¿Hasta dónde te reubicarías por una buena oferta? *</label>
