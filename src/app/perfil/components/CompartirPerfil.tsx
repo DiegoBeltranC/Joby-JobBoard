@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { QrCode, Copy, Check, Download, ToggleLeft, ToggleRight, Loader2 } from "lucide-react";
-import { updateOpcionesCompartir } from "@/app/actions/perfil";
+import { updateOpcionesCompartir } from "@/actions/perfil";
 import { toast } from "sonner";
 
 interface CompartirPerfilProps {
