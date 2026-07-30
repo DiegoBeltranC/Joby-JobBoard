@@ -6,7 +6,9 @@ import { fileURLToPath } from "node:url";
 // Los tests de componentes (jsdom + Testing Library) se añadirán en su fase.
 export default defineConfig({
   test: {
+    globals: true, // habilita el auto-cleanup de Testing Library entre tests
     environment: "node",
+    setupFiles: ["./vitest.setup.ts"],
     include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
     coverage: {
       provider: "v8",

@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
-import { encodeId } from "@/lib/hash";
+import { urlPerfilPublicoVacante } from "@/lib/vacanteUrls";
 import { calcularProgresoEstudiante } from "@/lib/perfilEstudiante";
 import { obtenerEstudianteYSincronizarHito } from "@/lib/syncPerfilEstudiante";
 import BienvenidaPerfilCompleto from "./BienvenidaPerfilCompleto";
@@ -246,7 +246,7 @@ export default async function InicioPage(props: { searchParams?: Promise<{ [key:
 
                                 <div className="mt-6">
                                     <Link
-                                        href={`/perfil-publico-empresa/${encodeId(v.empresa.id)}?vacante=${encodeId(v.id)}`}
+                                        href={urlPerfilPublicoVacante(v.empresa.id, v.id)}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="w-full py-3.5 bg-gray-900 hover:bg-teal-600 text-white font-black rounded-2xl transition-all shadow-lg shadow-gray-200 hover:shadow-teal-200 flex items-center justify-center gap-2 group/btn"

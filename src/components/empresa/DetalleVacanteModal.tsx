@@ -32,7 +32,8 @@ import {
     clasesEncabezadoDetalleVacante,
     etiquetaEstatusVacante,
 } from "@/lib/vacanteEstatus"
-import { encodeId } from "@/lib/hash"
+import { urlCortaVacante } from "@/lib/vacanteUrls"
+import { separarHabilidadesEIdiomas } from "@/lib/habilidadesVacante"
 import CompartirVacanteModal from "@/components/CompartirVacanteModal"
 
 
@@ -55,9 +56,7 @@ export default function DetalleVacanteModal({
     const [showQrModal, setShowQrModal] = useState(false)
 
     const origin = typeof window !== "undefined" ? window.location.origin : ""
-    const hashEmpresaId = encodeId(vacante.empresaId)
-    const hashVacanteId = encodeId(vacante.id)
-    const publicUrl = `${origin}/e/${hashEmpresaId}?vacante=${hashVacanteId}`
+    const publicUrl = urlCortaVacante(vacante.empresaId, vacante.id, origin)
 
     const estatus = vacante.estatus as string
     const esCerrada = estatus === "CERRADA"
@@ -139,11 +138,7 @@ export default function DetalleVacanteModal({
         }
     }
 
-    const habilidades = (vacante.habilidades_req || []).filter((h: string) => !h.includes(" - "))
-    const idiomas = [
-        ...(vacante.idiomas_req || []),
-        ...(vacante.habilidades_req || []).filter((h: string) => h.includes(" - ")),
-    ]
+    const { habilidades, idiomas } = separarHabilidadesEIdiomas(vacante.habilidades_req, vacante.idiomas_req)
 
     return (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-lg overflow-hidden animate-in zoom-in-95 duration-300 max-h-[90vh] flex flex-col w-full max-w-2xl">

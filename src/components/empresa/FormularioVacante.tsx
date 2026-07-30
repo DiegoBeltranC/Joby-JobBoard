@@ -36,6 +36,7 @@ import { cn } from "@/lib/utils"
 import { habilidades as sugerenciasHabilidades } from "@/lib/data/habilidades"
 import catalogos from "@/lib/data/idiomas.json"
 import locacionesRaw from "@/lib/data/mexico.json"
+import { separarHabilidadesEIdiomas } from "@/lib/habilidadesVacante"
 import {
     esFechaCierreVacanteValida,
     getMinimaFechaCierreVacanteString,
@@ -102,24 +103,14 @@ const formatFechaToLocalString = (fechaInput: any) => {
 
 export default function FormularioVacante({ onSuccess, onCancel, vacanteAEditar }: FormularioVacanteProps) {
     const [inputHabilidad, setInputHabilidad] = React.useState("")
-    const [habilidadesSeleccionadas, setHabilidadesSeleccionadas] = React.useState<string[]>(() => {
-        if (vacanteAEditar?.habilidades_req) {
-            return vacanteAEditar.habilidades_req.filter((h: string) => !h.includes(" - "))
-        }
-        return []
-    })
+    const [habilidadesSeleccionadas, setHabilidadesSeleccionadas] = React.useState<string[]>(
+        () => separarHabilidadesEIdiomas(vacanteAEditar?.habilidades_req).habilidades
+    )
     const [idiomaTemp, setIdiomaTemp] = React.useState("")
     const [nivelTemp, setNivelTemp] = React.useState("")
-    const [idiomasSeleccionados, setIdiomasSeleccionados] = React.useState<string[]>(() => {
-        const list = []
-        if (vacanteAEditar?.idiomas_req) {
-            list.push(...vacanteAEditar.idiomas_req)
-        }
-        if (vacanteAEditar?.habilidades_req) {
-            list.push(...vacanteAEditar.habilidades_req.filter((h: string) => h.includes(" - ")))
-        }
-        return list
-    })
+    const [idiomasSeleccionados, setIdiomasSeleccionados] = React.useState<string[]>(
+        () => separarHabilidadesEIdiomas(vacanteAEditar?.habilidades_req, vacanteAEditar?.idiomas_req).idiomas
+    )
     const [horaEntrada, setHoraEntrada] = React.useState(() => {
         if (vacanteAEditar?.horario && horarioRegex.test(vacanteAEditar.horario)) {
             return vacanteAEditar.horario.split(" - ")[0]
