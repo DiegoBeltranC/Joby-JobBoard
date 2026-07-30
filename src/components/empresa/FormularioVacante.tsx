@@ -16,34 +16,20 @@ import {
     Wrench,
     Languages,
     Clock,
-    Check,
-    ChevronsUpDown,
     AlertCircle,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import {
-    Command,
-    CommandEmpty,
-    CommandGroup,
-    CommandInput,
-    CommandItem,
-    CommandList,
-} from "@/components/ui/command"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 import { habilidades as sugerenciasHabilidades } from "@/lib/data/habilidades"
 import catalogos from "@/lib/data/idiomas.json"
-import locacionesRaw from "@/lib/data/mexico.json"
+import SelectorEstadoMunicipio from "@/components/SelectorEstadoMunicipio"
 import { separarHabilidadesEIdiomas } from "@/lib/habilidadesVacante"
 import {
     esFechaCierreVacanteValida,
     getMinimaFechaCierreVacanteString,
 } from "@/lib/vacanteFechaLimite"
-
-const ubicaciones = locacionesRaw as Record<string, string[]>
-const listaEstados = Object.keys(ubicaciones)
 
 const horarioRegex =
     /^([01][0-9]|2[0-3]):[0-5][0-9] - ([01][0-9]|2[0-3]):[0-5][0-9]$/
@@ -123,8 +109,6 @@ export default function FormularioVacante({ onSuccess, onCancel, vacanteAEditar 
         }
         return "18:00"
     })
-    const [openEstado, setOpenEstado] = React.useState(false)
-    const [openMunicipio, setOpenMunicipio] = React.useState(false)
     const [errorRequisitos, setErrorRequisitos] = React.useState(false)
     const [confirmarGuardar, setConfirmarGuardar] = React.useState(false)
 
@@ -152,8 +136,6 @@ export default function FormularioVacante({ onSuccess, onCancel, vacanteAEditar 
     const estadoActual = watch("estado")
     const municipioActual = watch("municipio")
     const tipoContrato = watch("tipo_contrato")
-
-    const municipiosDisponibles = estadoActual ? ubicaciones[estadoActual] || [] : []
 
     const sugerenciasFiltradas =
         inputHabilidad.trim() === ""
@@ -435,126 +417,17 @@ export default function FormularioVacante({ onSuccess, onCancel, vacanteAEditar 
                             </p>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div className="flex flex-col space-y-1.5">
-                                <Label className="text-sm font-medium text-gray-700">Estado *</Label>
-                                <Popover open={openEstado} onOpenChange={setOpenEstado}>
-                                    <PopoverTrigger asChild>
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            role="combobox"
-                                            aria-expanded={openEstado}
-                                            className={cn(
-                                                "w-full justify-between bg-white font-normal",
-                                                !estadoActual && "text-muted-foreground",
-                                                errors.estado && "border-red-500"
-                                            )}
-                                        >
-                                            {estadoActual || "Buscar estado..."}
-                                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-[300px] p-0 z-[110]" align="start">
-                                        <Command>
-                                            <CommandInput placeholder="Escribe tu estado..." />
-                                            <CommandList>
-                                                <CommandEmpty>No se encontró el estado.</CommandEmpty>
-                                                <CommandGroup>
-                                                    {listaEstados.map((estado) => (
-                                                        <CommandItem
-                                                            key={estado}
-                                                            value={estado}
-                                                            onSelect={(v) => {
-                                                                const estadoReal = listaEstados.find(
-                                                                    (e) => e.toLowerCase() === v.toLowerCase()
-                                                                )
-                                                                setValue("estado", estadoReal || "", {
-                                                                    shouldValidate: true,
-                                                                })
-                                                                setValue("municipio", "", { shouldValidate: true })
-                                                                setOpenEstado(false)
-                                                            }}
-                                                        >
-                                                            <Check
-                                                                className={cn(
-                                                                    "mr-2 h-4 w-4",
-                                                                    estadoActual === estado ? "opacity-100" : "opacity-0"
-                                                                )}
-                                                            />
-                                                            {estado}
-                                                        </CommandItem>
-                                                    ))}
-                                                </CommandGroup>
-                                            </CommandList>
-                                        </Command>
-                                    </PopoverContent>
-                                </Popover>
-                                {errors.estado && (
-                                    <p className="text-xs text-red-500">{errors.estado.message}</p>
-                                )}
-                            </div>
-                            <div className="flex flex-col space-y-1.5">
-                                <Label className="text-sm font-medium text-gray-700">Municipio *</Label>
-                                <Popover open={openMunicipio} onOpenChange={setOpenMunicipio}>
-                                    <PopoverTrigger asChild>
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            role="combobox"
-                                            aria-expanded={openMunicipio}
-                                            disabled={!estadoActual}
-                                            className={cn(
-                                                "w-full justify-between bg-white font-normal",
-                                                !municipioActual && "text-muted-foreground",
-                                                !estadoActual && "bg-gray-100",
-                                                errors.municipio && "border-red-500"
-                                            )}
-                                        >
-                                            {municipioActual ||
-                                                (estadoActual ? "Buscar municipio..." : "Primero elige un estado")}
-                                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-[300px] p-0 z-[110]" align="start">
-                                        <Command>
-                                            <CommandInput placeholder="Escribe tu municipio..." />
-                                            <CommandList>
-                                                <CommandEmpty>No se encontró el municipio.</CommandEmpty>
-                                                <CommandGroup>
-                                                    {municipiosDisponibles.map((mun) => (
-                                                        <CommandItem
-                                                            key={mun}
-                                                            value={mun}
-                                                            onSelect={(v) => {
-                                                                const munReal = municipiosDisponibles.find(
-                                                                    (m) => m.toLowerCase() === v.toLowerCase()
-                                                                )
-                                                                setValue("municipio", munReal || "", {
-                                                                    shouldValidate: true,
-                                                                })
-                                                                setOpenMunicipio(false)
-                                                            }}
-                                                        >
-                                                            <Check
-                                                                className={cn(
-                                                                    "mr-2 h-4 w-4",
-                                                                    municipioActual === mun ? "opacity-100" : "opacity-0"
-                                                                )}
-                                                            />
-                                                            {mun}
-                                                        </CommandItem>
-                                                    ))}
-                                                </CommandGroup>
-                                            </CommandList>
-                                        </Command>
-                                    </PopoverContent>
-                                </Popover>
-                                {errors.municipio && (
-                                    <p className="text-xs text-red-500">{errors.municipio.message}</p>
-                                )}
-                            </div>
-                        </div>
+                        <SelectorEstadoMunicipio
+                            className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+                            contentClassName="z-[110]"
+                            align="start"
+                            estado={estadoActual}
+                            municipio={municipioActual}
+                            onEstadoChange={(e) => setValue("estado", e, { shouldValidate: true })}
+                            onMunicipioChange={(m) => setValue("municipio", m, { shouldValidate: true })}
+                            errorEstado={errors.estado?.message}
+                            errorMunicipio={errors.municipio?.message}
+                        />
                     </div>
 
                     <div className="bg-violet-50/40 p-5 rounded-2xl border border-violet-100 space-y-5">
