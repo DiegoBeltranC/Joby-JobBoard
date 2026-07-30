@@ -6,13 +6,11 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { crearVacanteAction, editarVacanteAction } from "@/actions/vacantes"
 import { toast } from "sonner"
 import {
-    Plus,
     X,
     Briefcase,
     MapPin,
     DollarSign,
     Sparkles,
-    Languages,
     Clock,
     AlertCircle,
 } from "lucide-react"
@@ -20,9 +18,9 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
-import catalogos from "@/lib/data/idiomas.json"
 import SelectorEstadoMunicipio from "@/components/SelectorEstadoMunicipio"
 import SelectorHabilidades from "@/components/empresa/SelectorHabilidades"
+import SelectorIdiomas from "@/components/empresa/SelectorIdiomas"
 import { separarHabilidadesEIdiomas } from "@/lib/habilidadesVacante"
 import { getMinimaFechaCierreVacanteString } from "@/lib/vacanteFechaLimite"
 import {
@@ -43,8 +41,6 @@ export default function FormularioVacante({ onSuccess, onCancel, vacanteAEditar 
     const [habilidadesSeleccionadas, setHabilidadesSeleccionadas] = React.useState<string[]>(
         () => separarHabilidadesEIdiomas(vacanteAEditar?.habilidades_req).habilidades
     )
-    const [idiomaTemp, setIdiomaTemp] = React.useState("")
-    const [nivelTemp, setNivelTemp] = React.useState("")
     const [idiomasSeleccionados, setIdiomasSeleccionados] = React.useState<string[]>(
         () => separarHabilidadesEIdiomas(vacanteAEditar?.habilidades_req, vacanteAEditar?.idiomas_req).idiomas
     )
@@ -87,26 +83,6 @@ export default function FormularioVacante({ onSuccess, onCancel, vacanteAEditar 
     const estadoActual = watch("estado")
     const municipioActual = watch("municipio")
     const tipoContrato = watch("tipo_contrato")
-
-    const agregarIdioma = () => {
-        if (!idiomaTemp || !nivelTemp) {
-            toast.error("Selecciona idioma y nivel.")
-            return
-        }
-        const formato = `${idiomaTemp} - ${nivelTemp.split(" - ")[0]}`
-        if (idiomasSeleccionados.some((i) => i.startsWith(idiomaTemp))) {
-            toast.error("Ya agregaste este idioma.")
-            return
-        }
-        setIdiomasSeleccionados([...idiomasSeleccionados, formato])
-        setErrorRequisitos(false)
-        setIdiomaTemp("")
-        setNivelTemp("")
-    }
-
-    const quitarIdioma = (index: number) => {
-        setIdiomasSeleccionados(idiomasSeleccionados.filter((_, i) => i !== index))
-    }
 
     const onSubmit = async (data: VacanteFormValues) => {
         if (habilidadesSeleccionadas.length === 0 && idiomasSeleccionados.length === 0) {
@@ -412,69 +388,14 @@ export default function FormularioVacante({ onSuccess, onCancel, vacanteAEditar 
                     error={errorRequisitos}
                 />
 
-                <div className={cn(
-                    "p-5 rounded-2xl border space-y-4 transition-colors",
-                    errorRequisitos ? "bg-red-50/10 border-red-500" : "bg-violet-50/40 border-violet-100"
-                )}>
-                    <h3 className="text-sm font-bold text-violet-900 flex items-center gap-2">
-                        <Languages className="w-4 h-4 text-violet-600" />
-                        Idiomas requeridos
-                    </h3>
-                    <div className="flex flex-col sm:flex-row gap-2">
-                        <select
-                            value={idiomaTemp}
-                            onChange={(e) => setIdiomaTemp(e.target.value)}
-                            className="flex-1 rounded-lg border border-gray-300 bg-white p-2.5 text-sm focus:ring-2 focus:ring-violet-500 outline-none"
-                        >
-                            <option value="">Seleccionar idioma...</option>
-                            {(catalogos?.lista || []).map((i) => (
-                                <option key={i} value={i}>
-                                    {i}
-                                </option>
-                            ))}
-                        </select>
-                        <select
-                            value={nivelTemp}
-                            onChange={(e) => setNivelTemp(e.target.value)}
-                            className="flex-1 rounded-lg border border-gray-300 bg-white p-2.5 text-sm focus:ring-2 focus:ring-violet-500 outline-none"
-                        >
-                            <option value="">Nivel...</option>
-                            {(catalogos?.niveles || []).map((n) => (
-                                <option key={n} value={n}>
-                                    {n}
-                                </option>
-                            ))}
-                        </select>
-                        <Button
-                            type="button"
-                            onClick={agregarIdioma}
-                            className="bg-violet-600 hover:bg-violet-700 text-white shrink-0"
-                        >
-                            <Plus className="w-4 h-4 mr-1.5" />
-                            Añadir
-                        </Button>
-                    </div>
-                    {idiomasSeleccionados.length > 0 && (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                            {idiomasSeleccionados.map((idioma, index) => (
-                                <div
-                                    key={`${idioma}-${index}`}
-                                    className="flex items-center justify-between bg-white p-3 rounded-xl border border-violet-100"
-                                >
-                                    <span className="text-sm font-medium text-violet-900">{idioma}</span>
-                                    <button
-                                        type="button"
-                                        onClick={() => quitarIdioma(index)}
-                                        className="text-gray-400 hover:text-red-600 transition-colors"
-                                        aria-label="Quitar idioma"
-                                    >
-                                        <X className="w-4 h-4" />
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
+                <SelectorIdiomas
+                    idiomas={idiomasSeleccionados}
+                    onChange={(nuevos) => {
+                        if (nuevos.length > idiomasSeleccionados.length) setErrorRequisitos(false)
+                        setIdiomasSeleccionados(nuevos)
+                    }}
+                    error={errorRequisitos}
+                />
                 {errorRequisitos && (
                     <p className="text-sm text-red-500 font-medium animate-in fade-in-50 duration-200">
                         * Debes añadir al menos una habilidad o un idioma requerido.
