@@ -9,6 +9,12 @@ import { Label } from "@/components/ui/label";
 import { actualizarConfiguracionEstudiante, actualizarPasswordEstudiante, suspenderCuentaEstudiante } from "@/actions/perfil";
 import { vincularRelojAction, desvincularRelojAction } from "@/actions/smartwatch";
 import { logoutAction } from "@/actions/auth";
+import {
+    estaEnCooldownNombre,
+    fechaFinCooldownNombre,
+    validarDatosPersonales,
+    validarPassword,
+} from "@/lib/configuracionEstudiante";
 import { User, GraduationCap, IdCard, Loader2, ArrowLeft, Lock, Shield, AlertTriangle, ChevronDown, Settings, Trash2, Watch } from "lucide-react";
 import Link from "next/link";
 
@@ -104,33 +110,12 @@ export default function FormConfiguracion({ estudiante, carreras, relojVinculado
         }
     };
 
-    // Calcular cooldown de 30 días
-    const isCooldownActive = () => {
-        if (!estudiante.nombre_modificado_at) return false;
-        const diffMs = Date.now() - new Date(estudiante.nombre_modificado_at).getTime();
-        const diffDays = diffMs / (1000 * 60 * 60 * 24);
-        return diffDays < 30;
-    };
-
-    const getCooldownReleaseDate = () => {
-        if (!estudiante.nombre_modificado_at) return "";
-        const releaseDate = new Date(estudiante.nombre_modificado_at);
-        releaseDate.setDate(releaseDate.getDate() + 30);
-        return releaseDate.toLocaleDateString("es-MX", {
-            day: "numeric",
-            month: "long",
-            year: "numeric"
-        });
-    };
-
-    const cooldownActive = isCooldownActive();
+    // Cooldown de 30 días para volver a editar el nombre
+    const cooldownActive = estaEnCooldownNombre(estudiante.nombre_modificado_at);
+    const fechaFinCooldown = fechaFinCooldownNombre(estudiante.nombre_modificado_at);
 
     const validar = () => {
-        const nuevosErrores: { [key: string]: string } = {};
-        if (!nombre.trim()) nuevosErrores.nombre = "El nombre es requerido";
-        if (!apellidoPaterno.trim()) nuevosErrores.apellidoPaterno = "El apellido paterno es requerido";
-        if (!carreraId) nuevosErrores.carreraId = "Selecciona tu carrera";
-
+        const nuevosErrores = validarDatosPersonales({ nombre, apellidoPaterno, carreraId });
         setErrors(nuevosErrores);
         return Object.keys(nuevosErrores).length === 0;
     };
@@ -177,17 +162,7 @@ export default function FormConfiguracion({ estudiante, carreras, relojVinculado
 
     const handlePasswordSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        const errs: { [key: string]: string } = {};
-        if (!passwordActual) errs.passwordActual = "La contraseña actual es requerida";
-        if (!passwordNuevo) {
-            errs.passwordNuevo = "La nueva contraseña es requerida";
-        } else if (passwordNuevo.length < 8) {
-            errs.passwordNuevo = "Debe tener al menos 8 caracteres";
-        }
-        if (passwordNuevo !== confirmarPasswordNuevo) {
-            errs.confirmarPasswordNuevo = "Las contraseñas no coinciden";
-        }
-
+        const errs = validarPassword({ passwordActual, passwordNuevo, confirmarPasswordNuevo });
         setPasswordErrors(errs);
         if (Object.keys(errs).length > 0) return;
 
@@ -355,7 +330,7 @@ export default function FormConfiguracion({ estudiante, carreras, relojVinculado
                                 {cooldownActive && (
                                     <p className="text-xs text-amber-600 font-medium bg-amber-50/50 border border-amber-100 rounded-xl p-3 flex items-center gap-2">
                                         <AlertTriangle className="w-4 h-4 shrink-0" />
-                                        Modificado recientemente. Podrás volver a editarlo el {getCooldownReleaseDate()}.
+                                        Modificado recientemente. Podrás volver a editarlo el {fechaFinCooldown}.
                                     </p>
                                 )}
                             </div>
