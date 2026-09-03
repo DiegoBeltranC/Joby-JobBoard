@@ -1,0 +1,134 @@
+<title>JobBy · Cómo funciona</title>
+<style>
+  :root{
+    --bg:#f3f1ec; --surface:#ffffff; --ink:#12211f; --ink-soft:#465552; --ink-faint:#7c8a87; --line:#d9d5cb;
+    --accent:#0f766e; --accent-deep:#0a544e;
+    --est:#7a5ea3; --est-tint:#efeaf6;
+    --emp:#b0642a; --emp-tint:#f7ebdf;
+    --adm:#2f7d8f; --adm-tint:#e2eef1;
+    --shadow:0 2px 4px rgba(18,33,31,.06),0 10px 30px rgba(18,33,31,.08);
+  }
+  @media (prefers-color-scheme:dark){
+    :root{--bg:#0e1615;--surface:#15201e;--ink:#edf2f0;--ink-soft:#a9b8b4;--ink-faint:#74847f;--line:#2c3a36;
+      --accent:#35b3a6;--accent-deep:#5fd0c3;--est:#b39ad6;--est-tint:#241d33;--emp:#e0975a;--emp-tint:#33251a;
+      --adm:#5fb6c9;--adm-tint:#122a30;--shadow:0 2px 4px rgba(0,0,0,.3),0 10px 34px rgba(0,0,0,.4);}
+  }
+  :root[data-theme="light"]{--bg:#f3f1ec;--surface:#fff;--ink:#12211f;--ink-soft:#465552;--ink-faint:#7c8a87;--line:#d9d5cb;--accent:#0f766e;--accent-deep:#0a544e;--est:#7a5ea3;--est-tint:#efeaf6;--emp:#b0642a;--emp-tint:#f7ebdf;--adm:#2f7d8f;--adm-tint:#e2eef1;--shadow:0 2px 4px rgba(18,33,31,.06),0 10px 30px rgba(18,33,31,.08);}
+  :root[data-theme="dark"]{--bg:#0e1615;--surface:#15201e;--ink:#edf2f0;--ink-soft:#a9b8b4;--ink-faint:#74847f;--line:#2c3a36;--accent:#35b3a6;--accent-deep:#5fd0c3;--est:#b39ad6;--est-tint:#241d33;--emp:#e0975a;--emp-tint:#33251a;--adm:#5fb6c9;--adm-tint:#122a30;--shadow:0 2px 4px rgba(0,0,0,.3),0 10px 34px rgba(0,0,0,.4);}
+
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);line-height:1.5;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:920px;margin:0 auto;padding:clamp(18px,4vw,40px);}
+  .eyebrow{text-transform:uppercase;letter-spacing:.16em;font-size:.72rem;font-weight:700;color:var(--accent);margin:0 0 8px;}
+  h1{font-size:clamp(1.6rem,4vw,2.4rem);line-height:1.05;margin:0;letter-spacing:-.03em;text-wrap:balance;font-weight:820;}
+  .lede{margin:12px 0 6px;max-width:58ch;color:var(--ink-soft);}
+  .board{background:var(--surface);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);
+    padding:clamp(10px,2vw,22px);margin-top:22px;}
+  svg{width:100%;height:auto;display:block;}
+  .caption{text-align:center;color:var(--ink-faint);font-size:.82rem;margin-top:6px;}
+
+  /* svg text styles */
+  .node-name{font:800 25px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;letter-spacing:-.5px;}
+  .node-sub{font:500 15px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;}
+  .verb{font:700 16px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;}
+  .hub-name{font:800 30px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;letter-spacing:-.5px;}
+  .hub-sub{font:600 14px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;letter-spacing:.5px;}
+</style>
+
+<div class="wrap">
+  <p class="eyebrow">JobBy · Cómo funciona a grandes rasgos</p>
+  <h1>Tres actores, una sola plataforma</h1>
+  <p class="lede">El <b>estudiante</b>, la <b>empresa</b> y el <b>administrador</b> se conectan a través de JobBy y su base de datos. Cada flecha muestra qué aporta cada uno.</p>
+
+  <div class="board">
+    <svg viewBox="0 0 900 760" role="img" aria-label="Diagrama: estudiante, empresa y administrador conectados a la plataforma JobBy">
+      <defs>
+        <marker id="ah-est" markerWidth="10" markerHeight="10" refX="7" refY="5" orient="auto"><path d="M0,0 L8,5 L0,10 z" fill="var(--est)"/></marker>
+        <marker id="ah-emp" markerWidth="10" markerHeight="10" refX="7" refY="5" orient="auto"><path d="M0,0 L8,5 L0,10 z" fill="var(--emp)"/></marker>
+        <marker id="ah-adm" markerWidth="10" markerHeight="10" refX="7" refY="5" orient="auto"><path d="M0,0 L8,5 L0,10 z" fill="var(--adm)"/></marker>
+        <marker id="ah-back" markerWidth="10" markerHeight="10" refX="7" refY="5" orient="auto"><path d="M0,0 L8,5 L0,10 z" fill="var(--ink-faint)"/></marker>
+      </defs>
+
+      <!-- ================= ARROWS (drawn first, under nodes) ================= -->
+      <!-- ADMIN (top) -> HUB -->
+      <line x1="450" y1="235" x2="450" y2="300" stroke="var(--adm)" stroke-width="3.5" marker-end="url(#ah-adm)"/>
+      <!-- ESTUDIANTE (left) -> HUB -->
+      <line x1="255" y1="470" x2="360" y2="440" stroke="var(--est)" stroke-width="3.5" marker-end="url(#ah-est)"/>
+      <!-- EMPRESA (right) -> HUB -->
+      <line x1="645" y1="470" x2="540" y2="440" stroke="var(--emp)" stroke-width="3.5" marker-end="url(#ah-emp)"/>
+      <!-- HUB -> back to student/company (results / vacancies) -->
+      <path d="M 370 480 Q 300 520 250 512" fill="none" stroke="var(--ink-faint)" stroke-width="2.5" stroke-dasharray="6 6" marker-end="url(#ah-back)"/>
+      <path d="M 530 480 Q 600 520 650 512" fill="none" stroke="var(--ink-faint)" stroke-width="2.5" stroke-dasharray="6 6" marker-end="url(#ah-back)"/>
+
+      <!-- verb labels on arrows -->
+      <g text-anchor="middle">
+        <!-- admin verb -->
+        <rect x="462" y="252" width="230" height="30" rx="8" fill="var(--adm-tint)"/>
+        <text x="577" y="272" class="verb" fill="var(--adm)">Verifica y supervisa</text>
+
+        <!-- student verb -->
+        <rect x="205" y="392" width="196" height="30" rx="8" fill="var(--est-tint)" transform="rotate(-16 303 407)"/>
+        <text x="303" y="412" class="verb" fill="var(--est)" transform="rotate(-16 303 407)">Inicia sesión · CV · Postula</text>
+
+        <!-- company verb -->
+        <rect x="499" y="392" width="196" height="30" rx="8" fill="var(--emp-tint)" transform="rotate(16 597 407)"/>
+        <text x="597" y="412" class="verb" fill="var(--emp)" transform="rotate(16 597 407)">Publica · Revisa candidatos</text>
+
+        <!-- back arrows label -->
+        <text x="312" y="500" class="node-sub" fill="var(--ink-faint)">recibe vacantes</text>
+        <text x="588" y="500" class="node-sub" fill="var(--ink-faint)">recibe postulaciones</text>
+      </g>
+
+      <!-- ================= CENTER HUB ================= -->
+      <circle cx="450" cy="410" r="112" fill="var(--surface)" stroke="var(--accent)" stroke-width="3"/>
+      <circle cx="450" cy="410" r="112" fill="var(--accent)" opacity="0.06"/>
+      <!-- database icon -->
+      <g stroke="var(--accent)" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <ellipse cx="450" cy="360" rx="34" ry="12" fill="var(--accent)" fill-opacity="0.15"/>
+        <path d="M416 360 v34 c0 6.6 15.2 12 34 12 s34 -5.4 34 -12 v-34"/>
+        <path d="M416 377 c0 6.6 15.2 12 34 12 s34 -5.4 34 -12"/>
+      </g>
+      <text x="450" y="446" text-anchor="middle" class="hub-name" fill="var(--accent-deep)">JobBy</text>
+      <text x="450" y="470" text-anchor="middle" class="hub-sub" fill="var(--ink-faint)">PLATAFORMA + BASE DE DATOS</text>
+
+      <!-- ================= ADMIN NODE (top) ================= -->
+      <g>
+        <circle cx="450" cy="150" r="82" fill="var(--adm-tint)" stroke="var(--adm)" stroke-width="3"/>
+        <!-- shield-check icon -->
+        <g transform="translate(450,138)" stroke="var(--adm)" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M0 -34 L28 -22 V2 c0 22 -16 34 -28 40 c-12 -6 -28 -18 -28 -40 V-22 Z" fill="var(--adm)" fill-opacity="0.12"/>
+          <path d="M-13 4 l9 9 l18 -20"/>
+        </g>
+      </g>
+      <text x="450" y="212" text-anchor="middle" class="node-sub" fill="var(--adm)" font-weight="800">ADMINISTRADOR</text>
+
+      <!-- ================= ESTUDIANTE NODE (left) ================= -->
+      <g>
+        <circle cx="170" cy="500" r="82" fill="var(--est-tint)" stroke="var(--est)" stroke-width="3"/>
+        <!-- graduate icon -->
+        <g transform="translate(170,488)" stroke="var(--est)" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M-34 -8 L0 -24 L34 -8 L0 8 Z" fill="var(--est)" fill-opacity="0.12"/>
+          <path d="M-20 -1 v18 c0 8 40 8 40 0 v-18"/>
+          <path d="M34 -8 v18"/>
+        </g>
+      </g>
+      <text x="170" y="562" text-anchor="middle" class="node-sub" fill="var(--est)" font-weight="800">ESTUDIANTE</text>
+
+      <!-- ================= EMPRESA NODE (right) ================= -->
+      <g>
+        <circle cx="730" cy="500" r="82" fill="var(--emp-tint)" stroke="var(--emp)" stroke-width="3"/>
+        <!-- building icon -->
+        <g transform="translate(730,488)" stroke="var(--emp)" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="-26" y="-30" width="52" height="60" rx="4" fill="var(--emp)" fill-opacity="0.12"/>
+          <line x1="-12" y1="-16" x2="-4" y2="-16"/><line x1="6" y1="-16" x2="14" y2="-16"/>
+          <line x1="-12" y1="-2" x2="-4" y2="-2"/><line x1="6" y1="-2" x2="14" y2="-2"/>
+          <line x1="-12" y1="12" x2="-4" y2="12"/><line x1="6" y1="12" x2="14" y2="12"/>
+        </g>
+      </g>
+      <text x="730" y="562" text-anchor="middle" class="node-sub" fill="var(--emp)" font-weight="800">EMPRESA</text>
+
+    </svg>
+    <p class="caption">Flechas de color = lo que cada actor envía a la plataforma · Flechas punteadas = lo que la plataforma les devuelve</p>
+  </div>
+</div>

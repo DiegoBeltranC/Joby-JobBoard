@@ -1,0 +1,406 @@
+<title>JobBy · Modelo de Negocio</title>
+<style>
+  :root {
+    --bg: #f3f1ec;
+    --surface: #ffffff;
+    --ink: #12211f;
+    --ink-soft: #465552;
+    --ink-faint: #7c8a87;
+    --line: #e0ddd4;
+    --accent: #0f766e;
+    --accent-deep: #0a544e;
+    --accent-tint: #e5f0ee;
+    /* semantic block hues (muted, teal-family + warm accents) */
+    --c-partners: #4a6b8a;
+    --c-activities: #0f766e;
+    --c-resources: #7a5ea3;
+    --c-value: #b0642a;
+    --c-relations: #b0424a;
+    --c-channels: #4a6b8a;
+    --c-segments: #7a5ea3;
+    --c-cost: #465552;
+    --c-revenue: #0f766e;
+    --shadow: 0 1px 2px rgba(18,33,31,.05), 0 6px 20px rgba(18,33,31,.06);
+    --radius: 14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0e1615;
+      --surface: #15201e;
+      --ink: #edf2f0;
+      --ink-soft: #a9b8b4;
+      --ink-faint: #74847f;
+      --line: #26332f;
+      --accent: #35b3a6;
+      --accent-deep: #5fd0c3;
+      --accent-tint: #142a27;
+      --c-partners: #7ea3c4;
+      --c-activities: #35b3a6;
+      --c-resources: #b39ad6;
+      --c-value: #e0975a;
+      --c-relations: #e08088;
+      --c-channels: #7ea3c4;
+      --c-segments: #b39ad6;
+      --c-cost: #9fb0ac;
+      --c-revenue: #35b3a6;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 6px 24px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="light"] {
+    --bg: #f3f1ec; --surface: #ffffff; --ink: #12211f; --ink-soft: #465552;
+    --ink-faint: #7c8a87; --line: #e0ddd4; --accent: #0f766e; --accent-deep: #0a544e;
+    --accent-tint: #e5f0ee;
+    --c-partners:#4a6b8a; --c-activities:#0f766e; --c-resources:#7a5ea3; --c-value:#b0642a;
+    --c-relations:#b0424a; --c-channels:#4a6b8a; --c-segments:#7a5ea3; --c-cost:#465552; --c-revenue:#0f766e;
+    --shadow: 0 1px 2px rgba(18,33,31,.05), 0 6px 20px rgba(18,33,31,.06);
+  }
+  :root[data-theme="dark"] {
+    --bg: #0e1615; --surface: #15201e; --ink: #edf2f0; --ink-soft: #a9b8b4;
+    --ink-faint: #74847f; --line: #26332f; --accent: #35b3a6; --accent-deep: #5fd0c3;
+    --accent-tint: #142a27;
+    --c-partners:#7ea3c4; --c-activities:#35b3a6; --c-resources:#b39ad6; --c-value:#e0975a;
+    --c-relations:#e08088; --c-channels:#7ea3c4; --c-segments:#b39ad6; --c-cost:#9fb0ac; --c-revenue:#35b3a6;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 6px 24px rgba(0,0,0,.35);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: clamp(20px, 4vw, 48px); }
+
+  /* ---------- Header ---------- */
+  header { margin-bottom: 32px; }
+  .brand {
+    display: inline-flex; align-items: center; gap: 10px;
+    font-weight: 800; letter-spacing: -.02em; font-size: 1.15rem;
+  }
+  .brand .dot {
+    width: 30px; height: 30px; border-radius: 9px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-deep));
+    color: #fff; display: grid; place-items: center; font-size: .95rem;
+    box-shadow: var(--shadow);
+  }
+  .eyebrow {
+    text-transform: uppercase; letter-spacing: .16em; font-size: .72rem;
+    font-weight: 700; color: var(--accent); margin: 22px 0 8px;
+  }
+  h1 {
+    font-size: clamp(1.9rem, 4.4vw, 3rem); line-height: 1.04; margin: 0;
+    letter-spacing: -.03em; text-wrap: balance; font-weight: 820;
+  }
+  .lede {
+    margin: 14px 0 0; max-width: 62ch; color: var(--ink-soft);
+    font-size: clamp(1rem, 1.6vw, 1.12rem);
+  }
+
+  /* ---------- Summary strip ---------- */
+  .summary {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px;
+    margin: 28px 0 40px;
+  }
+  .stat {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 16px 18px; box-shadow: var(--shadow);
+  }
+  .stat .k { font-size: .72rem; text-transform: uppercase; letter-spacing: .1em; color: var(--ink-faint); font-weight: 700; }
+  .stat .v { font-size: 1.05rem; font-weight: 750; margin-top: 5px; letter-spacing: -.01em; }
+
+  /* ---------- Canvas grid ---------- */
+  .canvas {
+    display: grid; gap: 14px;
+    grid-template-columns: repeat(5, 1fr);
+    grid-template-areas:
+      "partners activities value relations segments"
+      "partners resources value channels segments"
+      "cost cost cost revenue revenue";
+  }
+  .block {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 16px 16px 18px;
+    box-shadow: var(--shadow);
+    display: flex; flex-direction: column;
+    position: relative; overflow: hidden;
+  }
+  .block::before {
+    content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+    background: var(--hue);
+  }
+  .block .head {
+    display: flex; align-items: center; gap: 9px; margin-bottom: 12px;
+  }
+  .ico {
+    width: 26px; height: 26px; flex: none; border-radius: 7px;
+    background: color-mix(in srgb, var(--hue) 16%, transparent);
+    color: var(--hue); display: grid; place-items: center;
+  }
+  .ico svg { width: 15px; height: 15px; }
+  .block h2 {
+    font-size: .82rem; margin: 0; font-weight: 800; letter-spacing: -.01em;
+    text-transform: uppercase; letter-spacing: .04em;
+  }
+  .block h2 .n { color: var(--ink-faint); font-weight: 700; margin-right: 4px; }
+  ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 9px; }
+  li {
+    font-size: .855rem; color: var(--ink-soft); line-height: 1.4;
+    padding-left: 15px; position: relative;
+  }
+  li::before {
+    content: ""; position: absolute; left: 0; top: .5em;
+    width: 5px; height: 5px; border-radius: 50%; background: var(--hue);
+  }
+  li b { color: var(--ink); font-weight: 700; }
+
+  .partners { grid-area: partners; --hue: var(--c-partners); }
+  .activities { grid-area: activities; --hue: var(--c-activities); }
+  .resources { grid-area: resources; --hue: var(--c-resources); }
+  .value { grid-area: value; --hue: var(--c-value); }
+  .relations { grid-area: relations; --hue: var(--c-relations); }
+  .channels { grid-area: channels; --hue: var(--c-channels); }
+  .segments { grid-area: segments; --hue: var(--c-segments); }
+  .cost { grid-area: cost; --hue: var(--c-cost); }
+  .revenue { grid-area: revenue; --hue: var(--c-revenue); }
+
+  /* value prop gets a soft highlight — it's the heart of the canvas */
+  .value { background: linear-gradient(180deg, var(--accent-tint), var(--surface) 55%); }
+
+  .cols-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 9px 20px; }
+
+  /* ---------- Revenue detail ---------- */
+  .rev-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 40px; }
+  .rev-card {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow);
+  }
+  .rev-card h3 { margin: 0 0 4px; font-size: 1.05rem; letter-spacing: -.01em; }
+  .rev-card .tag {
+    display: inline-block; font-size: .68rem; font-weight: 800; text-transform: uppercase;
+    letter-spacing: .08em; padding: 3px 9px; border-radius: 999px; margin-bottom: 12px;
+    background: var(--accent-tint); color: var(--accent-deep);
+  }
+  .plan-row {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
+    padding: 11px 0; border-top: 1px solid var(--line);
+  }
+  .plan-row:first-of-type { border-top: none; }
+  .plan-row .name { font-weight: 700; font-size: .92rem; }
+  .plan-row .desc { font-size: .8rem; color: var(--ink-faint); }
+  .plan-row .price { font-weight: 800; font-size: 1.05rem; white-space: nowrap; font-variant-numeric: tabular-nums; color: var(--accent); }
+
+  footer {
+    margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--line);
+    color: var(--ink-faint); font-size: .8rem; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px;
+  }
+
+  @media (max-width: 900px) {
+    .canvas {
+      grid-template-columns: 1fr 1fr;
+      grid-template-areas:
+        "value value"
+        "segments relations"
+        "channels partners"
+        "activities resources"
+        "cost revenue";
+    }
+    .summary { grid-template-columns: 1fr 1fr; }
+    .rev-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 560px) {
+    .canvas { grid-template-columns: 1fr; grid-template-areas: "value" "segments" "relations" "channels" "partners" "activities" "resources" "cost" "revenue"; }
+    .summary { grid-template-columns: 1fr; }
+    .cols-2 { grid-template-columns: 1fr; }
+  }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="brand"><span class="dot">J</span> JobBy</div>
+    <div class="eyebrow">Modelo de Negocio · Lienzo Canvas</div>
+    <h1>Bolsa de trabajo universitaria como plataforma de talento</h1>
+    <p class="lede">JobBy conecta a estudiantes y egresados de la UT Chetumal con empresas que buscan talento local, usando IA para construir CVs profesionales y un proceso de verificación que da confianza a ambos lados.</p>
+
+    <div class="summary">
+      <div class="stat"><div class="k">Tipo de negocio</div><div class="v">Marketplace de 2 lados (SaaS)</div></div>
+      <div class="stat"><div class="k">Quién paga</div><div class="v">Empresas + Estudiantes Premium</div></div>
+      <div class="stat"><div class="k">Modelo de ingreso</div><div class="v">Suscripción recurrente (Freemium)</div></div>
+      <div class="stat"><div class="k">Ventaja clave</div><div class="v">Talento verificado + CV con IA</div></div>
+    </div>
+  </header>
+
+  <main class="canvas">
+
+    <!-- 1 Aliados -->
+    <section class="block partners">
+      <div class="head">
+        <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+        <h2><span class="n">01</span> Aliados Clave</h2>
+      </div>
+      <ul>
+        <li><b>UT Chetumal</b> — avala la plataforma y aporta la base de estudiantes/egresados</li>
+        <li><b>Empresas de Q. Roo</b> (hotelería, turismo, TI) que reclutan talento</li>
+        <li><b>Google (Gemini AI)</b> — motor del CV mágico</li>
+        <li><b>Stripe</b> — cobros y suscripciones</li>
+        <li><b>Resend</b> — correos transaccionales · <b>Vercel</b> — hosting</li>
+      </ul>
+    </section>
+
+    <!-- 2 Actividades -->
+    <section class="block activities">
+      <div class="head">
+        <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></span>
+        <h2><span class="n">02</span> Actividades Clave</h2>
+      </div>
+      <ul>
+        <li><b>Verificar empresas</b> (RFC, razón social) antes de publicar</li>
+        <li><b>Match</b> entre habilidades del alumno y requisitos de la vacante</li>
+        <li><b>Generar CVs con IA</b> y plantillas profesionales</li>
+        <li>Mantener y evolucionar la plataforma</li>
+      </ul>
+    </section>
+
+    <!-- 3 Recursos -->
+    <section class="block resources">
+      <div class="head">
+        <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7h-9M14 17H5M17 3l3 4-3 4M7 21l-3-4 3-4"/></svg></span>
+        <h2><span class="n">03</span> Recursos Clave</h2>
+      </div>
+      <ul>
+        <li><b>Base de talento verificado</b> de la universidad</li>
+        <li>Plataforma web (Next.js, PostgreSQL, Prisma)</li>
+        <li>Créditos de IA (Gemini) y motor de plantillas de CV</li>
+        <li>Reputación institucional de la UTCH</li>
+      </ul>
+    </section>
+
+    <!-- 4 Propuesta de valor -->
+    <section class="block value">
+      <div class="head">
+        <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 7.4H22l-6 4.6 2.3 7.4L12 17l-6.3 4.4L8 14 2 9.4h7.6z"/></svg></span>
+        <h2><span class="n">04</span> Propuesta de Valor</h2>
+      </div>
+      <ul>
+        <li><b>Para estudiantes:</b> crea un CV profesional en minutos con IA y postúlate a vacantes reales sin experiencia previa.</li>
+        <li><b>Para empresas:</b> acceso directo a talento joven <b>verificado</b> por la universidad, filtrable por carrera, habilidades e idiomas.</li>
+        <li><b>Para la UTCH:</b> mide y potencia la empleabilidad de sus egresados.</li>
+        <li><b>Confianza:</b> perfiles y empresas validados antes de conectar.</li>
+      </ul>
+    </section>
+
+    <!-- 5 Relación con clientes -->
+    <section class="block relations">
+      <div class="head">
+        <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
+        <h2><span class="n">05</span> Relación con Clientes</h2>
+      </div>
+      <ul>
+        <li><b>Autoservicio</b> en la app (registro, perfil, postulación)</li>
+        <li>Onboarding y verificación asistida por el <b>Admin</b></li>
+        <li>Notificaciones por correo y estados de postulación</li>
+        <li>Comunidad respaldada por la universidad</li>
+      </ul>
+    </section>
+
+    <!-- 6 Canales -->
+    <section class="block channels">
+      <div class="head">
+        <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20"/></svg></span>
+        <h2><span class="n">06</span> Canales</h2>
+      </div>
+      <ul>
+        <li><b>App web</b> JobBy (responsive + integración smartwatch)</li>
+        <li>Difusión oficial de la <b>UT Chetumal</b></li>
+        <li>Correo (Resend) y códigos QR para compartir perfil</li>
+        <li>Redes sociales y ferias de empleo</li>
+      </ul>
+    </section>
+
+    <!-- 7 Segmentos -->
+    <section class="block segments">
+      <div class="head">
+        <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2M16 3.13a4 4 0 0 1 0 7.75M21 21v-2a4 4 0 0 0-3-3.87"/></svg></span>
+        <h2><span class="n">07</span> Segmentos de Cliente</h2>
+      </div>
+      <ul>
+        <li><b>Estudiantes activos</b> buscando estadía o medio tiempo</li>
+        <li><b>Egresados</b> en busca de su primer empleo profesional</li>
+        <li><b>Empresas locales</b> (turismo, hotelería, TI, servicios)</li>
+        <li>La <b>universidad</b> como usuaria institucional</li>
+      </ul>
+    </section>
+
+    <!-- 8 Costos -->
+    <section class="block cost">
+      <div class="head">
+        <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>
+        <h2><span class="n">08</span> Estructura de Costos</h2>
+      </div>
+      <ul class="cols-2">
+        <li><b>APIs de IA</b> (Gemini) por uso — costo variable clave</li>
+        <li><b>Infraestructura</b>: hosting, base de datos, almacenamiento</li>
+        <li><b>Comisiones</b> de Stripe por transacción</li>
+        <li><b>Correos</b> transaccionales (Resend)</li>
+        <li><b>Desarrollo y mantenimiento</b> de la plataforma</li>
+        <li><b>Soporte y verificación</b> de empresas</li>
+      </ul>
+    </section>
+
+    <!-- 9 Ingresos -->
+    <section class="block revenue">
+      <div class="head">
+        <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>
+        <h2><span class="n">09</span> Fuentes de Ingreso</h2>
+      </div>
+      <ul class="cols-2">
+        <li><b>Estudiante Premium:</b> más generaciones de CV con IA, plantillas y perfil destacado</li>
+        <li><b>Empresa Premium:</b> vacantes ilimitadas, búsqueda avanzada y acceso a la base de talento</li>
+        <li><b>Vacantes destacadas</b> (pago único por publicación)</li>
+        <li><b>Licencia institucional</b> a universidades (SaaS anual)</li>
+      </ul>
+    </section>
+
+  </main>
+
+  <!-- Revenue detail -->
+  <div class="rev-grid">
+    <div class="rev-card">
+      <span class="tag">Modelo Freemium</span>
+      <h3>Planes de suscripción</h3>
+      <div class="plan-row">
+        <div><div class="name">Free</div><div class="desc">Perfil, CV básico y postulaciones limitadas</div></div>
+        <div class="price">$0</div>
+      </div>
+      <div class="plan-row">
+        <div><div class="name">Estudiante Premium</div><div class="desc">IA ilimitada, plantillas y perfil destacado</div></div>
+        <div class="price">$ /mes</div>
+      </div>
+      <div class="plan-row">
+        <div><div class="name">Empresa Premium</div><div class="desc">Vacantes y búsqueda de talento sin límite</div></div>
+        <div class="price">$$ /mes</div>
+      </div>
+      <p class="desc" style="margin:14px 0 0">Cobrado con Stripe. Los precios se definen según el costo de IA y el mercado local.</p>
+    </div>
+
+    <div class="rev-card">
+      <span class="tag">Por qué funciona</span>
+      <h3>La lógica del negocio</h3>
+      <ul style="gap:12px">
+        <li style="--hue:var(--accent)"><b>Efecto de red:</b> más estudiantes atraen más empresas, y más vacantes atraen más estudiantes.</li>
+        <li style="--hue:var(--accent)"><b>El gancho es la IA:</b> el CV mágico da valor inmediato y engancha al estudiante desde el primer minuto.</li>
+        <li style="--hue:var(--accent)"><b>El respaldo de la UTCH</b> reduce la desconfianza: talento y empresas verificados.</li>
+        <li style="--hue:var(--accent)"><b>Ingreso recurrente</b> (suscripción) más escalable y predecible que cobrar por comisión.</li>
+      </ul>
+    </div>
+  </div>
+
+  <footer>
+    <span>JobBy — Bolsa de Trabajo UT Chetumal</span>
+    <span>Business Model Canvas · Osterwalder</span>
+  </footer>
+</div>

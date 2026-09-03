@@ -1,0 +1,247 @@
+<title>JobBy · Diagrama de Flujo</title>
+<style>
+  :root {
+    --bg: #f3f1ec;
+    --surface: #ffffff;
+    --ink: #12211f;
+    --ink-soft: #465552;
+    --ink-faint: #7c8a87;
+    --line: #e0ddd4;
+    --accent: #0f766e;
+    --accent-deep: #0a544e;
+    /* actor colors */
+    --est: #7a5ea3;   /* estudiante - morado */
+    --est-tint: #efeaf6;
+    --emp: #b0642a;   /* empresa - ámbar */
+    --emp-tint: #f7ebdf;
+    --adm: #0f766e;   /* admin - teal */
+    --adm-tint: #e2efed;
+    --good: #2f8a5b;
+    --bad: #b0424a;
+    --shadow: 0 1px 2px rgba(18,33,31,.05), 0 6px 18px rgba(18,33,31,.06);
+    --radius: 14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:#0e1615; --surface:#15201e; --ink:#edf2f0; --ink-soft:#a9b8b4; --ink-faint:#74847f; --line:#26332f;
+      --accent:#35b3a6; --accent-deep:#5fd0c3;
+      --est:#b39ad6; --est-tint:#241d33; --emp:#e0975a; --emp-tint:#33251a; --adm:#35b3a6; --adm-tint:#142a27;
+      --good:#5cc088; --bad:#e08088;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 6px 22px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="light"]{--bg:#f3f1ec;--surface:#fff;--ink:#12211f;--ink-soft:#465552;--ink-faint:#7c8a87;--line:#e0ddd4;--accent:#0f766e;--accent-deep:#0a544e;--est:#7a5ea3;--est-tint:#efeaf6;--emp:#b0642a;--emp-tint:#f7ebdf;--adm:#0f766e;--adm-tint:#e2efed;--good:#2f8a5b;--bad:#b0424a;--shadow:0 1px 2px rgba(18,33,31,.05),0 6px 18px rgba(18,33,31,.06);}
+  :root[data-theme="dark"]{--bg:#0e1615;--surface:#15201e;--ink:#edf2f0;--ink-soft:#a9b8b4;--ink-faint:#74847f;--line:#26332f;--accent:#35b3a6;--accent-deep:#5fd0c3;--est:#b39ad6;--est-tint:#241d33;--emp:#e0975a;--emp-tint:#33251a;--adm:#35b3a6;--adm-tint:#142a27;--good:#5cc088;--bad:#e08088;--shadow:0 1px 2px rgba(0,0,0,.3),0 6px 22px rgba(0,0,0,.35);}
+
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); line-height:1.5;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; -webkit-font-smoothing:antialiased; }
+  .wrap { max-width: 1080px; margin:0 auto; padding: clamp(20px,4vw,44px); }
+
+  header { margin-bottom: 8px; }
+  .brand { display:inline-flex; align-items:center; gap:10px; font-weight:800; letter-spacing:-.02em; font-size:1.1rem; }
+  .brand .dot { width:30px; height:30px; border-radius:9px; background:linear-gradient(135deg,var(--accent),var(--accent-deep));
+    color:#fff; display:grid; place-items:center; font-size:.95rem; box-shadow:var(--shadow); }
+  .eyebrow { text-transform:uppercase; letter-spacing:.16em; font-size:.72rem; font-weight:700; color:var(--accent); margin:20px 0 8px; }
+  h1 { font-size:clamp(1.7rem,4vw,2.6rem); line-height:1.05; margin:0; letter-spacing:-.03em; text-wrap:balance; font-weight:820; }
+  .lede { margin:12px 0 0; max-width:60ch; color:var(--ink-soft); font-size:1.02rem; }
+
+  /* Legend */
+  .legend { display:flex; flex-wrap:wrap; gap:10px 22px; margin:24px 0 8px; padding:14px 18px;
+    background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); }
+  .leg { display:inline-flex; align-items:center; gap:9px; font-size:.9rem; font-weight:600; }
+  .swatch { width:14px; height:14px; border-radius:5px; flex:none; }
+  .leg small { color:var(--ink-faint); font-weight:500; }
+
+  /* Phase */
+  .phase { margin-top: 10px; }
+  .phase-head { display:flex; align-items:center; gap:12px; margin:26px 0 14px; }
+  .phase-num { width:34px; height:34px; flex:none; border-radius:10px; background:var(--accent); color:#fff;
+    display:grid; place-items:center; font-weight:800; font-size:1rem; box-shadow:var(--shadow); }
+  .phase-head h2 { margin:0; font-size:1.15rem; letter-spacing:-.02em; font-weight:780; }
+  .phase-head p { margin:1px 0 0; font-size:.82rem; color:var(--ink-faint); }
+
+  .row { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .row.one { grid-template-columns:1fr; }
+
+  .card { background:var(--surface); border:1px solid var(--line); border-left:4px solid var(--who);
+    border-radius:var(--radius); padding:15px 16px; box-shadow:var(--shadow); position:relative; }
+  .card .tag { display:inline-flex; align-items:center; gap:6px; font-size:.68rem; font-weight:800; text-transform:uppercase;
+    letter-spacing:.07em; color:var(--who); background:var(--who-tint); padding:3px 9px; border-radius:999px; margin-bottom:9px; }
+  .card h3 { margin:0 0 5px; font-size:.98rem; letter-spacing:-.01em; }
+  .card p { margin:0; font-size:.86rem; color:var(--ink-soft); }
+  .card .mini { margin-top:10px; display:flex; flex-wrap:wrap; gap:6px; }
+  .chip { font-size:.72rem; font-weight:600; padding:3px 8px; border-radius:7px; background:var(--bg); border:1px solid var(--line); color:var(--ink-soft); }
+
+  .est { --who:var(--est); --who-tint:var(--est-tint); }
+  .emp { --who:var(--emp); --who-tint:var(--emp-tint); }
+  .adm { --who:var(--adm); --who-tint:var(--adm-tint); }
+
+  /* connector arrow between phases */
+  .arrow { display:flex; justify-content:center; margin:14px 0; }
+  .arrow svg { width:24px; height:24px; color:var(--ink-faint); }
+
+  /* the "match" highlight card */
+  .match { background:linear-gradient(135deg,var(--est-tint),var(--emp-tint)); border:1px dashed var(--accent);
+    border-left:1px dashed var(--accent); text-align:center; padding:18px; }
+  .match h3 { font-size:1rem; }
+  .match .who2 { display:inline-flex; gap:6px; align-items:center; justify-content:center; margin-bottom:8px; font-weight:800; font-size:.72rem; letter-spacing:.06em; text-transform:uppercase; color:var(--accent-deep); }
+
+  /* outcome row */
+  .outcomes { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .out { border-radius:var(--radius); padding:14px 16px; border:1px solid var(--line); box-shadow:var(--shadow); background:var(--surface); }
+  .out.good { border-left:4px solid var(--good); }
+  .out.bad { border-left:4px solid var(--bad); }
+  .out .st { font-weight:800; font-size:.9rem; }
+  .out.good .st { color:var(--good); }
+  .out.bad .st { color:var(--bad); }
+  .out p { margin:5px 0 0; font-size:.84rem; color:var(--ink-soft); }
+
+  /* admin overseer band */
+  .oversee { margin-top:34px; background:var(--adm-tint); border:1px solid var(--line); border-radius:var(--radius);
+    padding:18px 20px; display:flex; gap:16px; align-items:flex-start; }
+  .oversee .ico { width:38px; height:38px; flex:none; border-radius:10px; background:var(--adm); color:#fff; display:grid; place-items:center; }
+  .oversee h3 { margin:0 0 4px; font-size:1rem; }
+  .oversee p { margin:0; font-size:.87rem; color:var(--ink-soft); }
+
+  footer { margin-top:36px; padding-top:18px; border-top:1px solid var(--line); color:var(--ink-faint); font-size:.8rem;
+    display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+
+  @media (max-width:640px){ .row, .outcomes { grid-template-columns:1fr; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="brand"><span class="dot">J</span> JobBy</div>
+    <div class="eyebrow">Cómo funciona · Diagrama de flujo</div>
+    <h1>Del registro al empleo, paso a paso</h1>
+    <p class="lede">Así se conectan los tres actores de la plataforma: el <b>estudiante</b> construye su perfil, la <b>empresa</b> publica vacantes y el <b>administrador</b> verifica que todo sea confiable.</p>
+  </header>
+
+  <div class="legend">
+    <span class="leg"><span class="swatch" style="background:var(--est)"></span> Estudiante <small>/ egresado</small></span>
+    <span class="leg"><span class="swatch" style="background:var(--emp)"></span> Empresa <small>/ reclutador</small></span>
+    <span class="leg"><span class="swatch" style="background:var(--adm)"></span> Administrador <small>/ universidad</small></span>
+  </div>
+
+  <!-- FASE 1 -->
+  <section class="phase">
+    <div class="phase-head">
+      <span class="phase-num">1</span>
+      <div><h2>Registro y acceso</h2><p>Cada actor crea su cuenta</p></div>
+    </div>
+    <div class="row">
+      <div class="card est">
+        <span class="tag">Estudiante</span>
+        <h3>Se registra con su correo</h3>
+        <p>Confirma su cuenta con un código de verificación (OTP) enviado por email.</p>
+      </div>
+      <div class="card emp">
+        <span class="tag">Empresa</span>
+        <h3>Se registra y captura sus datos legales</h3>
+        <p>Sube razón social, RFC y datos de contacto. Su estatus queda como <b>Pendiente</b>.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M19 12l-7 7-7-7"/></svg></div>
+
+  <!-- FASE 2 -->
+  <section class="phase">
+    <div class="phase-head">
+      <span class="phase-num">2</span>
+      <div><h2>Preparación y verificación</h2><p>El admin valida a las empresas; el estudiante arma su perfil</p></div>
+    </div>
+    <div class="row">
+      <div class="card est">
+        <span class="tag">Estudiante</span>
+        <h3>Completa su perfil y genera su CV con IA</h3>
+        <p>Agrega carrera, habilidades e idiomas. El <b>CV Mágico</b> arma un CV profesional automáticamente.</p>
+        <div class="mini"><span class="chip">Habilidades</span><span class="chip">Idiomas</span><span class="chip">CV con IA</span></div>
+      </div>
+      <div class="card adm">
+        <span class="tag">Administrador</span>
+        <h3>Revisa y aprueba a la empresa</h3>
+        <p>Puede <b>Aprobar</b>, pedir <b>cambios</b> o <b>rechazar</b>. Solo las empresas aprobadas pueden publicar vacantes.</p>
+        <div class="mini"><span class="chip">Aprobar</span><span class="chip">Requiere cambios</span><span class="chip">Rechazar</span></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M19 12l-7 7-7-7"/></svg></div>
+
+  <!-- FASE 3 -->
+  <section class="phase">
+    <div class="phase-head">
+      <span class="phase-num">3</span>
+      <div><h2>Vacantes y postulación</h2><p>Aquí se encuentran los dos lados</p></div>
+    </div>
+    <div class="row">
+      <div class="card emp">
+        <span class="tag">Empresa</span>
+        <h3>Publica una vacante</h3>
+        <p>Define el puesto, tipo de contrato, modalidad y las habilidades e idiomas requeridos.</p>
+      </div>
+      <div class="card est">
+        <span class="tag">Estudiante</span>
+        <h3>Busca vacantes y ve su match</h3>
+        <p>El sistema cruza sus habilidades con los requisitos de cada vacante.</p>
+      </div>
+    </div>
+
+    <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M19 12l-7 7-7-7"/></svg></div>
+
+    <div class="match">
+      <div class="who2"><span class="swatch" style="background:var(--est)"></span> Estudiante &nbsp;→&nbsp; Empresa <span class="swatch" style="background:var(--emp)"></span></div>
+      <h3>El estudiante se postula a la vacante</h3>
+      <p style="margin:6px 0 0; font-size:.86rem; color:var(--ink-soft)">Se guarda una <b>copia (snapshot)</b> de su CV y perfil tal como estaban al momento de postularse.</p>
+    </div>
+  </section>
+
+  <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M19 12l-7 7-7-7"/></svg></div>
+
+  <!-- FASE 4 -->
+  <section class="phase">
+    <div class="phase-head">
+      <span class="phase-num">4</span>
+      <div><h2>Revisión y resultado</h2><p>La empresa decide; el estudiante se entera</p></div>
+    </div>
+    <div class="row one">
+      <div class="card emp">
+        <span class="tag">Empresa</span>
+        <h3>Revisa a los candidatos</h3>
+        <p>La postulación avanza por estados a medida que la empresa la atiende:</p>
+        <div class="mini">
+          <span class="chip">Enviada</span><span class="chip">Vista</span><span class="chip">En revisión</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M19 12l-7 7-7-7"/></svg></div>
+
+    <div class="outcomes">
+      <div class="out good">
+        <div class="st">✓ Aceptada</div>
+        <p>La empresa selecciona al candidato y el estudiante recibe la notificación. <b>Vinculación lograda.</b></p>
+      </div>
+      <div class="out bad">
+        <div class="st">✕ Rechazada</div>
+        <p>El estudiante recibe el resultado y puede seguir postulándose a otras vacantes.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Admin overseer -->
+  <div class="oversee">
+    <span class="ico"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>
+    <div>
+      <h3>El administrador supervisa todo el tiempo</h3>
+      <p>Además de verificar empresas, el admin envía comunicados, puede <b>suspender</b> empresas que incumplan las normas y mantiene la confianza y calidad de la plataforma.</p>
+    </div>
+  </div>
+
+  <footer>
+    <span>JobBy — Bolsa de Trabajo UT Chetumal</span>
+    <span>Flujo general del sistema</span>
+  </footer>
+</div>

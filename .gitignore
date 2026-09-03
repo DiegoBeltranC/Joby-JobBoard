@@ -42,6 +42,5 @@ next-env.d.ts
 
 /src/generated/prisma
 
-/src/generated/prisma
-
-/src/generated/prisma
+# claude code (config local de máquina; el resto de .claude/ sí se versiona)
+.claude/settings.local.json
